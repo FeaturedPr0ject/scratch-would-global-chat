@@ -1,6 +1,6 @@
 # SWG Chat
 
-A dark global chat interface using the SWG orange and white visual style.
+A dark SWG Chat interface using the SWG orange and white visual style.
 
 ## Current build
 
@@ -8,7 +8,7 @@ The frontend is ready for GitHub Pages.
 
 The current build includes:
 
-- Global Chat interface
+- SWG Chat interface
 - Two SWG logo treatments
 - Orange and white branding
 - Username selection
