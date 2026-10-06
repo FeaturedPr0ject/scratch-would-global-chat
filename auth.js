@@ -5,6 +5,7 @@ const message=document.querySelector("#authMessage");
 const signInTab=document.querySelector("#signInTab");
 const logInTab=document.querySelector("#logInTab");
 const submitButton=document.querySelector("#authSubmit");
+const captchaStatus=document.querySelector("#captchaStatus");
 let authMode="signIn";
 function setAuthMode(mode){
  authMode=mode;
@@ -54,6 +55,10 @@ form.addEventListener("submit",event=>{
  const email=document.querySelector("#emailInput").value.trim();
  const password=document.querySelector("#passwordInput").value;
  const turnstileToken=window.turnstile?.getResponse?.()||"";
+ if(captchaStatus){
+  message.textContent="CAPTCHA is not configured yet."; 
+  return;
+ }
  if(!email||!password){
   message.textContent="Enter your email and password.";
   return;
