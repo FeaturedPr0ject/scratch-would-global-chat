@@ -4,56 +4,52 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#ffad00">
-<title>SWG Chat</title>
+<title>SWGC Room Chats</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body><script src="auth-gate.js"></script>
 <div class="app-shell">
 <header class="topbar">
-<a class="brand" href="./" aria-label="SWG Chat">
-<img class="logo-image" src="./assests/logo.png" alt="SWG">
-<span>SWG Chat</span>
+<a class="brand" href="./" aria-label="SWGC Room Chats">
+<img class="logo-image logo-main" src="./assests/logo.png" alt="SWG">
+<span>SWGC Room Chats</span>
 </a>
 <div class="top-actions">
 <span id="connectionDot" class="status-dot offline"></span>
 <span id="connectionText">Signed out</span>
 </div>
 </header>
-
 <main class="chat-layout">
 <aside class="sidebar">
 <div class="profile-card">
 <div class="avatar" id="profileAvatar">?</div>
 <div>
 <strong id="profileName">Guest</strong>
-<span>Global member</span>
+<span>Room member</span>
 </div>
 <button id="changeName" class="icon-button" type="button" aria-label="Change username">✎</button>
 </div>
 <div class="server-card">
 <img class="logo-image mini-logo-image" src="./assests/logo.png" alt="SWG">
 <div>
-<strong>Global</strong>
-<span>Everyone can chat</span>
+<strong>Public Room</strong>
+<span>Everyone can join</span>
 </div>
 </div>
 <div class="sidebar-note">
-<strong>Be nice.</strong>
-<span>Keep the global chat friendly and safe.</span>
+<strong>Be respectful.</strong>
+<span>Keep room chats friendly and safe.</span>
 </div>
 </aside>
-
 <section class="chat-panel">
 <div class="chat-head">
 <div>
-<h1>SWG Chat</h1>
+<h1>SWGC Room Chats</h1>
 <p id="roomStatus">Public room</p>
 </div>
-<div class="head-pill">GLOBAL</div>
+<div class="head-pill">PUBLIC ROOM</div>
 </div>
-
 <div id="messages" class="messages" aria-live="polite"></div>
-
 <div class="composer">
 <div class="composer-row">
 <textarea id="messageInput" maxlength="500" rows="1" placeholder="Send a message..." aria-label="Message"></textarea>
@@ -70,10 +66,10 @@
 <div id="nameModal" class="modal hidden">
 <div class="modal-card">
 <div class="modal-logo"><img class="logo-image" src="./assests/logo.png" alt="SWG"></div>
-<h2>Choose your name</h2>
-<p>Pick a username for SWG Chat.</p>
+<h2>Choose your display name</h2>
+<p>Pick a username for SWGC Room Chats.</p>
 <input id="nameInput" maxlength="24" autocomplete="nickname" placeholder="Username">
-<button id="saveName" class="primary-button" type="button">Join Chat</button>
+<button id="saveName" class="primary-button" type="button">Join Room</button>
 </div>
 </div>
 <script type="module" src="app.js"></script>
