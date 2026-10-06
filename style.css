@@ -102,3 +102,9 @@ button{cursor:pointer}
 .auth-foot a:hover{text-decoration:underline}
 .auth-card .primary-button{color:#171009;background:var(--orange);height:48px}
 .auth-card .primary-button:hover{background:var(--orange2)}
+
+.logo-image{width:100%;height:100%;display:block;object-fit:contain}
+.logo-main.logo-image{width:62px;height:38px}
+.mini-logo-image{width:44px;height:36px}
+.modal-logo .logo-image{width:150px;height:76px}
+.auth-logo .logo-image{width:170px;height:86px}
