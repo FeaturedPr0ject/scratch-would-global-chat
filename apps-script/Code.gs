@@ -1,12 +1,11 @@
-const SUPPORT_EMAIL="YOUR_SUPPORT_GMAIL_ADDRESS";
+const SUPPORT_EMAIL="duongminhduc8690@gmail.com";
 
 function doPost(e){
   try{
     const data={
       product:e.parameter.product||"SWGC Room Chats",
       type:e.parameter.type||"Troubleshoot",
-      email:e.parameter.email||"",
-      reason:e.parameter.reason||"",
+            reason:e.parameter.reason||"",
       otherReason:e.parameter.otherReason||"",
       details:e.parameter.details||"",
       page:e.parameter.page||"",
@@ -27,8 +26,7 @@ function doPost(e){
     const body=[
       "A new SWGC Room Chats troubleshooting request was submitted.",
       "",
-      "Email: "+data.email,
-      "Reason: "+data.reason,
+            "Reason: "+data.reason,
       data.otherReason?"Other reason: "+data.otherReason:"",
       "",
       "Details:",
@@ -43,7 +41,6 @@ function doPost(e){
       subject,
       body,
       attachments:[attachment],
-      replyTo:data.email,
       name:"SWGC Room Chats Support"
     });
     return ContentService.createTextOutput(JSON.stringify({ok:true})).setMimeType(ContentService.MimeType.JSON);
