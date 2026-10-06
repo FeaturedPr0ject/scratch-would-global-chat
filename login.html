@@ -6,7 +6,6 @@
 <meta name="theme-color" content="#ffad00">
 <title>SWGC Room Chats — Authentication</title>
 <link rel="stylesheet" href="style.css">
-<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body class="auth-page">
 <main class="auth-shell">
@@ -25,9 +24,7 @@
 <input id="emailInput" type="email" autocomplete="email" required placeholder="you@example.com">
 <label for="passwordInput">Password</label>
 <input id="passwordInput" type="password" autocomplete="current-password" required placeholder="Password">
-<div class="turnstile-wrap">
-<div class="cf-turnstile" data-sitekey="YOUR_TURNSTILE_SITE_KEY" data-theme="dark"></div>
-</div>
+<div class="turnstile-wrap"><span id="captchaStatus">CAPTCHA configuration pending</span></div>
 <p id="authMessage" class="auth-message"></p>
 <button id="authSubmit" class="primary-button" type="submit">Sign In</button>
 </form>
