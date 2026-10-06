@@ -1,22 +1,23 @@
-# SWG Chat
+# SWGC Room Chats
 
-A dark SWG Chat interface using the SWG orange and white visual style.
+A dark SWGC Room Chats interface using the SWG orange and white visual style.
 
-## Current build
+## Current Build
 
 The frontend is ready for GitHub Pages.
 
 The current build includes:
 
-- SWG Chat interface
-- Two SWG logo treatments
-- Orange and white branding
-- Username selection
+- SWGC Room Chats interface
+- SWG logo branding
+- Orange and white visual design
+- Display name selection
 - Message composer
 - Responsive mobile layout
 - Local demo message storage
+- Sign In and Log In authentication tabs
 
-## Realtime backend
+## Realtime Backend
 
 GitHub Pages only hosts static files. To make messages global and realtime for every visitor, connect a realtime backend such as Firebase Realtime Database or Supabase.
 
