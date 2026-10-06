@@ -108,3 +108,8 @@ button{cursor:pointer}
 .mini-logo-image{width:44px;height:36px}
 .modal-logo .logo-image{width:150px;height:76px}
 .auth-logo .logo-image{width:170px;height:86px}
+
+.auth-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#f0f0f2;border:1px solid #e2e2e5;border-radius:13px;padding:4px;margin-bottom:14px}
+.auth-tab{height:42px;border:0;border-radius:9px;background:transparent;color:#5d5d64;font-size:13px;font-weight:900}
+.auth-tab:hover{color:#222}
+.auth-tab.active{background:var(--orange);color:#171009;box-shadow:0 3px 10px rgba(255,173,0,.18)}
