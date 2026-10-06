@@ -1,4 +1,15 @@
 const STORAGE_NAME="swg-global-chat-name";
+const SESSION_COOKIE="swg_session";
+function getSession(){
+ const raw=document.cookie.split("; ").find(item=>item.startsWith(SESSION_COOKIE+"="))?.split("=").slice(1).join("=")||"";
+ if(!raw)return null;
+ try{
+  const session=JSON.parse(decodeURIComponent(escape(atob(raw))));
+  if(!session.expiresAt||Date.now()>=session.expiresAt){location.replace("./login.html");return null;}
+  return session;
+ }catch{location.replace("./login.html");return null;}
+}
+const session=getSession();
 const messagesEl=document.querySelector("#messages");
 const input=document.querySelector("#messageInput");
 const sendButton=document.querySelector("#sendButton");
@@ -12,7 +23,7 @@ const profileAvatar=document.querySelector("#profileAvatar");
 const connectionDot=document.querySelector("#connectionDot");
 const connectionText=document.querySelector("#connectionText");
 
-let username=localStorage.getItem(STORAGE_NAME)||"";
+let username=localStorage.getItem(STORAGE_NAME)||session?.email?.split("@")[0]||"";
 let messages=JSON.parse(localStorage.getItem("swg-local-messages")||"[]");
 
 function escapeText(value){
