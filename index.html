@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b0b0f">
+<title>SWG Global Chat</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app-shell">
+<header class="topbar">
+<a class="brand" href="./" aria-label="SWG Global Chat">
+<svg class="logo logo-main" viewBox="0 0 240 120" aria-hidden="true">
+<path d="M30 62C8 42 23 10 55 16C72-1 101 6 111 23C128 2 165 8 170 31C203 12 226 36 211 61C233 82 213 111 182 101C166 121 134 116 122 96C103 118 69 113 65 91C35 103 12 85 30 62Z" fill="#ffad00" stroke="#fff" stroke-width="9" stroke-linejoin="round"/>
+<text x="120" y="73" text-anchor="middle" fill="#fff" font-size="58" font-weight="900" font-family="Arial Black,Arial,sans-serif">SWG</text>
+</svg>
+<span>Global Chat</span>
+</a>
+<div class="top-actions">
+<span id="connectionDot" class="status-dot offline"></span>
+<span id="connectionText">Offline</span>
+</div>
+</header>
+
+<main class="chat-layout">
+<aside class="sidebar">
+<div class="profile-card">
+<div class="avatar" id="profileAvatar">?</div>
+<div>
+<strong id="profileName">Guest</strong>
+<span>Global member</span>
+</div>
+<button id="changeName" class="icon-button" type="button" aria-label="Change username">✎</button>
+</div>
+<div class="server-card">
+<div class="mini-logo">
+<svg viewBox="0 0 120 70" aria-hidden="true">
+<path d="M17 39C3 27 13 7 32 11C42 0 60 4 65 15C76 2 96 7 98 22C117 12 127 30 116 42C126 55 112 69 94 63C83 74 64 68 58 57C46 70 26 66 24 53C7 60 0 48 17 39Z" fill="#ffad00" stroke="#fff" stroke-width="6" stroke-linejoin="round"/>
+<text x="60" y="45" text-anchor="middle" fill="#fff" font-size="30" font-weight="900" font-family="Arial Black,Arial,sans-serif">SWG</text>
+</svg>
+</div>
+<div>
+<strong>Global</strong>
+<span>Everyone can chat</span>
+</div>
+</div>
+<div class="sidebar-note">
+<strong>Be nice.</strong>
+<span>Keep the global chat friendly and safe.</span>
+</div>
+</aside>
+
+<section class="chat-panel">
+<div class="chat-head">
+<div>
+<h1>Global Chat</h1>
+<p id="roomStatus">Public room</p>
+</div>
+<div class="head-pill">GLOBAL</div>
+</div>
+
+<div id="messages" class="messages" aria-live="polite"></div>
+
+<div class="composer">
+<div class="composer-row">
+<textarea id="messageInput" maxlength="500" rows="1" placeholder="Send a message..." aria-label="Message"></textarea>
+<button id="sendButton" class="send-button" type="button">Send</button>
+</div>
+<div class="composer-foot">
+<span id="charCount">0 / 500</span>
+<span>Enter to send · Shift+Enter for a new line</span>
+</div>
+</div>
+</section>
+</main>
+</div>
+<div id="nameModal" class="modal hidden">
+<div class="modal-card">
+<div class="modal-logo">
+<svg viewBox="0 0 240 120" aria-hidden="true">
+<path d="M30 62C8 42 23 10 55 16C72-1 101 6 111 23C128 2 165 8 170 31C203 12 226 36 211 61C233 82 213 111 182 101C166 121 134 116 122 96C103 118 69 113 65 91C35 103 12 85 30 62Z" fill="#ffad00" stroke="#fff" stroke-width="9" stroke-linejoin="round"/>
+<text x="120" y="73" text-anchor="middle" fill="#fff" font-size="58" font-weight="900" font-family="Arial Black,Arial,sans-serif">SWG</text>
+</svg>
+</div>
+<h2>Choose your name</h2>
+<p>Pick a username for Global Chat.</p>
+<input id="nameInput" maxlength="24" autocomplete="nickname" placeholder="Username">
+<button id="saveName" class="primary-button" type="button">Join Chat</button>
+</div>
+</div>
+<script type="module" src="app.js"></script>
+</body>
+</html>
