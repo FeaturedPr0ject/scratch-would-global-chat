@@ -1,3 +1,10 @@
+function setupAuthBackend(){
+  getAuthSecret();
+  getUsers();
+  UrlFetchApp.fetch("https://www.google.com/generate_204",{muteHttpExceptions:true});
+  return "Authentication backend is authorized.";
+}
+
 function getSupportEmail(){
   return PropertiesService.getScriptProperties().getProperty("SUPPORT_EMAIL")||"";
 }
