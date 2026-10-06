@@ -46,9 +46,7 @@ form.addEventListener("submit",async event=>{
  submitButton.textContent="Sending...";
  try{
   const body=new URLSearchParams(request);
-  const response=await fetch(ENDPOINT,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},body});
-  const result=await response.json();
-  if(!result.ok)throw new Error(result.error||"Request failed");
+  await fetch(ENDPOINT,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},body});
   requestMessage.textContent="Support request sent successfully.";
   form.reset();
   otherReasonWrap.classList.add("hidden");
