@@ -5,7 +5,7 @@ const otherReasonInput=document.querySelector("#otherReasonInput");
 const requestMessage=document.querySelector("#requestMessage");
 const submitButton=form.querySelector("button[type=submit]");
 const detailsInput=document.querySelector("#detailsInput");
-const ENDPOINT="YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL";
+const ENDPOINT="https://script.google.com/macros/s/AKfycbw7x_9kSRpck2bO_iEOC5M13pU07N_q0VVbVa6BaQeAgVfbe_cIs139Vv_7XP6g1pQo/exec";
 
 reasonInput.addEventListener("change",()=>{
  const isOther=reasonInput.value==="Other";
@@ -18,7 +18,7 @@ function buildRequest(){
  return {
   product:"SWGC Room Chats",
   type:"Troubleshoot",
-    reason:reasonInput.value,
+  reason:reasonInput.value,
   otherReason:reasonInput.value==="Other"?otherReasonInput.value.trim():"",
   details:detailsInput.value.trim(),
   page:location.href,
@@ -32,14 +32,13 @@ form.addEventListener("submit",async event=>{
  event.preventDefault();
  requestMessage.textContent="";
  const request=buildRequest();
- if(!request.email||!request.reason||!request.details)return;
+ if(!request.reason||!request.details){
+  requestMessage.textContent="Please complete the required fields.";
+  return;
+ }
  if(request.reason==="Other"&&!request.otherReason){
   requestMessage.textContent="Please write the other reason.";
   otherReasonInput.focus();
-  return;
- }
- if(ENDPOINT==="YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL"){
-  requestMessage.textContent="The request file was created. Gmail sending is not configured yet.";
   return;
  }
  submitButton.disabled=true;
@@ -52,7 +51,7 @@ form.addEventListener("submit",async event=>{
   otherReasonWrap.classList.add("hidden");
   otherReasonInput.required=false;
  }catch{
-  requestMessage.textContent="Could not send the support request. Please try again."
+  requestMessage.textContent="Could not send the support request. Please try again.";
  }finally{
   submitButton.disabled=false;
   submitButton.textContent="Send Support Request";
