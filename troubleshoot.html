@@ -18,9 +18,6 @@
 <p>Tell us what went wrong and send a support request.</p>
 </div>
 <form id="troubleshootForm" class="troubleshoot-form">
-<label for="emailInput">Email</label>
-<input id="emailInput" name="email" type="email" autocomplete="email" placeholder="you@example.com" required>
-
 <label for="reasonInput">Reason</label>
 <select id="reasonInput" name="reason" required>
 <option value="">Select a reason</option>
@@ -40,11 +37,7 @@
 <label for="detailsInput">Details</label>
 <textarea id="detailsInput" name="details" maxlength="5000" rows="8" placeholder="Describe the problem, what you expected, and what happened." required></textarea>
 
-<div class="request-preview">
-<strong>Request file</strong>
-<span id="fileName">swgc-troubleshoot-request.json</span>
-</div>
-
+<p class="support-destination">Support requests are sent to the SWGC support mailbox.</p>
 <p id="requestMessage" class="request-message" aria-live="polite"></p>
 <button class="primary-button" type="submit">Send Support Request</button>
 </form>
