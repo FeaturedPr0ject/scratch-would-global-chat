@@ -1,4 +1,4 @@
-# SWG Global Chat
+# SWG Chat
 
 A dark global chat interface using the SWG orange and white visual style.
 
