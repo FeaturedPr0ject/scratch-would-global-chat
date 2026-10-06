@@ -9,6 +9,7 @@ const submitButton=document.querySelector("#authSubmit");
 let authMode="signIn";
 let pendingFrame=null;
 let pendingNonce="";
+let pendingTimeout=null;
 
 function setAuthMode(mode){
  authMode=mode;
@@ -61,6 +62,10 @@ function hasValidSession(){
 }
 
 function cleanupFrame(){
+ if(pendingTimeout){
+  clearTimeout(pendingTimeout);
+  pendingTimeout=null;
+ }
  if(pendingFrame){
   pendingFrame.remove();
   pendingFrame=null;
@@ -98,6 +103,13 @@ function submitAuth(email,password,turnstileToken){
  document.body.appendChild(authForm);
  authForm.submit();
  authForm.remove();
+ pendingTimeout=setTimeout(()=>{
+  if(!pendingFrame)return;
+  cleanupFrame();
+  submitButton.disabled=false;
+  message.textContent="The authentication server did not respond. Check the Apps Script deployment and try again.";
+  window.turnstile?.reset?.();
+ },15000);
 }
 
 window.addEventListener("message",event=>{
