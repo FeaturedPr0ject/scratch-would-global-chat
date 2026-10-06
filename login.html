@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#ffad00">
-<title>SWG Chat — Login</title>
+<title>SWGC Room Chats — Authentication</title>
 <link rel="stylesheet" href="style.css">
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
@@ -13,8 +13,12 @@
 <section class="auth-card">
 <div class="auth-logo"><img class="logo-image" src="./assests/logo.png" alt="SWG"></div>
 <div class="auth-title">
-<h1>Đăng nhập / Log In</h1>
-<p>Sign in to keep your SWG Chat identity connected to your account.</p>
+<h1>SWGC Room Chats</h1>
+<p>Use Sign In or Log In to continue to your SWGC Room Chats account.</p>
+</div>
+<div class="auth-tabs" role="tablist" aria-label="Authentication method">
+<button id="signInTab" class="auth-tab active" type="button" role="tab" aria-selected="true">Sign In</button>
+<button id="logInTab" class="auth-tab" type="button" role="tab" aria-selected="false">Log In</button>
 </div>
 <form id="loginForm" class="auth-form">
 <label for="emailInput">Email</label>
@@ -25,11 +29,11 @@
 <div class="cf-turnstile" data-sitekey="YOUR_TURNSTILE_SITE_KEY" data-theme="dark"></div>
 </div>
 <p id="authMessage" class="auth-message"></p>
-<button class="primary-button" type="submit">Đăng nhập / Log In</button>
+<button id="authSubmit" class="primary-button" type="submit">Sign In</button>
 </form>
 <div class="auth-foot">
 <span>Session expires after 2 days.</span>
-<a href="./">Back to SWG Chat</a>
+<a href="./">Back to SWGC Room Chats</a>
 </div>
 </section>
 </main>
