@@ -307,6 +307,15 @@ async function joinRoom(){
   firstUsernameCheck.className="field-status taken first-check";
   return;
  }
+ if(!supabase){
+  profile={username,display_name:displayName,note:"",avatar_url:""};
+  localStorage.setItem(STORAGE_NAME,username);
+  localStorage.setItem(STORAGE_PROFILE,JSON.stringify(profile));
+  renderProfile();
+  nameModal.classList.add("hidden");
+  input.focus();
+  return;
+ }
  joinRoomButton.disabled=true;
  try{
   const available=await checkUsername(username,true);
