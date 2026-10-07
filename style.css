@@ -297,3 +297,14 @@ html,body{width:100%;max-width:100%;overflow-x:clip}
 .top-search-status{top:40px}
 .top-search-result{top:42px}
 }
+
+.friends-card-head{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.friends-card-head>strong{min-width:0}
+.friend-refresh-button,.friends-card-head #friendRefreshButton{box-sizing:border-box!important;width:32px!important;height:32px!important;min-width:32px!important;min-height:32px!important;max-width:32px!important;max-height:32px!important;flex:0 0 32px!important;margin-left:auto!important;border:1px solid rgba(255,173,0,.42)!important;border-radius:10px!important;background:#1b1b20!important;color:#ffad00!important;padding:0!important;display:grid!important;place-items:center!important;font-family:Arial,sans-serif!important;font-size:19px!important;font-weight:700!important;line-height:1!important;appearance:none!important;-webkit-appearance:none!important;cursor:pointer!important;box-shadow:none!important}
+.friend-refresh-button:hover,.friends-card-head #friendRefreshButton:hover{background:#25252c!important;border-color:#ffad00!important;box-shadow:0 0 12px rgba(255,173,0,.16)!important}
+.friend-refresh-button:active,.friends-card-head #friendRefreshButton:active{transform:scale(.94)!important}
+.friend-refresh-button.refreshing{animation:friendRefreshSpin .4s ease!important}
+@keyframes friendRefreshSpin{to{transform:rotate(360deg)}}
+.profile-friend-button{transition:background .15s ease,border-color .15s ease,transform .1s ease}
+.profile-friend-button.unfriend-button{background:#2a2020!important;border-color:#6b3030!important;color:#ff8c8c!important}
+.profile-friend-button.unfriend-button:hover{background:#3a2323!important;border-color:#9b3b3b!important}
