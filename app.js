@@ -390,6 +390,7 @@ async function initializeSupabase(){
  renderMessages();
  connectRealtime();
  await loadFriends();
+ setConnection("Connected");
 }
 
 function connectRealtime(){
@@ -435,7 +436,7 @@ function connectRealtime(){
    }
   })
   .subscribe(state=>{
-   setConnection(state==="SUBSCRIBED"?"Connected":"Connecting");
+   if(state==="SUBSCRIBED")setConnection("Connected");
   });
  presenceChannel=supabaseClient.channel("swgc-presence",{config:{presence:{key:userId}}});
  const refreshPresence=()=>{
