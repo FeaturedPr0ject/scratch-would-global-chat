@@ -45,6 +45,8 @@ const friendActionMessage=document.querySelector("#friendActionMessage");
 const mobileMenuButton=document.querySelector("#mobileMenuButton");
 const mobileMenuBackdrop=document.querySelector("#mobileMenuBackdrop");
 const mobileSidebar=document.querySelector(".sidebar");
+const chatLayout=document.querySelector(".chat-layout");
+const scrollToBottomButton=document.querySelector("#scrollToBottom");
 let friends=[];
 let selectedProfileId="";
 const connectionDot=document.querySelector("#connectionDot");
@@ -57,12 +59,29 @@ let socket=null;
 let avatarFile=null;
 let usernameTimer=null;
 let savingProfile=false;
-let ownerUserId="";
-
 function setMobileMenu(open){
- mobileSidebar?.classList.toggle("mobile-open",open);
- mobileMenuBackdrop?.classList.toggle("mobile-open",open);
+ const mobile=window.innerWidth<=760;
+ if(mobile){
+  mobileSidebar?.classList.toggle("mobile-open",open);
+  mobileMenuBackdrop?.classList.toggle("mobile-open",open);
+ }else{
+  chatLayout?.classList.toggle("sidebar-collapsed",!open);
+  mobileMenuBackdrop?.classList.remove("mobile-open");
+ }
  mobileMenuButton?.setAttribute("aria-expanded",open?"true":"false");
+}
+
+function isNearBottom(){
+ return messagesEl.scrollHeight-messagesEl.scrollTop-messagesEl.clientHeight<120;
+}
+
+function updateScrollButton(){
+ scrollToBottomButton?.classList.toggle("hidden",isNearBottom());
+}
+
+function scrollToBottom(smooth=false){
+ messagesEl.scrollTo({top:messagesEl.scrollHeight,behavior:smooth?"smooth":"auto"});
+ setTimeout(updateScrollButton,180);
 }
 
 
@@ -82,8 +101,8 @@ function initials(name){
  return (parts.length>1?parts[0][0]+parts[1][0]:String(name||"?").slice(0,2)).toUpperCase();
 }
 
-function ownerBadgeMarkup(id){
- return id&&ownerUserId&&id===ownerUserId?'<span class="owner-badge" title="Owner">OWNER</span>':"";
+function ownerBadgeMarkup(id,userNumber){
+ return Number(userNumber)===1?'<span class="owner-badge" title="Owner">OWNER</span>':"";
 }
 
 function avatarMarkup(item,className="message-avatar"){
@@ -108,18 +127,19 @@ function setProfileAvatar(element,data,sizeClass=""){
 
 function renderProfile(){
  const current=profile||{};
- profileDisplayName.textContent=current.display_name||"Guest";
- profileUsername.textContent=current.username?"@"+current.username:"@guest";
+ profileDisplayName.innerHTML=escapeText(current.display_name||"Guest")+ownerBadgeMarkup(current.id,current.user_number);
+ profileUsername.textContent=current.username?"@"+current.username+(current.user_number?" · ID #"+current.user_number:""):"@guest";
  setProfileAvatar(profileAvatar,current,"avatar-large");
  setProfileAvatar(avatarPreview,current,"avatar-preview");
 }
 
-function renderMessages(){
+function renderMessages(forceScroll=false){
  if(!messages.length){
+  updateScrollButton();
   messagesEl.innerHTML='<div class="empty"><div class="empty-inner"><div class="empty-logo"><img class="logo-image" src="./assests/logo.png" alt="SWG"></div><h2>Welcome to SWGC Room Chats</h2><p>Start the conversation. New messages appear here in real time.</p></div></div>';
   return;
  }
- const wasNearBottom=messagesEl.scrollHeight-messagesEl.scrollTop-messagesEl.clientHeight<80;
+ const wasNearBottom=isNearBottom();
  messagesEl.innerHTML=messages.map(item=>{
   const displayName=item.display_name||item.username||"Guest";
   const username=item.username?("@"+item.username):"";
@@ -128,7 +148,8 @@ function renderMessages(){
    avatarMarkup(item)+
    '<span class="message-body"><span class="message-meta"><span class="message-name-wrap"><span class="message-display-name">'+escapeText(displayName)+'</span>'+ownerBadgeMarkup(item.user_id)+'<span class="message-username">'+escapeText(username)+'</span></span><time class="message-time">'+escapeText(new Date(item.created_at||Date.now()).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}))+'</time></span>'+content+'</span></button>';
  }).join("");
- if(wasNearBottom)messagesEl.scrollTop=messagesEl.scrollHeight;
+ if(forceScroll||wasNearBottom)scrollToBottom(false);
+ updateScrollButton();
 }
 
 async function request(path,options={}){
@@ -139,33 +160,33 @@ async function request(path,options={}){
  let error=null;
 
  if(url.pathname==="/api/profiles"&&method==="GET"){
-  const result=await supabaseClient.from("profiles").select("id,username,display_name,note,avatar_url,created_at,updated_at").order("created_at",{ascending:true});
+  const result=await supabaseClient.from("profiles").select("id,user_number,username,display_name,note,avatar_url,created_at,updated_at").order("created_at",{ascending:true});
   data={ok:true,profiles:result.data||[]};
   error=result.error;
  }else if(url.pathname==="/api/username"&&method==="GET"){
   const username=new URLSearchParams(url.search).get("username")?.trim()||"";
-  const result=await supabaseClient.from("profiles").select("id").eq("username_key",username.toLowerCase()).maybeSingle();
+  const result=await supabaseClient.from("profiles").select("id,user_number").eq("username_key",username.toLowerCase()).maybeSingle();
   data={ok:true,taken:Boolean(result.data)};
   error=result.error;
  }else if(url.pathname==="/api/users/search"&&method==="GET"){
   const username=new URLSearchParams(url.search).get("username")?.trim()||"";
-  const result=await supabaseClient.from("profiles").select("id,username,display_name,note,avatar_url").eq("username_key",username.toLowerCase()).maybeSingle();
+  const result=await supabaseClient.from("profiles").select("id,user_number,username,display_name,note,avatar_url").eq("username_key",username.toLowerCase()).maybeSingle();
   data={ok:true,profile:result.data||null};
   error=result.error;
  }else if(url.pathname==="/api/messages"&&method==="GET"){
-  const result=await supabaseClient.from("messages").select("id,user_id,username,display_name,avatar_url,text,type,created_at").order("created_at",{ascending:false}).limit(100);
+  const result=await supabaseClient.from("messages").select("id,user_id,user_number,username,display_name,avatar_url,text,type,created_at").order("created_at",{ascending:false}).limit(100);
   data={ok:true,messages:(result.data||[]).reverse()};
   error=result.error;
  }else if(url.pathname==="/api/friends"&&method==="GET"){
   const result=await supabaseClient.from("friend_requests").select("id,requester_id,recipient_id,status,created_at,updated_at").or("requester_id.eq."+userId+",recipient_id.eq."+userId).in("status",["pending","accepted"]).order("updated_at",{ascending:false});
   if(!result.error){
    const ids=[...new Set((result.data||[]).map(item=>item.requester_id===userId?item.recipient_id:item.requester_id))];
-   const profilesResult=ids.length?await supabaseClient.from("profiles").select("id,username,display_name,avatar_url").in("id",ids):{data:[],error:null};
+   const profilesResult=ids.length?await supabaseClient.from("profiles").select("id,user_number,username,display_name,avatar_url").in("id",ids):{data:[],error:null};
    const profilesMap=new Map((profilesResult.data||[]).map(item=>[item.id,item]));
    data={ok:true,friends:(result.data||[]).map(item=>{
     const otherId=item.requester_id===userId?item.recipient_id:item.requester_id;
     const other=profilesMap.get(otherId);
-    return {id:item.id,user_id:otherId,status:item.status,username:other?.username||"",display_name:other?.display_name||"",avatar_url:other?.avatar_url||"",incoming:item.recipient_id===userId};
+    return {id:item.id,user_id:otherId,user_number:other?.user_number||null,status:item.status,username:other?.username||"",display_name:other?.display_name||"",avatar_url:other?.avatar_url||"",incoming:item.recipient_id===userId};
    })};
    error=profilesResult.error;
   }else{
@@ -199,8 +220,8 @@ async function request(path,options={}){
   if(existing.error)throw existing.error;
   const payload={id,username,display_name:displayName||username,note,avatar_url:avatarUrl};
   const result=existing.data
-   ? await supabaseClient.from("profiles").update({username,display_name:payload.display_name,note,avatar_url:avatarUrl}).eq("id",id).select("id,username,display_name,note,avatar_url,created_at,updated_at").single()
-   : await supabaseClient.from("profiles").insert(payload).select("id,username,display_name,note,avatar_url,created_at,updated_at").single();
+   ? await supabaseClient.from("profiles").update({username,display_name:payload.display_name,note,avatar_url:avatarUrl}).eq("id",id).select("id,user_number,username,display_name,note,avatar_url,created_at,updated_at").single()
+   : await supabaseClient.from("profiles").insert(payload).select("id,user_number,username,display_name,note,avatar_url,created_at,updated_at").single();
   data={ok:true,profile:result.data};
   error=result.error;
  }else if(url.pathname==="/api/messages"&&method==="POST"){
@@ -210,12 +231,13 @@ async function request(path,options={}){
   if(!profile)throw new Error("Profile not found");
   const result=await supabaseClient.from("messages").insert({
    user_id:profile.id,
+   user_number:profile.user_number,
    username:profile.username,
    display_name:profile.display_name,
    avatar_url:profile.avatar_url,
    text:messageText,
    type
-  }).select("id,user_id,username,display_name,avatar_url,text,type,created_at").single();
+  }).select("id,user_id,user_number,username,display_name,avatar_url,text,type,created_at").single();
   data={ok:true,message:result.data};
   error=result.error;
  }else{
@@ -235,7 +257,6 @@ async function initializeSupabase(){
  const config=await configResponse.json();
  const supabaseUrl=String(config.supabaseUrl||"").trim();
  const publishableKey=String(config.supabasePublishableKey||"").trim();
- ownerUserId=String(config.ownerUserId||"").trim();
  if(!supabaseUrl||!publishableKey)throw new Error("Supabase is not configured");
  supabaseClient=createClient(supabaseUrl,publishableKey);
  let sessionResult=await supabaseClient.auth.getSession();
@@ -280,7 +301,7 @@ function connectRealtime(){
     renderProfile();
    }
    if(payload.new){
-    messages=messages.map(item=>item.user_id===payload.new.id?{...item,username:payload.new.username,display_name:payload.new.display_name,avatar_url:payload.new.avatar_url}:item);
+    messages=messages.map(item=>item.user_id===payload.new.id?{...item,user_number:payload.new.user_number,username:payload.new.username,display_name:payload.new.display_name,avatar_url:payload.new.avatar_url}:item);
     renderMessages();
    }
   })
@@ -292,7 +313,7 @@ function connectRealtime(){
     renderProfile();
    }
    if(payload.new){
-    messages=messages.map(item=>item.user_id===payload.new.id?{...item,username:payload.new.username,display_name:payload.new.display_name,avatar_url:payload.new.avatar_url}:item);
+    messages=messages.map(item=>item.user_id===payload.new.id?{...item,user_number:payload.new.user_number,username:payload.new.username,display_name:payload.new.display_name,avatar_url:payload.new.avatar_url}:item);
     renderMessages();
    }
   })
@@ -424,7 +445,7 @@ async function sendMessage(type="text",sticker=""){
   if(result.message&&!messages.some(item=>item.id===result.message.id)){
    messages.push(result.message);
    messages=messages.slice(-100);
-   renderMessages();
+   renderMessages(true);
   }
   input.value="";
   input.style.height="auto";
@@ -444,8 +465,8 @@ async function openPublicProfile(userIdValue){
   if(!data)return;
   selectedProfileId=data.id;
   setProfileAvatar(publicProfileAvatar,data,"public-avatar");
-  publicProfileDisplayName.innerHTML=escapeText(data.display_name||data.username)+ownerBadgeMarkup(data.id);
-  publicProfileUsername.textContent=data.username?"@"+data.username:"";
+  publicProfileDisplayName.innerHTML=escapeText(data.display_name||data.username)+ownerBadgeMarkup(data.id,data.user_number);
+  publicProfileUsername.textContent=data.username?"@"+data.username+(data.user_number?" · ID #"+data.user_number:""):"";
   publicProfileNote.textContent=data.note||"No profile note.";
   friendActionMessage.textContent="";
   const relation=friends.find(item=>item.user_id===data.id);
@@ -466,8 +487,13 @@ avatarInput.addEventListener("change",()=>{
  reader.readAsDataURL(avatarFile);
 });
 
-mobileMenuButton?.addEventListener("click",()=>setMobileMenu(!mobileSidebar?.classList.contains("mobile-open")));
+mobileMenuButton?.addEventListener("click",()=>{
+ const mobile=window.innerWidth<=760;
+ const open=mobile?mobileSidebar?.classList.contains("mobile-open"):!chatLayout?.classList.contains("sidebar-collapsed");
+ setMobileMenu(!open);
+});
 mobileMenuBackdrop?.addEventListener("click",()=>setMobileMenu(false));
+document.querySelector(".sidebar-menu-button")?.addEventListener("click",()=>setMobileMenu(false));
 openProfileButton.addEventListener("click",()=>{setMobileMenu(false);openMyProfile();});
 closeProfileButton.addEventListener("click",closeProfileModal);
 closeUserProfileButton.addEventListener("click",()=>userProfileModal.classList.add("hidden"));
@@ -485,12 +511,22 @@ input.addEventListener("input",()=>{
 input.addEventListener("keydown",event=>{
  if(event.key==="Enter"&&!event.shiftKey){event.preventDefault();sendMessage();}
 });
+messagesEl.addEventListener("scroll",updateScrollButton,{passive:true});
+scrollToBottomButton?.addEventListener("click",()=>scrollToBottom(true));
 sendButton.addEventListener("click",()=>sendMessage());
 stickerButton?.addEventListener("click",event=>{event.stopPropagation();stickerPicker?.classList.toggle("hidden")});
 stickerButtons.forEach(button=>button.addEventListener("click",()=>sendMessage("sticker",button.dataset.sticker||"")));
 document.addEventListener("click",event=>{if(!event.target.closest(".sticker-picker")&&!event.target.closest("#stickerButton"))stickerPicker?.classList.add("hidden")});
 friendSearchButton?.addEventListener("click",searchFriend);
-window.addEventListener("resize",()=>{if(window.innerWidth>760)setMobileMenu(false);});
+window.addEventListener("resize",()=>{
+ if(window.innerWidth>760){
+  mobileSidebar?.classList.remove("mobile-open");
+  mobileMenuBackdrop?.classList.remove("mobile-open");
+  chatLayout?.classList.remove("sidebar-collapsed");
+ }else{
+  chatLayout?.classList.remove("sidebar-collapsed");
+ }
+});
 friendSearchInput?.addEventListener("keydown",event=>{if(event.key==="Enter")searchFriend()});
 addFriendButton?.addEventListener("click",addFriend);
 friendSearchResult?.addEventListener("click",event=>{const button=event.target.closest("[data-search-id]");if(button)openPublicProfile(button.dataset.searchId)});
@@ -525,8 +561,8 @@ async function loadFriends(){
 function renderFriendList(){
  const incoming=friends.filter(item=>item.status==="pending"&&item.incoming);
  const accepted=friends.filter(item=>item.status==="accepted");
- const incomingMarkup=incoming.map(item=>'<div class="friend-request"><button class="friend-item" type="button" data-friend-id="'+escapeText(item.user_id)+'">'+avatarMarkup(item,"friend-avatar")+'<span><strong>'+escapeText(item.display_name||item.username)+'</strong><small>@'+escapeText(item.username)+'</small></span></button><div class="friend-request-actions"><button type="button" data-accept-id="'+escapeText(item.id)+'">Accept</button><button type="button" data-decline-id="'+escapeText(item.id)+'">Decline</button></div></div>').join("");
- const acceptedMarkup=accepted.map(item=>'<button class="friend-item" type="button" data-friend-id="'+escapeText(item.user_id)+'">'+avatarMarkup(item,"friend-avatar")+'<span><strong>'+escapeText(item.display_name||item.username)+'</strong><small>@'+escapeText(item.username)+'</small></span></button>').join("");
+ const incomingMarkup=incoming.map(item=>'<div class="friend-request"><button class="friend-item" type="button" data-friend-id="'+escapeText(item.user_id)+'">'+avatarMarkup(item,"friend-avatar")+'<span><strong>'+escapeText(item.display_name||item.username)+ownerBadgeMarkup(item.user_id,item.user_number)+'</strong><small>@'+escapeText(item.username)+(item.user_number?" · ID #"+item.user_number:"")+'</small></span></button><div class="friend-request-actions"><button type="button" data-accept-id="'+escapeText(item.id)+'">Accept</button><button type="button" data-decline-id="'+escapeText(item.id)+'">Decline</button></div></div>').join("");
+ const acceptedMarkup=accepted.map(item=>'<button class="friend-item" type="button" data-friend-id="'+escapeText(item.user_id)+'">'+avatarMarkup(item,"friend-avatar")+'<span><strong>'+escapeText(item.display_name||item.username)+ownerBadgeMarkup(item.user_id,item.user_number)+'</strong><small>@'+escapeText(item.username)+(item.user_number?" · ID #"+item.user_number:"")+'</small></span></button>').join("");
  friendList.innerHTML=incomingMarkup+acceptedMarkup+(!incomingMarkup&&!acceptedMarkup?'<span class="friend-empty">No friends yet.</span>':"");
 }
 
@@ -542,7 +578,7 @@ async function searchFriend(){
   const item=result.profile;
   friendSearchStatus.textContent="";
   friendSearchResult.classList.remove("hidden");
-  friendSearchResult.innerHTML=avatarMarkup(item,"friend-search-avatar")+'<span><strong>'+escapeText(item.display_name||item.username)+'</strong><small>@'+escapeText(item.username)+'</small></span><button type="button" class="friend-view-button" data-search-id="'+escapeText(item.id)+'">View</button>';
+  friendSearchResult.innerHTML=avatarMarkup(item,"friend-search-avatar")+'<span><strong>'+escapeText(item.display_name||item.username)+ownerBadgeMarkup(item.user_id,item.user_number)+'</strong><small>@'+escapeText(item.username)+(item.user_number?" · ID #"+item.user_number:"")+'</small></span><button type="button" class="friend-view-button" data-search-id="'+escapeText(item.id)+'">View</button>';
  }catch(error){friendSearchStatus.textContent=error instanceof Error?error.message:"Search failed."}
 }
 
