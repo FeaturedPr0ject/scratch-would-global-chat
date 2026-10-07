@@ -37,6 +37,13 @@
 <span>Everyone can join</span>
 </span>
 </div>
+<div class="friends-card">
+<strong>Friends</strong>
+<div class="friend-search-row"><input id="friendSearchInput" maxlength="24" placeholder="Search username" autocomplete="off"><button id="friendSearchButton" type="button">Search</button></div>
+<div id="friendSearchStatus" class="friend-search-status"></div>
+<div id="friendSearchResult" class="friend-search-result hidden"></div>
+<div id="friendList" class="friend-list"></div>
+</div>
 <div class="sidebar-note">
 <strong>Be respectful.</strong>
 <span>Keep room chats friendly and safe.</span>
@@ -100,6 +107,8 @@
 <h2 id="publicProfileDisplayName">Guest</h2>
 <p id="publicProfileUsername">@guest</p>
 <div id="publicProfileNote" class="public-profile-note">No profile note.</div>
+<button id="addFriendButton" class="primary-button profile-friend-button" type="button">Add Friend</button>
+<div id="friendActionMessage" class="profile-message"></div>
 </div>
 </div>
 
@@ -114,6 +123,6 @@
 <button id="joinRoomButton" class="primary-button" type="button">Join Room</button>
 </div>
 </div>
-<script type="module" src="app.js?v=20261007-sidebar-stickers"></script>
+<script type="module" src="app.js?v=20261007-friends-v2"></script>
 </body>
 </html>
