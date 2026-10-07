@@ -190,10 +190,10 @@ function handleAuth(e){
 }
 
 function doPost(e){
+  const action=e&&e.parameter&&e.parameter.action||"";
+  const nonce=String(e&&e.parameter&&e.parameter.nonce||"");
   try{
-    const action=e&&e.parameter&&e.parameter.action||"";
     if(action==="signIn"||action==="logIn"){
-      const nonce=String(e.parameter.nonce||"");
       const result=handleAuth(e);
       queueAuthResponse(nonce,result);
       return ContentService.createTextOutput(JSON.stringify({ok:true,queued:true})).setMimeType(ContentService.MimeType.JSON);
@@ -237,7 +237,10 @@ function doPost(e){
       name:"SWGC Room Chats Support"
     });
     return ContentService.createTextOutput(JSON.stringify({ok:true})).setMimeType(ContentService.MimeType.JSON);
-  }catch{
+  }catch(error){
+    if(action==="signIn"||action==="logIn"){
+      queueAuthResponse(nonce,{ok:false,error:"Authentication backend error. Please try again."});
+    }
     return ContentService.createTextOutput(JSON.stringify({ok:false,error:"Backend error. Please try again."})).setMimeType(ContentService.MimeType.JSON);
   }
 }
