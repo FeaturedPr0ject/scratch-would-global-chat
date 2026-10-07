@@ -269,6 +269,14 @@ async function saveProfile(){
   showProfileMessage("Profile note is too long.");
   return;
  }
+ if(!supabase){
+  profile={...(profile||{}),username,display_name:displayName,note,avatar_url:profile?.avatar_url||""};
+  localStorage.setItem(STORAGE_NAME,username);
+  localStorage.setItem(STORAGE_PROFILE,JSON.stringify(profile));
+  renderProfile();
+  closeProfileModal();
+  return;
+ }
  savingProfile=true;
  saveProfileButton.disabled=true;
  showProfileMessage("Saving...");
