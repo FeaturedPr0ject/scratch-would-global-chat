@@ -207,7 +207,16 @@ async function request(path,options={}){
   const result=await supabaseClient.from("friend_requests").insert({requester_id:requesterId,recipient_id:targetId,status:"pending"}).select("id,requester_id,recipient_id,status,created_at,updated_at").single();
   data={ok:true,message:"Friend request sent.",friend:result.data};
   error=result.error;
- }else if(url.pathname==="/api/friends/respond"&&method==="POST"){
+ }else if(url.pathname==="/api/friends/unfriend"&&method==="POST"){
+  const targetId=String(body.target_user_id||"");
+  if(!targetId||targetId===userId)throw new Error("Invalid friend");
+  const friendship=await supabaseClient.from("friendships").delete().or("and(user_a.eq."+userId+",user_b.eq."+targetId+"),and(user_a.eq."+targetId+",user_b.eq."+userId+")");
+  if(friendship.error)throw friendship.error;
+  const requests=await supabaseClient.from("friend_requests").delete().or("and(requester_id.eq."+userId+",recipient_id.eq."+targetId+"),and(requester_id.eq."+targetId+",recipient_id.eq."+userId+")");
+  if(requests.error)throw requests.error;
+  data={ok:true,message:"Friend removed."};
+  error=null;
+ else if(url.pathname==="/api/friends/respond"&&method==="POST"){
   const action=body.action==="accept"?"accepted":body.action==="decline"?"declined":"";
   if(!action)throw new Error("Invalid friend response");
   const result=await supabaseClient.from("friend_requests").update({status:action}).eq("id",body.request_id).eq("recipient_id",body.user_id).select("id,requester_id,recipient_id,status,created_at,updated_at").single();
@@ -474,8 +483,8 @@ async function openPublicProfile(userIdValue){
   publicProfileNote.textContent=data.note||"No profile note.";
   friendActionMessage.textContent="";
   const relation=friends.find(item=>item.user_id===data.id);
-  addFriendButton.textContent=data.id===userId?"This is you":relation?.status==="accepted"?"Friends":relation?.status==="pending"?"Request pending":"Add Friend";
-  addFriendButton.disabled=data.id===userId||relation?.status==="accepted"||relation?.status==="pending";
+  addFriendButton.textContent=data.id===userId?"This is you":relation?.status==="accepted"?"Unfriend":relation?.status==="pending"?"Request pending":"Add Friend";
+  addFriendButton.disabled=data.id===userId||relation?.status==="pending";
   userProfileModal.classList.remove("hidden");
  }catch{}
 }
@@ -501,6 +510,8 @@ document.querySelector(".sidebar-menu-button")?.addEventListener("click",()=>set
 openProfileButton.addEventListener("click",()=>{setMobileMenu(false);openMyProfile();});
 closeProfileButton.addEventListener("click",closeProfileModal);
 closeUserProfileButton.addEventListener("click",()=>userProfileModal.classList.add("hidden"));
+friendRefreshButton?.addEventListener("click",async()=>{friendRefreshButton.classList.add("refreshing");await loadFriends();setTimeout(()=>friendRefreshButton.classList.remove("refreshing"),280);});
+addFriendButton?.addEventListener("click",()=>{const relation=friends.find(item=>item.user_id===selectedProfileId);if(relation?.status==="accepted")unfriend();else addFriend();});
 saveProfileButton.addEventListener("click",saveProfile);
 joinRoomButton.addEventListener("click",joinRoom);
 usernameInput.addEventListener("input",()=>scheduleUsernameCheck(false));
@@ -585,6 +596,22 @@ async function searchFriend(){
   friendSearchResult.classList.remove("hidden");
   friendSearchResult.innerHTML=avatarMarkup(item,"friend-search-avatar")+'<span><strong>'+escapeText(item.display_name||item.username)+ownerBadgeMarkup(item.user_id,item.user_number)+'</strong><small>@'+escapeText(item.username)+(item.user_number?" · ID #"+item.user_number:"")+'</small></span><button type="button" class="friend-view-button" data-search-id="'+escapeText(item.id)+'">View</button>';
  }catch(error){friendSearchStatus.textContent=error instanceof Error?error.message:"Search failed."}
+}
+
+async function unfriend(){
+ if(!selectedProfileId||selectedProfileId===userId)return;
+ addFriendButton.disabled=true;
+ friendActionMessage.textContent="Removing friend...";
+ try{
+  const result=await request("/api/friends/unfriend",{method:"POST",body:JSON.stringify({user_id:userId,target_user_id:selectedProfileId})});
+  friendActionMessage.textContent=result.message||"Friend removed.";
+  addFriendButton.textContent="Add Friend";
+  addFriendButton.disabled=false;
+  await loadFriends();
+ }catch(error){
+  friendActionMessage.textContent=error instanceof Error?error.message:"Could not remove friend.";
+  addFriendButton.disabled=false;
+ }
 }
 
 async function addFriend(){
