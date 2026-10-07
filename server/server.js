@@ -88,7 +88,7 @@ const server=http.createServer(async(request,response)=>{
   return;
  }
 
- if(method==="GET"&&url.pathname==="/health"){
+ if(method==="GET"&&(url.pathname==="/"||url.pathname==="/health")){
   sendJson(response,200,{ok:true,service:"SWGC Mini Chat Server"});
   return;
  }
@@ -125,7 +125,7 @@ const server=http.createServer(async(request,response)=>{
    const note=String(body.note??"").trim().slice(0,1000);
    const avatarUrl=clean(body.avatar_url,2000);
    if(!id||username.length<2){
-    sendJson(response,400,{ok:false,error:"Username and display name are required"});
+    sendJson(response,400,{ok:false,error:"Username is required"});
     return;
    }
    if(findProfile(username)){
@@ -136,7 +136,7 @@ const server=http.createServer(async(request,response)=>{
    if(existing){
     existing.username=username;
     existing.username_key=usernameKey(username);
-    existing.display_name=displayName;
+    existing.display_name=displayName||username;
     existing.note=note;
     existing.avatar_url=avatarUrl;
     existing.updated_at=new Date().toISOString();
@@ -208,4 +208,4 @@ wss.on("connection",socket=>{
  socket.send(JSON.stringify({type:"ready"}));
 });
 
-server.listen(PORT,()=>console.log("SWGC Mini Chat Server listening on port "+PORT));
+server.listen(PORT,"0.0.0.0",()=>console.log("SWGC Mini Chat Server listening on port "+PORT));
