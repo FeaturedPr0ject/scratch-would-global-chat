@@ -54,6 +54,10 @@
 <div id="messages" class="messages" aria-live="polite"></div>
 <div class="composer">
 <div class="composer-row">
+<button id="stickerButton" class="sticker-button" type="button" aria-label="Open stickers">☺</button>
+<div id="stickerPicker" class="sticker-picker hidden">
+<button type="button" data-sticker="😀">😀</button><button type="button" data-sticker="😂">😂</button><button type="button" data-sticker="😍">😍</button><button type="button" data-sticker="😎">😎</button><button type="button" data-sticker="😭">😭</button><button type="button" data-sticker="😡">😡</button><button type="button" data-sticker="👍">👍</button><button type="button" data-sticker="❤️">❤️</button><button type="button" data-sticker="🔥">🔥</button><button type="button" data-sticker="🎉">🎉</button><button type="button" data-sticker="💀">💀</button><button type="button" data-sticker="🤖">🤖</button>
+</div>
 <textarea id="messageInput" maxlength="500" rows="1" placeholder="Send a message..." aria-label="Message"></textarea>
 <button id="sendButton" class="send-button" type="button">Send</button>
 </div>
@@ -110,6 +114,6 @@
 <button id="joinRoomButton" class="primary-button" type="button">Join Room</button>
 </div>
 </div>
-<script type="module" src="app.js?v=20261007-optional-display"></script>
+<script type="module" src="app.js?v=20261007-sidebar-stickers"></script>
 </body>
 </html>
