@@ -14,7 +14,13 @@
 <img class="logo-image logo-main" src="./assests/logo.png" alt="SWG">
 <span>SWGC Room Chats</span>
 </a>
-<button id="mobileMenuButton" class="mobile-menu-button" type="button" aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button>
+<div class="top-search-wrap">
+<input id="friendSearchInput" class="top-search-input" maxlength="24" placeholder="Search users" autocomplete="off">
+<button id="friendSearchButton" class="top-search-button" type="button" aria-label="Search users">⌕</button>
+<div id="friendSearchStatus" class="top-search-status"></div>
+<div id="friendSearchResult" class="friend-search-result top-search-result hidden"></div>
+</div>
+<button id="mobileMenuButton" class="mobile-menu-button" type="button" aria-label="Toggle side menu" aria-expanded="true"><span></span><span></span><span></span></button>
 <div class="top-actions">
 <a class="support-link" href="./troubleshoot.html">Troubleshoot</a>
 <span id="connectionDot" class="status-dot offline"></span>
@@ -22,7 +28,33 @@
 </div>
 </header>
 <main class="chat-layout">
+<section class="chat-panel">
+<div class="chat-head">
+<div>
+<h1>SWGC Room Chats</h1>
+<p id="roomStatus">Public room</p>
+</div>
+<div class="head-pill">REALTIME</div>
+</div>
+<div id="messages" class="messages" aria-live="polite"></div>
+<button id="scrollToBottom" class="scroll-to-bottom hidden" type="button" aria-label="Jump to latest messages" title="Jump to latest messages">↓</button>
+<div class="composer">
+<div class="composer-row">
+<button id="stickerButton" class="sticker-button" type="button" aria-label="Open stickers">☺</button>
+<div id="stickerPicker" class="sticker-picker hidden">
+<button type="button" data-sticker="😀">😀</button><button type="button" data-sticker="😂">😂</button><button type="button" data-sticker="😍">😍</button><button type="button" data-sticker="😎">😎</button><button type="button" data-sticker="😭">😭</button><button type="button" data-sticker="😡">😡</button><button type="button" data-sticker="👍">👍</button><button type="button" data-sticker="❤️">❤️</button><button type="button" data-sticker="🔥">🔥</button><button type="button" data-sticker="🎉">🎉</button><button type="button" data-sticker="💀">💀</button><button type="button" data-sticker="🤖">🤖</button>
+</div>
+<textarea id="messageInput" maxlength="500" rows="1" placeholder="Send a message..." aria-label="Message"></textarea>
+<button id="sendButton" class="send-button" type="button">Send</button>
+</div>
+<div class="composer-foot">
+<span id="charCount">0 / 500</span>
+<span>Enter to send · Shift+Enter for a new line</span>
+</div>
+</div>
+</section>
 <aside class="sidebar">
+<div class="sidebar-head"><strong>Friends</strong><button class="sidebar-menu-button" type="button" aria-label="Close side menu"><span></span><span></span><span></span></button></div>
 <button id="openProfile" class="profile-card profile-button" type="button">
 <span class="avatar avatar-large" id="profileAvatar">?</span>
 <span class="profile-summary">
@@ -40,9 +72,6 @@
 </div>
 <div class="friends-card">
 <strong>Friends</strong>
-<div class="friend-search-row"><input id="friendSearchInput" maxlength="24" placeholder="Search username" autocomplete="off"><button id="friendSearchButton" type="button">Search</button></div>
-<div id="friendSearchStatus" class="friend-search-status"></div>
-<div id="friendSearchResult" class="friend-search-result hidden"></div>
 <div id="friendList" class="friend-list"></div>
 </div>
 <div class="sidebar-note">
@@ -52,30 +81,6 @@
 </div>
 </aside>
 <div id="mobileMenuBackdrop" class="mobile-menu-backdrop"></div>
-<section class="chat-panel">
-<div class="chat-head">
-<div>
-<h1>SWGC Room Chats</h1>
-<p id="roomStatus">Public room</p>
-</div>
-<div class="head-pill">REALTIME</div>
-</div>
-<div id="messages" class="messages" aria-live="polite"></div>
-<div class="composer">
-<div class="composer-row">
-<button id="stickerButton" class="sticker-button" type="button" aria-label="Open stickers">☺</button>
-<div id="stickerPicker" class="sticker-picker hidden">
-<button type="button" data-sticker="😀">😀</button><button type="button" data-sticker="😂">😂</button><button type="button" data-sticker="😍">😍</button><button type="button" data-sticker="😎">😎</button><button type="button" data-sticker="😭">😭</button><button type="button" data-sticker="😡">😡</button><button type="button" data-sticker="👍">👍</button><button type="button" data-sticker="❤️">❤️</button><button type="button" data-sticker="🔥">🔥</button><button type="button" data-sticker="🎉">🎉</button><button type="button" data-sticker="💀">💀</button><button type="button" data-sticker="🤖">🤖</button>
-</div>
-<textarea id="messageInput" maxlength="500" rows="1" placeholder="Send a message..." aria-label="Message"></textarea>
-<button id="sendButton" class="send-button" type="button">Send</button>
-</div>
-<div class="composer-foot">
-<span id="charCount">0 / 500</span>
-<span>Enter to send · Shift+Enter for a new line</span>
-</div>
-</div>
-</section>
 </main>
 </div>
 <div id="profileModal" class="modal hidden">
@@ -122,6 +127,6 @@
 <button id="joinRoomButton" class="primary-button" type="button">Join Room</button>
 </div>
 </div>
-<script type="module" src="app.js?v=20261007-supabase-v5"></script>
+<script type="module" src="app.js?v=20261007-supabase-v6"></script>
 </body>
 </html>
