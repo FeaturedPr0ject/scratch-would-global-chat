@@ -245,7 +245,7 @@ async function saveProfile(){
  const displayName=displayNameInput.value.trim().replace(/\s+/g," ");
  const note=profileNoteInput.value.trim();
  if(username.length<2||username.length>24){showProfileMessage("Username must be 2-24 characters.");return;}
- if(displayName.length<2||displayName.length>32){showProfileMessage("Display name must be 2-32 characters.");return;}
+ if(displayName.length>32){showProfileMessage("Display name must be 32 characters or less.");return;}
  if(note.length>1000){showProfileMessage("Profile note is too long.");return;}
  savingProfile=true;
  saveProfileButton.disabled=true;
@@ -268,7 +268,7 @@ async function joinRoom(){
  const username=firstUsernameInput.value.trim().replace(/\s+/g," ");
  const displayName=firstDisplayNameInput.value.trim().replace(/\s+/g," ");
  if(username.length<2||username.length>24){firstUsernameCheck.textContent="Use 2-24 characters";firstUsernameCheck.className="field-status taken first-check";return;}
- if(displayName.length<2||displayName.length>32){firstUsernameCheck.textContent="Choose a display name";firstUsernameCheck.className="field-status taken first-check";return;}
+ if(displayName.length>32){firstUsernameCheck.textContent="Display name is too long.";firstUsernameCheck.className="field-status taken first-check";return;}
  joinRoomButton.disabled=true;
  try{
   if(!await checkUsername(username,true))return;
