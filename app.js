@@ -19,6 +19,11 @@ const profileModal=document.querySelector("#profileModal");
 const closeProfileButton=document.querySelector("#closeProfile");
 const avatarPreview=document.querySelector("#avatarPreview");
 const avatarInput=document.querySelector("#avatarInput");
+const avatarCropModal=document.querySelector("#avatarCropModal");
+const avatarCropCanvas=document.querySelector("#avatarCropCanvas");
+const avatarCropZoom=document.querySelector("#avatarCropZoom");
+const avatarCropCancel=document.querySelector("#avatarCropCancel");
+const avatarCropSave=document.querySelector("#avatarCropSave");
 const usernameInput=document.querySelector("#usernameInput");
 const displayNameInput=document.querySelector("#displayNameInput");
 const profileNoteInput=document.querySelector("#profileNoteInput");
@@ -60,6 +65,16 @@ let profile=null;
 let messages=[];
 let socket=null;
 let avatarFile=null;
+let avatarCropImage=null;
+let avatarCropObjectUrl="";
+let avatarCropScale=1;
+let avatarCropOffsetX=0;
+let avatarCropOffsetY=0;
+let avatarCropDragging=false;
+let avatarCropStartX=0;
+let avatarCropStartY=0;
+let avatarCropStartOffsetX=0;
+let avatarCropStartOffsetY=0;
 let usernameTimer=null;
 let savingProfile=false;
 function setMobileMenu(open){
@@ -127,6 +142,66 @@ function setProfileAvatar(element,data,sizeClass=""){
  element.className="avatar "+sizeClass;
  if(url)element.innerHTML='<img src="'+escapeText(url)+'" alt="">';
  else element.textContent=initials(data?.display_name||data?.username);
+}
+
+function drawAvatarCrop(){
+ if(!avatarCropCanvas||!avatarCropImage)return;
+ const ctx=avatarCropCanvas.getContext("2d");
+ const size=avatarCropCanvas.width;
+ ctx.clearRect(0,0,size,size);
+ ctx.fillStyle="#111116";
+ ctx.fillRect(0,0,size,size);
+ const image=avatarCropImage;
+ const baseScale=Math.max(size/image.width,size/image.height);
+ const scale=baseScale*avatarCropScale;
+ const width=image.width*scale;
+ const height=image.height*scale;
+ const x=(size-width)/2+avatarCropOffsetX;
+ const y=(size-height)/2+avatarCropOffsetY;
+ ctx.drawImage(image,x,y,width,height);
+}
+
+function closeAvatarCrop(){
+ avatarCropModal?.classList.add("hidden");
+ avatarCropDragging=false;
+ if(avatarCropObjectUrl){URL.revokeObjectURL(avatarCropObjectUrl);avatarCropObjectUrl="";}
+ avatarCropImage=null;
+ avatarInput.value="";
+}
+
+function openAvatarCrop(file){
+ if(!file||!avatarCropCanvas)return;
+ avatarCropObjectUrl=URL.createObjectURL(file);
+ const image=new Image();
+ image.onload=()=>{
+  avatarCropImage=image;
+  avatarCropScale=1;
+  avatarCropOffsetX=0;
+  avatarCropOffsetY=0;
+  avatarCropZoom.value="1";
+  avatarCropModal.classList.remove("hidden");
+  drawAvatarCrop();
+ };
+ image.src=avatarCropObjectUrl;
+}
+
+function saveAvatarCrop(){
+ if(!avatarCropCanvas||!avatarCropImage)return;
+ const output=document.createElement("canvas");
+ output.width=512;
+ output.height=512;
+ const ctx=output.getContext("2d");
+ ctx.drawImage(avatarCropCanvas,0,0,512,512);
+ output.toBlob(blob=>{
+  if(!blob)return;
+  avatarFile=new File([blob],"avatar.jpg",{type:"image/jpeg"});
+  const reader=new FileReader();
+  reader.onload=()=>{
+   avatarPreview.innerHTML='<img src="'+escapeText(String(reader.result))+'" alt="">';
+   closeAvatarCrop();
+  };
+  reader.readAsDataURL(blob);
+ },"image/jpeg",.88);
 }
 
 function renderProfile(){
@@ -316,7 +391,9 @@ function connectRealtime(){
     renderProfile();
    }
    if(payload.new){
+    friends=friends.map(item=>item.user_id===payload.new.id?{...item,user_number:payload.new.user_number,username:payload.new.username,display_name:payload.new.display_name,avatar_url:payload.new.avatar_url}:item);
     messages=messages.map(item=>item.user_id===payload.new.id?{...item,user_number:payload.new.user_number,username:payload.new.username,display_name:payload.new.display_name,avatar_url:payload.new.avatar_url}:item);
+    renderFriendList();
     renderMessages();
    }
   })
@@ -328,7 +405,9 @@ function connectRealtime(){
     renderProfile();
    }
    if(payload.new){
+    friends=friends.map(item=>item.user_id===payload.new.id?{...item,user_number:payload.new.user_number,username:payload.new.username,display_name:payload.new.display_name,avatar_url:payload.new.avatar_url}:item);
     messages=messages.map(item=>item.user_id===payload.new.id?{...item,user_number:payload.new.user_number,username:payload.new.username,display_name:payload.new.display_name,avatar_url:payload.new.avatar_url}:item);
+    renderFriendList();
     renderMessages();
    }
   })
@@ -510,13 +589,30 @@ async function openPublicProfile(userIdValue){
 
 avatarPreview.addEventListener("click",()=>avatarInput.click());
 avatarInput.addEventListener("change",()=>{
- avatarFile=avatarInput.files?.[0]||null;
- if(!avatarFile)return;
- if(avatarFile.size>4*1024*1024){showProfileMessage("Avatar must be smaller than 4 MB.");avatarFile=null;avatarInput.value="";return;}
- const reader=new FileReader();
- reader.onload=()=>avatarPreview.innerHTML='<img src="'+escapeText(String(reader.result))+'" alt="">';
- reader.readAsDataURL(avatarFile);
+ const file=avatarInput.files?.[0]||null;
+ if(!file)return;
+ if(file.size>8*1024*1024){showProfileMessage("Avatar must be smaller than 8 MB.");avatarInput.value="";return;}
+ openAvatarCrop(file);
 });
+avatarCropZoom?.addEventListener("input",()=>{avatarCropScale=Number(avatarCropZoom.value)||1;drawAvatarCrop()});
+avatarCropCanvas?.addEventListener("pointerdown",event=>{
+ avatarCropDragging=true;
+ avatarCropCanvas.setPointerCapture(event.pointerId);
+ avatarCropStartX=event.clientX;
+ avatarCropStartY=event.clientY;
+ avatarCropStartOffsetX=avatarCropOffsetX;
+ avatarCropStartOffsetY=avatarCropOffsetY;
+});
+avatarCropCanvas?.addEventListener("pointermove",event=>{
+ if(!avatarCropDragging)return;
+ avatarCropOffsetX=avatarCropStartOffsetX+event.clientX-avatarCropStartX;
+ avatarCropOffsetY=avatarCropStartOffsetY+event.clientY-avatarCropStartY;
+ drawAvatarCrop();
+});
+avatarCropCanvas?.addEventListener("pointerup",()=>{avatarCropDragging=false});
+avatarCropCanvas?.addEventListener("pointercancel",()=>{avatarCropDragging=false});
+avatarCropCancel?.addEventListener("click",closeAvatarCrop);
+avatarCropSave?.addEventListener("click",saveAvatarCrop);
 
 mobileMenuButton?.addEventListener("click",()=>{
  const mobile=window.innerWidth<=760;
@@ -527,6 +623,7 @@ mobileMenuBackdrop?.addEventListener("click",()=>setMobileMenu(false));
 document.querySelector(".sidebar-menu-button")?.addEventListener("click",()=>setMobileMenu(false));
 openProfileButton.addEventListener("click",()=>{setMobileMenu(false);openMyProfile();});
 closeProfileButton.addEventListener("click",closeProfileModal);
+avatarCropModal?.addEventListener("click",event=>{if(event.target===avatarCropModal)closeAvatarCrop()});
 closeUserProfileButton.addEventListener("click",()=>userProfileModal.classList.add("hidden"));
 friendRefreshButton?.addEventListener("click",async()=>{friendRefreshButton.classList.add("refreshing");await loadFriends();setTimeout(()=>friendRefreshButton.classList.remove("refreshing"),280);});
 addFriendButton?.addEventListener("click",()=>{const relation=friends.find(item=>item.user_id===selectedProfileId);if(relation?.status==="accepted")unfriend();else addFriend();});
