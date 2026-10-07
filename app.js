@@ -97,10 +97,10 @@ function renderMessages(){
  messagesEl.innerHTML=messages.map(item=>{
   const displayName=item.display_name||item.username||"Guest";
   const username=item.username?("@"+item.username):"";
+  const content=item.type==="sticker"?'<span class="message-sticker">'+escapeText(item.text)+'</span>':'<span class="message-text">'+escapeText(item.text)+'</span>';
   return '<button class="message-profile-button" type="button" data-user-id="'+escapeText(item.user_id)+'">'+
    avatarMarkup(item)+
-   '<span class="message-body"><span class="message-meta"><span class="message-name-wrap"><span class="message-display-name">'+escapeText(displayName)+'</span><span class="message-username">'+escapeText(username)+'</span></span><time class="message-time">'+escapeText(new Date(item.created_at||Date.now()).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}))+'</time></span>'+
-   '<span class="message-text">'+escapeText(item.text)+'</span></span></button>';
+   '<span class="message-body"><span class="message-meta"><span class="message-name-wrap"><span class="message-display-name">'+escapeText(displayName)+'</span><span class="message-username">'+escapeText(username)+'</span></span><time class="message-time">'+escapeText(new Date(item.created_at||Date.now()).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}))+'</time></span>'+content+'</span></button>';
  }).join("");
  if(wasNearBottom)messagesEl.scrollTop=messagesEl.scrollHeight;
 }
