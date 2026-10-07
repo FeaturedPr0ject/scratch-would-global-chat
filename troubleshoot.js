@@ -5,7 +5,6 @@ const otherReasonInput=document.querySelector("#otherReasonInput");
 const requestMessage=document.querySelector("#requestMessage");
 const submitButton=form.querySelector("button[type=submit]");
 const detailsInput=document.querySelector("#detailsInput");
-
 const params=new URLSearchParams(location.search);
 const presetReason=params.get("reason");
 const presetError=params.get("error");
@@ -17,15 +16,12 @@ if(presetError){
  const prefix="Error code: "+presetError;
  detailsInput.value=detailsInput.value?prefix+"\\n\\n"+detailsInput.value:prefix;
 }
-const ENDPOINT="https://script.google.com/macros/s/AKfycbw7x_9kSRpck2bO_iEOC5M13pU07N_q0VVbVa6BaQeAgVfbe_cIs139Vv_7XP6g1pQo/exec";
-
 reasonInput.addEventListener("change",()=>{
  const isOther=reasonInput.value==="Other";
  otherReasonWrap.classList.toggle("hidden",!isOther);
  otherReasonInput.required=isOther;
  if(!isOther)otherReasonInput.value="";
 });
-
 function buildRequest(){
  return {
   product:"SWGC Room Chats",
@@ -39,7 +35,6 @@ function buildRequest(){
   createdAt:new Date().toISOString()
  };
 }
-
 form.addEventListener("submit",async event=>{
  event.preventDefault();
  requestMessage.textContent="";
@@ -56,8 +51,13 @@ form.addEventListener("submit",async event=>{
  submitButton.disabled=true;
  submitButton.textContent="Sending...";
  try{
-  const body=new URLSearchParams(request);
-  await fetch(ENDPOINT,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},body});
+  const response=await fetch("/api/troubleshoot",{
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify(request)
+  });
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok||!result.ok)throw new Error(result.error||"Request failed");
   requestMessage.textContent="Support request sent successfully.";
   form.reset();
   otherReasonWrap.classList.add("hidden");
