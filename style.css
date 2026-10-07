@@ -192,6 +192,10 @@ button{cursor:pointer}
 
 .mobile-menu-button{display:flex;width:42px;height:42px;border:1px solid var(--line);border-radius:12px;background:#18181d;padding:9px;flex:none;align-items:center;justify-content:center;flex-direction:column;gap:5px}
 .mobile-menu-button span{display:block;width:20px;height:2px;border-radius:2px;background:var(--white)}
+.mobile-menu-button span{transition:transform .18s ease,opacity .18s ease}
+.mobile-menu-button.active span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.mobile-menu-button.active span:nth-child(2){opacity:0}
+.mobile-menu-button.active span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
 .sidebar-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .sidebar-head strong{font-size:13px}
 .sidebar-menu-button{width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:#18181d;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px}
