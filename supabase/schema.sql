@@ -1,3 +1,5 @@
+create schema if not exists private;
+
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   username text not null check (char_length(username) between 2 and 24),
