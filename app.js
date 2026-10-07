@@ -69,6 +69,7 @@ function setMobileMenu(open){
   mobileMenuBackdrop?.classList.remove("mobile-open");
  }
  mobileMenuButton?.setAttribute("aria-expanded",open?"true":"false");
+ mobileMenuButton?.classList.toggle("active",open);
 }
 
 function isNearBottom(){
