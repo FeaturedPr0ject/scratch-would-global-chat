@@ -7,9 +7,8 @@ const signInTab=document.querySelector("#signInTab");
 const logInTab=document.querySelector("#logInTab");
 const submitButton=document.querySelector("#authSubmit");
 let authMode="signIn";
-let pendingFrame=null;
 let pendingNonce="";
-let pendingTimeout=null;
+let pendingTimer=null;
 
 function setAuthMode(mode){
  authMode=mode;
@@ -57,78 +56,99 @@ function getSession(){
  }
 }
 
-function hasValidSession(){
- return Boolean(getSession());
-}
-
-function cleanupFrame(){
- if(pendingTimeout){
-  clearTimeout(pendingTimeout);
-  pendingTimeout=null;
- }
- if(pendingFrame){
-  pendingFrame.remove();
-  pendingFrame=null;
+function stopPolling(){
+ if(pendingTimer){
+  clearTimeout(pendingTimer);
+  pendingTimer=null;
  }
  pendingNonce="";
 }
 
+function pollAuth(nonce,startedAt){
+ if(nonce!==pendingNonce)return;
+ const callbackName="swgcAuth_"+crypto.randomUUID().replaceAll("-","");
+ const script=document.createElement("script");
+ let finished=false;
+ const finish=callback=>{
+  if(finished)return;
+  finished=true;
+  script.remove();
+  delete window[callbackName];
+  callback();
+ };
+ window[callbackName]=data=>{
+  if(data?.pending){
+   finish(()=>{});
+   if(Date.now()-startedAt<15000){
+    pendingTimer=setTimeout(()=>pollAuth(nonce,startedAt),500);
+    return;
+   }
+   stopPolling();
+   submitButton.disabled=false;
+   message.textContent="The authentication server did not respond. Check the Apps Script deployment and try again.";
+   window.turnstile?.reset?.();
+   return;
+  }
+  finish(()=>{});
+  stopPolling();
+  submitButton.disabled=false;
+  if(!data?.ok){
+   message.textContent=data?.error||"Authentication failed.";
+   window.turnstile?.reset?.();
+   return;
+  }
+  saveSession(data.email,data.token);
+  message.textContent=authMode==="signIn"?"Account created. Signing you in...":"Login successful. Redirecting...";
+  location.replace("./");
+ };
+ script.onerror=()=>{
+  finish(()=>{});
+  if(Date.now()-startedAt<15000){
+   pendingTimer=setTimeout(()=>pollAuth(nonce,startedAt),500);
+   return;
+  }
+  stopPolling();
+  submitButton.disabled=false;
+  message.textContent="The authentication server could not be reached.";
+  window.turnstile?.reset?.();
+ };
+ const query=new URLSearchParams({
+  action:"poll",
+  nonce,
+  callback:callbackName,
+  cacheBust:Date.now()
+ });
+ script.src=ENDPOINT+"?"+query.toString();
+ document.head.appendChild(script);
+}
+
 function submitAuth(email,password,turnstileToken){
- cleanupFrame();
+ stopPolling();
  pendingNonce=crypto.randomUUID();
- const iframe=document.createElement("iframe");
- iframe.name="swgc-auth-frame-"+pendingNonce;
- iframe.style.display="none";
- document.body.appendChild(iframe);
- pendingFrame=iframe;
- const authForm=document.createElement("form");
- authForm.method="POST";
- authForm.action=ENDPOINT;
- authForm.target=iframe.name;
- authForm.style.display="none";
- const fields={
+ const nonce=pendingNonce;
+ const body=new URLSearchParams({
   action:authMode,
   email,
   password,
   turnstileToken,
-  nonce:pendingNonce
- };
- Object.entries(fields).forEach(([name,value])=>{
-  const input=document.createElement("input");
-  input.type="hidden";
-  input.name=name;
-  input.value=value;
-  authForm.appendChild(input);
+  nonce
  });
- document.body.appendChild(authForm);
- authForm.submit();
- authForm.remove();
- pendingTimeout=setTimeout(()=>{
-  if(!pendingFrame)return;
-  cleanupFrame();
+ const startedAt=Date.now();
+ fetch(ENDPOINT,{
+  method:"POST",
+  mode:"no-cors",
+  body
+ }).then(()=>{
+  pollAuth(nonce,startedAt);
+ }).catch(()=>{
+  stopPolling();
   submitButton.disabled=false;
-  message.textContent="The authentication server did not respond. Check the Apps Script deployment and try again.";
+  message.textContent="The authentication request could not be sent.";
   window.turnstile?.reset?.();
- },15000);
+ });
 }
 
-window.addEventListener("message",event=>{
- if(!pendingFrame||event.source!==pendingFrame.contentWindow)return;
- const data=event.data||{};
- if(data.type!=="swgc-auth-response")return;
- cleanupFrame();
- submitButton.disabled=false;
- if(!data.ok){
-  message.textContent=data.error||"Authentication failed.";
-  window.turnstile?.reset?.();
-  return;
- }
- saveSession(data.email,data.token);
- message.textContent=authMode==="signIn"?"Account created. Signing you in...":"Login successful. Redirecting...";
- location.replace("./");
-});
-
-if(hasValidSession())location.replace("./");
+if(getSession())location.replace("./");
 
 signInTab.addEventListener("click",()=>setAuthMode("signIn"));
 logInTab.addEventListener("click",()=>setAuthMode("logIn"));
