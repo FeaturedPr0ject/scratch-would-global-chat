@@ -16,14 +16,20 @@ function loadData(){
   return {
    profiles:Array.isArray(data.profiles)?data.profiles:[],
    messages:Array.isArray(data.messages)?data.messages:[],
-   friendRequests:Array.isArray(data.friendRequests)?data.friendRequests:[]
+   friendRequests:Array.isArray(data.friendRequests)?data.friendRequests:[],
+   usernameRegistry:Array.isArray(data.usernameRegistry)?data.usernameRegistry:[]
   };
  }catch{
-  return {profiles:[],messages:[],friendRequests:[]};
+  return {profiles:[],messages:[],friendRequests:[],usernameRegistry:[]};
  }
 }
 
 let data=loadData();
+for(const profile of data.profiles){
+ if(!data.usernameRegistry.some(item=>item.username_key===profile.username_key)){
+  data.usernameRegistry.push({username_key:profile.username_key,username:profile.username,profile_id:profile.id,created_at:profile.created_at||new Date().toISOString()});
+ }
+}
 
 function saveData(){
  const temp=DATA_FILE+".tmp";
@@ -65,7 +71,10 @@ function usernameKey(value){
 
 function findProfile(username){
  const key=usernameKey(username);
- return data.profiles.find(item=>item.username_key===key);
+ const current=data.profiles.find(item=>item.username_key===key);
+ if(current)return current;
+ const history=data.usernameRegistry.find(item=>item.username_key===key);
+ return history?data.profiles.find(item=>item.id===history.profile_id):null;
 }
 
 function broadcast(payload){
@@ -195,8 +204,15 @@ const server=http.createServer(async(request,response)=>{
     return;
    }
    if(existing){
+    const oldUsernameKey=existing.username_key;
     existing.username=username;
     existing.username_key=usernameKey(username);
+    if(!data.usernameRegistry.some(item=>item.username_key===oldUsernameKey)){
+     data.usernameRegistry.push({username_key:oldUsernameKey,username:existing.username,profile_id:id,created_at:existing.created_at});
+    }
+    if(!data.usernameRegistry.some(item=>item.username_key===existing.username_key)){
+     data.usernameRegistry.push({username_key:existing.username_key,username,profile_id:id,created_at:new Date().toISOString()});
+    }
     existing.display_name=displayName||username;
     existing.note=note;
     existing.avatar_url=avatarUrl;
@@ -217,6 +233,7 @@ const server=http.createServer(async(request,response)=>{
     updated_at:new Date().toISOString()
    };
    data.profiles.push(profile);
+   data.usernameRegistry.push({username_key:profile.username_key,username:profile.username,profile_id:profile.id,created_at:profile.created_at});
    saveData();
    broadcast({type:"profile.created",profile});
    sendJson(response,201,{ok:true,profile});
