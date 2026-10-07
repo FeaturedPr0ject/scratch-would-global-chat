@@ -15,30 +15,32 @@
 <span>SWGC Room Chats</span>
 </a>
 <div class="top-actions">
-<a class="support-link" href="./troubleshoot.html">Troubleshoot</a><span id="connectionDot" class="status-dot offline"></span>
-<span id="connectionText">Local demo</span>
+<a class="support-link" href="./troubleshoot.html">Troubleshoot</a>
+<span id="connectionDot" class="status-dot offline"></span>
+<span id="connectionText">Connecting</span>
 </div>
 </header>
 <main class="chat-layout">
 <aside class="sidebar">
-<div class="profile-card">
-<div class="avatar" id="profileAvatar">?</div>
-<div>
-<strong id="profileName">Guest</strong>
-<span>Room member</span>
-</div>
-<button id="changeName" class="icon-button" type="button" aria-label="Change username">✎</button>
-</div>
+<button id="openProfile" class="profile-card profile-button" type="button">
+<span class="avatar avatar-large" id="profileAvatar">?</span>
+<span class="profile-summary">
+<strong id="profileDisplayName">Guest</strong>
+<span id="profileUsername">@guest</span>
+</span>
+<span class="profile-edit">Edit</span>
+</button>
 <div class="server-card">
 <img class="logo-image mini-logo-image" src="./assests/logo.png" alt="SWG">
-<div>
+<span>
 <strong>Public Room</strong>
 <span>Everyone can join</span>
-</div>
+</span>
 </div>
 <div class="sidebar-note">
 <strong>Be respectful.</strong>
-<span>Keep room chats friendly and safe.</span><a href="./troubleshoot.html">Report a problem</a>
+<span>Keep room chats friendly and safe.</span>
+<a href="./troubleshoot.html">Report a problem</a>
 </div>
 </aside>
 <section class="chat-panel">
@@ -47,7 +49,7 @@
 <h1>SWGC Room Chats</h1>
 <p id="roomStatus">Public room</p>
 </div>
-<div class="head-pill">PUBLIC ROOM</div>
+<div class="head-pill">REALTIME</div>
 </div>
 <div id="messages" class="messages" aria-live="polite"></div>
 <div class="composer">
@@ -63,13 +65,49 @@
 </section>
 </main>
 </div>
+
+<div id="profileModal" class="modal hidden">
+<div class="modal-card profile-modal-card">
+<button id="closeProfile" class="modal-close" type="button" aria-label="Close profile">×</button>
+<div class="profile-avatar-editor">
+<button id="avatarPreview" class="avatar avatar-preview" type="button" aria-label="Choose avatar">?</button>
+<input id="avatarInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
+</div>
+<div class="profile-form">
+<label for="usernameInput">Username</label>
+<div class="name-check-row">
+<input id="usernameInput" maxlength="24" autocomplete="nickname" placeholder="Unique username">
+<span id="usernameCheck" class="field-status"></span>
+</div>
+<label for="displayNameInput">Display name</label>
+<input id="displayNameInput" maxlength="32" autocomplete="name" placeholder="Fake name or display name">
+<label for="profileNoteInput">Profile note</label>
+<textarea id="profileNoteInput" maxlength="1000" rows="7" placeholder="Write something about yourself..."></textarea>
+<div id="profileMessage" class="profile-message"></div>
+<button id="saveProfile" class="primary-button" type="button">Save Profile</button>
+</div>
+</div>
+</div>
+
+<div id="userProfileModal" class="modal hidden">
+<div class="modal-card public-profile-card">
+<button id="closeUserProfile" class="modal-close" type="button" aria-label="Close profile">×</button>
+<div id="publicProfileAvatar" class="avatar public-avatar">?</div>
+<h2 id="publicProfileDisplayName">Guest</h2>
+<p id="publicProfileUsername">@guest</p>
+<div id="publicProfileNote" class="public-profile-note">No profile note.</div>
+</div>
+</div>
+
 <div id="nameModal" class="modal hidden">
 <div class="modal-card">
 <div class="modal-logo"><img class="logo-image" src="./assests/logo.png" alt="SWG"></div>
-<h2>Choose your display name</h2>
-<p>Pick a username for SWGC Room Chats.</p>
-<input id="nameInput" maxlength="24" autocomplete="nickname" placeholder="Username">
-<button id="saveName" class="primary-button" type="button">Join Room</button>
+<h2>Choose your username</h2>
+<p>Your username must be unique. You can use a different display name.</p>
+<input id="firstUsernameInput" maxlength="24" autocomplete="nickname" placeholder="Unique username">
+<div id="firstUsernameCheck" class="field-status first-check"></div>
+<input id="firstDisplayNameInput" maxlength="32" autocomplete="name" placeholder="Display name">
+<button id="joinRoomButton" class="primary-button" type="button">Join Room</button>
 </div>
 </div>
 <script type="module" src="app.js"></script>
