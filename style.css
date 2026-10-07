@@ -308,3 +308,5 @@ html,body{width:100%;max-width:100%;overflow-x:clip}
 .profile-friend-button{transition:background .15s ease,border-color .15s ease,transform .1s ease}
 .profile-friend-button.unfriend-button{background:#2a2020!important;border-color:#6b3030!important;color:#ff8c8c!important}
 .profile-friend-button.unfriend-button:hover{background:#3a2323!important;border-color:#9b3b3b!important}
+
+.friend-refresh-button img{width:16px!important;height:16px!important;display:block!important;object-fit:contain!important;pointer-events:none!important}
