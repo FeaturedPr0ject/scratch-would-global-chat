@@ -171,6 +171,7 @@ const server=http.createServer(async(request,response)=>{
    const body=await readBody(request);
    const userId=clean(body.user_id,80);
    const text=String(body.text??"").trim().slice(0,500);
+   const type=body.type==="sticker"?"sticker":"text";
    const profile=data.profiles.find(item=>item.id===userId);
    if(!profile){
     sendJson(response,403,{ok:false,error:"Profile not found"});
@@ -187,6 +188,7 @@ const server=http.createServer(async(request,response)=>{
     display_name:profile.display_name,
     avatar_url:profile.avatar_url,
     text,
+    type,
     created_at:new Date().toISOString()
    };
    data.messages.push(message);
