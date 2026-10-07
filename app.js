@@ -57,6 +57,7 @@ let socket=null;
 let avatarFile=null;
 let usernameTimer=null;
 let savingProfile=false;
+let ownerUserId="";
 
 function setMobileMenu(open){
  mobileSidebar?.classList.toggle("mobile-open",open);
@@ -79,6 +80,10 @@ function safeUrl(value){
 function initials(name){
  const parts=String(name||"Guest").trim().split(/\s+/).filter(Boolean);
  return (parts.length>1?parts[0][0]+parts[1][0]:String(name||"?").slice(0,2)).toUpperCase();
+}
+
+function ownerBadgeMarkup(id){
+ return id&&ownerUserId&&id===ownerUserId?'<span class="owner-badge" title="Owner">OWNER</span>':"";
 }
 
 function avatarMarkup(item,className="message-avatar"){
@@ -121,7 +126,7 @@ function renderMessages(){
   const content=item.type==="sticker"?'<span class="message-sticker">'+escapeText(item.text)+'</span>':'<span class="message-text">'+escapeText(item.text)+'</span>';
   return '<button class="message-profile-button" type="button" data-user-id="'+escapeText(item.user_id)+'">'+
    avatarMarkup(item)+
-   '<span class="message-body"><span class="message-meta"><span class="message-name-wrap"><span class="message-display-name">'+escapeText(displayName)+'</span><span class="message-username">'+escapeText(username)+'</span></span><time class="message-time">'+escapeText(new Date(item.created_at||Date.now()).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}))+'</time></span>'+content+'</span></button>';
+   '<span class="message-body"><span class="message-meta"><span class="message-name-wrap"><span class="message-display-name">'+escapeText(displayName)+'</span>'+ownerBadgeMarkup(item.user_id)+'<span class="message-username">'+escapeText(username)+'</span></span><time class="message-time">'+escapeText(new Date(item.created_at||Date.now()).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}))+'</time></span>'+content+'</span></button>';
  }).join("");
  if(wasNearBottom)messagesEl.scrollTop=messagesEl.scrollHeight;
 }
@@ -230,6 +235,7 @@ async function initializeSupabase(){
  const config=await configResponse.json();
  const supabaseUrl=String(config.supabaseUrl||"").trim();
  const publishableKey=String(config.supabasePublishableKey||"").trim();
+ ownerUserId=String(config.ownerUserId||"").trim();
  if(!supabaseUrl||!publishableKey)throw new Error("Supabase is not configured");
  supabaseClient=createClient(supabaseUrl,publishableKey);
  let sessionResult=await supabaseClient.auth.getSession();
@@ -438,7 +444,7 @@ async function openPublicProfile(userIdValue){
   if(!data)return;
   selectedProfileId=data.id;
   setProfileAvatar(publicProfileAvatar,data,"public-avatar");
-  publicProfileDisplayName.textContent=data.display_name||data.username;
+  publicProfileDisplayName.innerHTML=escapeText(data.display_name||data.username)+ownerBadgeMarkup(data.id);
   publicProfileUsername.textContent=data.username?"@"+data.username:"";
   publicProfileNote.textContent=data.note||"No profile note.";
   friendActionMessage.textContent="";
