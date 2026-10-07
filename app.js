@@ -59,7 +59,6 @@ const friendRefreshButton=document.querySelector("#friendRefreshButton");
 const addFriendButton=document.querySelector("#addFriendButton");
 const friendActionMessage=document.querySelector("#friendActionMessage");
 const mobileMenuButton=document.querySelector("#mobileMenuButton");
-const sidebarToggleButton=document.querySelector("#sidebarToggle");
 const mobileMenuBackdrop=document.querySelector("#mobileMenuBackdrop");
 const mobileSidebar=document.querySelector(".sidebar");
 const chatLayout=document.querySelector(".chat-layout");
@@ -713,11 +712,6 @@ avatarCropCanvas?.addEventListener("pointercancel",()=>{avatarCropDragging=false
 avatarCropCancel?.addEventListener("click",closeAvatarCrop);
 avatarCropSave?.addEventListener("click",saveAvatarCrop);
 
-sidebarToggleButton?.addEventListener("click",()=>{
- const mobile=window.innerWidth<=760;
- const open=mobile?mobileSidebar?.classList.contains("mobile-open"):!chatLayout?.classList.contains("sidebar-collapsed");
- setMobileMenu(!open);
-});
 mobileMenuButton?.addEventListener("click",()=>{
  const mobile=window.innerWidth<=760;
  const open=mobile?mobileSidebar?.classList.contains("mobile-open"):!chatLayout?.classList.contains("sidebar-collapsed");
