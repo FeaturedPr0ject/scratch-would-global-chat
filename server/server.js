@@ -15,10 +15,11 @@ function loadData(){
   const data=JSON.parse(fs.readFileSync(DATA_FILE,"utf8"));
   return {
    profiles:Array.isArray(data.profiles)?data.profiles:[],
-   messages:Array.isArray(data.messages)?data.messages:[]
+   messages:Array.isArray(data.messages)?data.messages:[],
+   friendRequests:Array.isArray(data.friendRequests)?data.friendRequests:[]
   };
  }catch{
-  return {profiles:[],messages:[]};
+  return {profiles:[],messages:[],friendRequests:[]};
  }
 }
 
@@ -105,6 +106,25 @@ const server=http.createServer(async(request,response)=>{
   return;
  }
 
+ if(method==="GET"&&url.pathname==="/api/users/search"){
+  const username=clean(url.searchParams.get("username"),24);
+  const profile=username?findProfile(username):null;
+  sendJson(response,200,{ok:true,profile:profile?{id:profile.id,username:profile.username,display_name:profile.display_name,note:profile.note,avatar_url:profile.avatar_url}:null});
+  return;
+ }
+
+ if(method==="GET"&&url.pathname==="/api/friends"){
+  const userId=clean(url.searchParams.get("user_id"),80);
+  const relations=data.friendRequests.filter(item=>item.requester_id===userId||item.recipient_id===userId);
+  const result=relations.map(item=>{
+   const otherId=item.requester_id===userId?item.recipient_id:item.requester_id;
+   const other=data.profiles.find(profile=>profile.id===otherId);
+   return {id:item.id,user_id:otherId,status:item.status,username:other?.username||"",display_name:other?.display_name||"",avatar_url:other?.avatar_url||"",incoming:item.recipient_id===userId};
+  });
+  sendJson(response,200,{ok:true,friends:result});
+  return;
+ }
+
  if(method==="GET"&&url.pathname==="/api/profiles"){
   sendJson(response,200,{ok:true,profiles:data.profiles.map(({id,username,display_name,note,avatar_url})=>({id,username,display_name,note,avatar_url}))});
   return;
@@ -113,6 +133,46 @@ const server=http.createServer(async(request,response)=>{
  if(method==="POST"&&url.pathname==="/api/session"){
   const id=crypto.randomUUID();
   sendJson(response,200,{ok:true,userId:id});
+  return;
+ }
+
+ if(method==="POST"&&url.pathname==="/api/friends/request"){
+  try{
+   const body=await readBody(request);
+   const userId=clean(body.user_id,80);
+   const targetUserId=clean(body.target_user_id,80);
+   if(!userId||!targetUserId||userId===targetUserId){sendJson(response,400,{ok:false,error:"Invalid friend request"});return;}
+   const requester=data.profiles.find(item=>item.id===userId);
+   const recipient=data.profiles.find(item=>item.id===targetUserId);
+   if(!requester||!recipient){sendJson(response,404,{ok:false,error:"User not found"});return;}
+   const existing=data.friendRequests.find(item=>(item.requester_id===userId&&item.recipient_id===targetUserId)||(item.requester_id===targetUserId&&item.recipient_id===userId));
+   if(existing){
+    if(existing.status==="accepted"){sendJson(response,409,{ok:false,error:"You are already friends."});return;}
+    if(existing.status==="pending"){sendJson(response,409,{ok:false,error:"Friend request already exists."});return;}
+   }
+   const friend={id:crypto.randomUUID(),requester_id:userId,recipient_id:targetUserId,status:"pending",created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+   data.friendRequests.push(friend);
+   saveData();
+   broadcast({type:"friend.updated",friend});
+   sendJson(response,201,{ok:true,message:"Friend request sent.",friend});
+  }catch(error){sendJson(response,400,{ok:false,error:error instanceof Error?error.message:"Invalid request"});}
+  return;
+ }
+
+ if(method==="POST"&&url.pathname==="/api/friends/respond"){
+  try{
+   const body=await readBody(request);
+   const userId=clean(body.user_id,80);
+   const requestId=clean(body.request_id,80);
+   const action=body.action==="accept"?"accept":body.action==="decline"?"decline":"";
+   const item=data.friendRequests.find(entry=>entry.id===requestId);
+   if(!item||item.recipient_id!==userId||!action){sendJson(response,400,{ok:false,error:"Invalid friend response"});return;}
+   item.status=action==="accept"?"accepted":"declined";
+   item.updated_at=new Date().toISOString();
+   saveData();
+   broadcast({type:"friend.updated",friend:item});
+   sendJson(response,200,{ok:true,friend:item});
+  }catch(error){sendJson(response,400,{ok:false,error:error instanceof Error?error.message:"Invalid request"});}
   return;
  }
 
