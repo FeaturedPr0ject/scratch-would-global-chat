@@ -5,40 +5,43 @@ let session=null;
 if(raw){
  try{
   session=JSON.parse(decodeURIComponent(escape(atob(raw))));
-  if(!session.expiresAt||Date.now()>=session.expiresAt||!session.email||!session.token){
-   session=null;
-  }
+  if(!session.expiresAt||Date.now()>=session.expiresAt||!session.email||!session.token)session=null;
  }catch{
   session=null;
  }
 }
-if(!session){
+function redirectToLogin(){
+ document.cookie=SESSION_COOKIE+"=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax; Secure";
  location.replace("./login.html");
-}else{
- const iframe=document.createElement("iframe");
- iframe.style.display="none";
- document.documentElement.appendChild(iframe);
- const cleanup=()=>{
-  window.removeEventListener("message",handleMessage);
-  iframe.remove();
- };
- const handleMessage=event=>{
-  if(event.source!==iframe.contentWindow)return;
-  const data=event.data||{};
-  if(data.type!=="swgc-session-response")return;
-  cleanup();
-  if(!data.ok||data.email!==session.email){
-   document.cookie=SESSION_COOKIE+"=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax; Secure";
-   location.replace("./login.html");
-  }
- };
- window.addEventListener("message",handleMessage);
- iframe.src=ENDPOINT+"?action=validate&token="+encodeURIComponent(session.token);
- setTimeout(()=>{
-  if(document.documentElement.contains(iframe)){
-   cleanup();
-   document.cookie=SESSION_COOKIE+"=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax; Secure";
-   location.replace("./login.html");
-  }
- },10000);
 }
+function validateSession(){
+ if(!session){
+  redirectToLogin();
+  return;
+ }
+ const callbackName="swgcGate_"+crypto.randomUUID().replaceAll("-","");
+ const script=document.createElement("script");
+ let finished=false;
+ const finish=valid=>{
+  if(finished)return;
+  finished=true;
+  script.remove();
+  delete window[callbackName];
+  if(!valid)redirectToLogin();
+ };
+ window[callbackName]=data=>{
+  if(data?.type!=="swgc-session-response")return;
+  finish(Boolean(data.ok&&data.email===session.email));
+ };
+ script.onerror=()=>finish(false);
+ const query=new URLSearchParams({
+  action:"validate",
+  token:session.token,
+  callback:callbackName,
+  cacheBust:Date.now()
+ });
+ script.src=ENDPOINT+"?"+query.toString();
+ document.head.appendChild(script);
+ setTimeout(()=>finish(false),10000);
+}
+validateSession();
