@@ -45,7 +45,26 @@
 <div class="composer-row">
 <button id="stickerButton" class="sticker-button" type="button" aria-label="Open stickers">☺</button>
 <div id="stickerPicker" class="sticker-picker hidden">
-<button type="button" data-sticker="😀">😀</button><button type="button" data-sticker="😂">😂</button><button type="button" data-sticker="😍">😍</button><button type="button" data-sticker="😎">😎</button><button type="button" data-sticker="😭">😭</button><button type="button" data-sticker="😡">😡</button><button type="button" data-sticker="👍">👍</button><button type="button" data-sticker="❤️">❤️</button><button type="button" data-sticker="🔥">🔥</button><button type="button" data-sticker="🎉">🎉</button><button type="button" data-sticker="💀">💀</button><button type="button" data-sticker="🤖">🤖</button>
+<div class="sticker-picker-head">
+<strong>Stickers</strong>
+<button id="stickerPickerClose" type="button" aria-label="Close stickers">×</button>
+</div>
+<div class="sticker-tabs" role="tablist">
+<button id="savedStickerTab" class="sticker-tab active" type="button" role="tab">Saved</button>
+<button id="searchStickerTab" class="sticker-tab" type="button" role="tab">Search</button>
+</div>
+<div id="savedStickerPanel" class="sticker-panel">
+<div id="savedStickerGrid" class="sticker-grid"></div>
+<div id="savedStickerEmpty" class="sticker-empty">No saved stickers yet.</div>
+</div>
+<div id="searchStickerPanel" class="sticker-panel hidden">
+<div class="sticker-search-row">
+<input id="stickerSearchInput" type="search" maxlength="80" placeholder="Search stickers" autocomplete="off">
+<button id="stickerSearchButton" type="button">Search</button>
+</div>
+<div id="stickerSearchStatus" class="sticker-search-status"></div>
+<div id="stickerSearchGrid" class="sticker-grid"></div>
+</div>
 </div>
 <textarea id="messageInput" maxlength="500" rows="1" placeholder="Send a message..." aria-label="Message"></textarea>
 <button id="sendButton" class="send-button" type="button">Send</button>

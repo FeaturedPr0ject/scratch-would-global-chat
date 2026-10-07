@@ -29,7 +29,17 @@ const displayNameInput=document.querySelector("#displayNameInput");
 const profileNoteInput=document.querySelector("#profileNoteInput");
 const usernameCheck=document.querySelector("#usernameCheck");
 const profileMessage=document.querySelector("#profileMessage");
-const stickerButtons=stickerPicker?stickerPicker.querySelectorAll("[data-sticker]"):[];
+const savedStickerTab=document.querySelector("#savedStickerTab");
+const searchStickerTab=document.querySelector("#searchStickerTab");
+const savedStickerPanel=document.querySelector("#savedStickerPanel");
+const searchStickerPanel=document.querySelector("#searchStickerPanel");
+const savedStickerGrid=document.querySelector("#savedStickerGrid");
+const savedStickerEmpty=document.querySelector("#savedStickerEmpty");
+const stickerSearchInput=document.querySelector("#stickerSearchInput");
+const stickerSearchButton=document.querySelector("#stickerSearchButton");
+const stickerSearchStatus=document.querySelector("#stickerSearchStatus");
+const stickerSearchGrid=document.querySelector("#stickerSearchGrid");
+const stickerPickerClose=document.querySelector("#stickerPickerClose");
 const saveProfileButton=document.querySelector("#saveProfile");
 const userProfileModal=document.querySelector("#userProfileModal");
 const closeUserProfileButton=document.querySelector("#closeUserProfile");
@@ -65,6 +75,8 @@ let profile=null;
 const profileDirectory=new Map();
 let messages=[];
 let socket=null;
+const SAVED_STICKERS_STORAGE="swgc-room-chats-saved-stickers";
+let savedStickers=[];
 let avatarFile=null;
 let avatarCropImage=null;
 let avatarCropObjectUrl="";
@@ -230,7 +242,8 @@ function renderMessages(forceScroll=false){
   const username=liveProfile.username||item.username||"";
   const userNumber=liveProfile.user_number||item.user_number;
   const avatarItem={...item,...liveProfile};
-  const content=item.type==="sticker"?'<span class="message-sticker">'+escapeText(item.text)+'</span>':'<span class="message-text">'+escapeText(item.text)+'</span>';
+  const stickerUrl=item.type==="sticker"?safeUrl(item.text):"";
+  const content=item.type==="sticker"&&stickerUrl?'<span class="message-sticker"><img src="'+escapeText(stickerUrl)+'" alt="Sticker" loading="lazy"></span>':item.type==="sticker"?'<span class="message-sticker">'+escapeText(item.text)+'</span>':'<span class="message-text">'+escapeText(item.text)+'</span>';
   return '<button class="message-profile-button" type="button" data-user-id="'+escapeText(item.user_id)+'">'+
    avatarMarkup(avatarItem)+
    '<span class="message-body"><span class="message-meta"><span class="message-name-wrap"><span class="message-display-name">'+escapeText(displayName)+'</span>'+ownerBadgeMarkup(item.user_id,userNumber)+'<span class="message-username">'+escapeText(username?"@"+username:"")+'</span></span><time class="message-time">'+escapeText(new Date(item.created_at||Date.now()).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}))+'</time></span>'+content+'</span></button>';
@@ -556,6 +569,81 @@ async function joinRoom(){
  }finally{joinRoomButton.disabled=false;}
 }
 
+function loadSavedStickers(){
+ try{
+  const data=JSON.parse(localStorage.getItem(SAVED_STICKERS_STORAGE)||"[]");
+  savedStickers=Array.isArray(data)?data.filter(item=>typeof item==="string"&&safeUrl(item)):[]; 
+ }catch{savedStickers=[];}
+ renderSavedStickers();
+}
+
+function saveSticker(url){
+ const safe=safeUrl(url);
+ if(!safe)return;
+ savedStickers=[safe,...savedStickers.filter(item=>item!==safe)].slice(0,60);
+ localStorage.setItem(SAVED_STICKERS_STORAGE,JSON.stringify(savedStickers));
+ renderSavedStickers();
+}
+
+function renderSavedStickers(){
+ if(!savedStickerGrid||!savedStickerEmpty)return;
+ savedStickerGrid.innerHTML=savedStickers.map(url=>'<button class="sticker-tile" type="button" data-sticker-url="'+escapeText(url)+'"><img src="'+escapeText(url)+'" alt="Saved sticker" loading="lazy"></button>').join("");
+ savedStickerEmpty.classList.toggle("hidden",savedStickers.length>0);
+}
+
+function setStickerTab(tab){
+ const search=tab==="search";
+ savedStickerTab?.classList.toggle("active",!search);
+ searchStickerTab?.classList.toggle("active",search);
+ savedStickerPanel?.classList.toggle("hidden",search);
+ searchStickerPanel?.classList.toggle("hidden",!search);
+ if(search)stickerSearchInput?.focus();
+}
+
+async function searchStickers(){
+ const query=stickerSearchInput?.value.trim()||"";
+ if(!stickerSearchStatus||!stickerSearchGrid)return;
+ if(query.length<2){
+  stickerSearchStatus.textContent="Enter at least 2 characters.";
+  stickerSearchGrid.innerHTML="";
+  return;
+ }
+ stickerSearchStatus.textContent="Searching...";
+ stickerSearchGrid.innerHTML="";
+ try{
+  const endpoint="https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrlimit=24&gsrsearch="+encodeURIComponent(query+" sticker")+"&prop=imageinfo&iiprop=url|mime&iiurlwidth=240&format=json&origin=*";
+  const response=await fetch(endpoint);
+  if(!response.ok)throw new Error("Search failed");
+  const data=await response.json();
+  const pages=Object.values(data.query?.pages||{}).filter(item=>item.imageinfo?.[0]?.thumburl||item.imageinfo?.[0]?.url);
+  if(!pages.length){
+   stickerSearchStatus.textContent="No stickers found.";
+   return;
+  }
+  stickerSearchStatus.textContent=pages.length+" results";
+  stickerSearchGrid.innerHTML=pages.map(item=>{
+   const info=item.imageinfo?.[0]||{};
+   const url=info.thumburl||info.url;
+   return '<div class="sticker-result"><button class="sticker-tile" type="button" data-sticker-url="'+escapeText(url)+'"><img src="'+escapeText(url)+'" alt="Sticker" loading="lazy"></button><button class="sticker-save" type="button" data-save-sticker="'+escapeText(url)+'">Save</button></div>';
+  }).join("");
+ }catch{
+  stickerSearchStatus.textContent="Could not search stickers.";
+ }
+}
+
+function openStickerPicker(){
+ stickerPicker?.classList.remove("hidden");
+ loadSavedStickers();
+ setStickerTab("saved");
+}
+
+async function sendSticker(url){
+ const safe=safeUrl(url);
+ if(!safe||!profile||!userId)return;
+ saveSticker(safe);
+ await sendMessage("sticker",safe);
+}
+
 async function sendMessage(type="text",sticker=""){
  const text=type==="sticker"?sticker:input.value.trim();
  if(!text||!profile||!userId)return;
@@ -654,9 +742,28 @@ input.addEventListener("keydown",event=>{
 messagesEl.addEventListener("scroll",updateScrollButton,{passive:true});
 scrollToBottomButton?.addEventListener("click",()=>scrollToBottom(true));
 sendButton.addEventListener("click",()=>sendMessage());
-stickerButton?.addEventListener("click",event=>{event.stopPropagation();stickerPicker?.classList.toggle("hidden")});
-stickerButtons.forEach(button=>button.addEventListener("click",()=>sendMessage("sticker",button.dataset.sticker||"")));
+stickerButton?.addEventListener("click",event=>{event.stopPropagation();openStickerPicker()});
+stickerPickerClose?.addEventListener("click",()=>stickerPicker?.classList.add("hidden"));
+savedStickerTab?.addEventListener("click",()=>setStickerTab("saved"));
+searchStickerTab?.addEventListener("click",()=>setStickerTab("search"));
+stickerSearchButton?.addEventListener("click",searchStickers);
+stickerSearchInput?.addEventListener("keydown",event=>{if(event.key==="Enter")searchStickers()});
+savedStickerGrid?.addEventListener("click",event=>{
+ const button=event.target.closest("[data-sticker-url]");
+ if(button)sendSticker(button.dataset.stickerUrl);
+});
+stickerSearchGrid?.addEventListener("click",event=>{
+ const save=event.target.closest("[data-save-sticker]");
+ const send=event.target.closest("[data-sticker-url]");
+ if(save){
+  saveSticker(save.dataset.saveSticker);
+  save.textContent="Saved";
+  return;
+ }
+ if(send)sendSticker(send.dataset.stickerUrl);
+});
 document.addEventListener("click",event=>{if(!event.target.closest(".sticker-picker")&&!event.target.closest("#stickerButton"))stickerPicker?.classList.add("hidden")});
+loadSavedStickers();
 friendSearchButton?.addEventListener("click",searchFriend);
 window.addEventListener("resize",()=>{
  if(window.innerWidth>760){
