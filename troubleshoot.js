@@ -14,7 +14,7 @@ if(presetReason){
 }
 if(presetError){
  const prefix="Error code: "+presetError;
- detailsInput.value=detailsInput.value?prefix+"\\n\\n"+detailsInput.value:prefix;
+ detailsInput.value=detailsInput.value?prefix+"\n\n"+detailsInput.value:prefix;
 }
 reasonInput.addEventListener("change",()=>{
  const isOther=reasonInput.value==="Other";
@@ -62,8 +62,8 @@ form.addEventListener("submit",async event=>{
   form.reset();
   otherReasonWrap.classList.add("hidden");
   otherReasonInput.required=false;
- }catch{
-  requestMessage.textContent="Could not send the support request. Please try again.";
+ }catch(error){
+  requestMessage.textContent=error instanceof Error?error.message:"Could not send the support request. Please try again.";
  }finally{
   submitButton.disabled=false;
   submitButton.textContent="Send Support Request";
