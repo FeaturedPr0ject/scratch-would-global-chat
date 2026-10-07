@@ -427,9 +427,10 @@ async function start(){
  }catch(error){
   console.error(error);
   setConnection("Local demo");
+  const cachedProfile=JSON.parse(localStorage.getItem(STORAGE_PROFILE)||"null");
   const cachedName=localStorage.getItem(STORAGE_NAME)||"";
-  if(cachedName){
-   profile={username:cachedName,display_name:cachedName,note:"",avatar_url:""};
+  if(cachedProfile||cachedName){
+   profile=cachedProfile||{username:cachedName,display_name:cachedName,note:"",avatar_url:""};
    renderProfile();
   }else{
    profile={username:"",display_name:"Guest",note:"",avatar_url:""};
