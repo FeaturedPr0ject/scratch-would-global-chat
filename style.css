@@ -135,6 +135,13 @@ button{cursor:pointer}
 .message-name-wrap{display:flex;align-items:baseline;gap:7px}
 .message-display-name{font-size:13px;font-weight:800}
 .message-username{font-size:10px;color:#777780}
+.owner-badge{display:inline-flex;align-items:center;justify-content:center;height:17px;padding:0 6px;border:1px solid rgba(255,173,0,.45);border-radius:999px;background:rgba(255,173,0,.1);color:var(--orange2);font-size:8px;font-weight:900;letter-spacing:.7px;line-height:1;vertical-align:middle}
+#messageInput,.profile-form textarea{scrollbar-width:thin;scrollbar-color:#4b4b55 transparent}
+#messageInput::-webkit-scrollbar,.profile-form textarea::-webkit-scrollbar{width:7px}
+#messageInput::-webkit-scrollbar-track,.profile-form textarea::-webkit-scrollbar-track{background:transparent;margin:8px}
+#messageInput::-webkit-scrollbar-thumb,.profile-form textarea::-webkit-scrollbar-thumb{background:#45454e;border-radius:999px;border:2px solid transparent;background-clip:padding-box}
+#messageInput::-webkit-scrollbar-thumb:hover,.profile-form textarea::-webkit-scrollbar-thumb:hover{background:#666671;border:2px solid transparent;background-clip:padding-box}
+
 .modal-close{position:absolute;right:14px;top:12px;width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:#1b1b20;color:var(--white);font-size:20px;line-height:1}
 .profile-modal-card,.public-profile-card{position:relative}
 .profile-modal-card{width:min(470px,100%);text-align:left}
