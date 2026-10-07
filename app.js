@@ -4,6 +4,8 @@ const STORAGE_PROFILE="swgc-room-chats-profile";
 const messagesEl=document.querySelector("#messages");
 const input=document.querySelector("#messageInput");
 const sendButton=document.querySelector("#sendButton");
+const stickerButton=document.querySelector("#stickerButton");
+const stickerPicker=document.querySelector("#stickerPicker");
 const charCount=document.querySelector("#charCount");
 const nameModal=document.querySelector("#nameModal");
 const firstUsernameInput=document.querySelector("#firstUsernameInput");
@@ -20,6 +22,7 @@ const displayNameInput=document.querySelector("#displayNameInput");
 const profileNoteInput=document.querySelector("#profileNoteInput");
 const usernameCheck=document.querySelector("#usernameCheck");
 const profileMessage=document.querySelector("#profileMessage");
+const stickerButtons=stickerPicker?stickerPicker.querySelectorAll("[data-sticker]"):[];
 const saveProfileButton=document.querySelector("#saveProfile");
 const userProfileModal=document.querySelector("#userProfileModal");
 const closeUserProfileButton=document.querySelector("#closeUserProfile");
@@ -285,12 +288,12 @@ async function joinRoom(){
  }finally{joinRoomButton.disabled=false;}
 }
 
-async function sendMessage(){
- const text=input.value.trim();
+async function sendMessage(type="text",sticker=""){
+ const text=type==="sticker"?sticker:input.value.trim();
  if(!text||!profile||!userId)return;
  sendButton.disabled=true;
  try{
-  const result=await request("/api/messages",{method:"POST",body:JSON.stringify({user_id:userId,text})});
+  const result=await request("/api/messages",{method:"POST",body:JSON.stringify({user_id:userId,text,type})});
   if(result.message&&!messages.some(item=>item.id===result.message.id)){
    messages.push(result.message);
    messages=messages.slice(-100);
@@ -299,6 +302,7 @@ async function sendMessage(){
   input.value="";
   input.style.height="auto";
   charCount.textContent="0 / 500";
+  stickerPicker?.classList.add("hidden");
  }catch(error){
   setConnection(error instanceof Error?error.message:"Message failed");
   setTimeout(()=>setConnection("Connected"),1800);
@@ -346,7 +350,10 @@ input.addEventListener("input",()=>{
 input.addEventListener("keydown",event=>{
  if(event.key==="Enter"&&!event.shiftKey){event.preventDefault();sendMessage();}
 });
-sendButton.addEventListener("click",sendMessage);
+sendButton.addEventListener("click",()=>sendMessage());
+stickerButton?.addEventListener("click",event=>{event.stopPropagation();stickerPicker?.classList.toggle("hidden")});
+stickerButtons.forEach(button=>button.addEventListener("click",()=>sendMessage("sticker",button.dataset.sticker||"")));
+document.addEventListener("click",event=>{if(!event.target.closest(".sticker-picker")&&!event.target.closest("#stickerButton"))stickerPicker?.classList.add("hidden")});
 messagesEl.addEventListener("click",event=>{
  const button=event.target.closest("[data-user-id]");
  if(button)openPublicProfile(button.dataset.userId);
