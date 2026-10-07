@@ -330,7 +330,7 @@ html,body{width:100%;max-width:100%;overflow-x:clip}
 .crop-zoom{width:100%;accent-color:var(--orange);margin:0 0 14px}
 .avatar-preview{overflow:hidden}
 
-.sticker-picker{position:absolute;left:0;bottom:58px;width:min(460px,calc(100vw - 32px));max-height:min(500px,68vh);overflow:hidden;display:block;padding:10px;border:1px solid var(--line);border-radius:18px;background:#15151a;box-shadow:0 20px 55px rgba(0,0,0,.5);z-index:20}
+.sticker-picker{position:absolute;left:0;bottom:58px;width:min(460px,calc(100vw - 32px));max-height:none;height:auto;overflow:hidden;display:block;padding:10px;border:1px solid var(--line);border-radius:18px;background:#15151a;box-shadow:0 20px 55px rgba(0,0,0,.5);z-index:20}
 .sticker-picker.hidden{display:none}
 .sticker-picker-head{display:flex;align-items:center;justify-content:space-between;padding:2px 3px 8px}
 .sticker-picker-head strong{font-size:13px}
@@ -338,7 +338,7 @@ html,body{width:100%;max-width:100%;overflow-x:clip}
 .sticker-tabs{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:4px;background:#101014;border:1px solid var(--line);border-radius:11px;margin-bottom:9px}
 .sticker-tab{height:32px;border:0;border-radius:8px;background:transparent;color:var(--muted);font-size:11px;font-weight:800}
 .sticker-tab.active{background:var(--orange);color:#171009}
-.sticker-panel{min-height:180px}
+.sticker-panel{min-height:0}
 .sticker-search-row{display:flex;gap:6px;margin-bottom:7px}
 .sticker-search-row input{min-width:0;flex:1;height:36px;background:#1b1b20;border:1px solid var(--line);border-radius:10px;color:var(--white);padding:0 10px;outline:none;font-size:11px}
 .sticker-search-row input:focus{border-color:rgba(255,173,0,.55)}
@@ -351,7 +351,7 @@ html,body{width:100%;max-width:100%;overflow-x:clip}
 .sticker-tile{position:relative;width:100%;aspect-ratio:1;border:1px solid transparent;border-radius:11px;background:#1b1b20;padding:5px;overflow:hidden;cursor:pointer}
 .sticker-tile:hover{border-color:rgba(255,173,0,.5);background:#202027}
 .sticker-tile img{width:100%;height:100%;object-fit:contain;display:block}
-.sticker-empty{display:grid;place-items:center;min-height:150px;color:var(--muted);font-size:10px}
+.sticker-empty{display:grid;place-items:center;min-height:96px;color:var(--muted);font-size:10px}
 .sticker-empty.hidden{display:none}
 .sticker-result{display:flex;flex-direction:column;gap:4px;min-width:0}
 .sticker-result .sticker-tile{aspect-ratio:1}
