@@ -560,7 +560,7 @@ async function start(){
   await initializeSupabase();
  }catch(error){
   console.error(error);
-  setConnection("Database offline");
+  setConnection(error instanceof Error?error.message:"Database offline");
   profile=JSON.parse(localStorage.getItem(STORAGE_PROFILE)||"null");
   if(profile)renderProfile();else openFirstProfile();
   messages=[];
