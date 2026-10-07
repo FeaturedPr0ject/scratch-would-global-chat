@@ -40,6 +40,7 @@ const friendSearchButton=document.querySelector("#friendSearchButton");
 const friendSearchStatus=document.querySelector("#friendSearchStatus");
 const friendSearchResult=document.querySelector("#friendSearchResult");
 const friendList=document.querySelector("#friendList");
+const friendRefreshButton=document.querySelector("#friendRefreshButton");
 const addFriendButton=document.querySelector("#addFriendButton");
 const friendActionMessage=document.querySelector("#friendActionMessage");
 const mobileMenuButton=document.querySelector("#mobileMenuButton");
@@ -170,8 +171,10 @@ async function request(path,options={}){
   data={ok:true,taken:Boolean(result.data)};
   error=result.error;
  }else if(url.pathname==="/api/users/search"&&method==="GET"){
-  const username=new URLSearchParams(url.search).get("username")?.trim()||"";
-  const result=await supabaseClient.from("profiles").select("id,user_number,username,display_name,note,avatar_url").eq("username_key",username.toLowerCase()).maybeSingle();
+  const query=new URLSearchParams(url.search).get("q")?.trim()||"";
+  const result=/^\d+$/.test(query)
+   ? await supabaseClient.from("profiles").select("id,user_number,username,display_name,note,avatar_url,last_seen").eq("user_number",Number(query)).maybeSingle()
+   : await supabaseClient.from("profiles").select("id,user_number,username,display_name,note,avatar_url,last_seen").eq("username_key",query.toLowerCase()).maybeSingle();
   data={ok:true,profile:result.data||null};
   error=result.error;
  }else if(url.pathname==="/api/messages"&&method==="GET"){
@@ -568,14 +571,15 @@ function renderFriendList(){
 }
 
 async function searchFriend(){
- const username=friendSearchInput.value.trim();
+ const query=friendSearchInput.value.trim();
  friendSearchStatus.textContent="";
  friendSearchResult.classList.add("hidden");
- if(username.length<2){friendSearchStatus.textContent="Enter at least 2 characters.";return;}
+ if(query.length<1){friendSearchStatus.textContent="Enter a username or UID.";return;}
+ if(!/^\d+$/.test(query)&&query.length<2){friendSearchStatus.textContent="Enter at least 2 characters.";return;}
  friendSearchStatus.textContent="Searching...";
  try{
-  const result=await request("/api/users/search?username="+encodeURIComponent(username));
-  if(!result.profile){friendSearchStatus.textContent="Username not found.";return;}
+  const result=await request("/api/users/search?q="+encodeURIComponent(query));
+  if(!result.profile){friendSearchStatus.textContent="User not found.";return;}
   const item=result.profile;
   friendSearchStatus.textContent="";
   friendSearchResult.classList.remove("hidden");
