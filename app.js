@@ -90,14 +90,6 @@ let avatarCropStartOffsetX=0;
 let avatarCropStartOffsetY=0;
 let usernameTimer=null;
 let savingProfile=false;
-function setStickerTab(tab){
- const saved=tab==="saved";
- savedStickerTab?.classList.toggle("active",saved);
- searchStickerTab?.classList.toggle("active",!saved);
- savedStickerPanel?.classList.toggle("hidden",!saved);
- searchStickerPanel?.classList.toggle("hidden",saved);
-}
-
 function setMobileMenu(open){
  const mobile=window.innerWidth<=760;
  if(mobile){
@@ -751,8 +743,6 @@ messagesEl.addEventListener("scroll",updateScrollButton,{passive:true});
 scrollToBottomButton?.addEventListener("click",()=>scrollToBottom(true));
 sendButton.addEventListener("click",()=>sendMessage());
 stickerButton?.addEventListener("click",event=>{event.stopPropagation();openStickerPicker()});
-savedStickerTab?.addEventListener("click",()=>setStickerTab("saved"));
-searchStickerTab?.addEventListener("click",()=>setStickerTab("search"));
 stickerPickerClose?.addEventListener("click",()=>stickerPicker?.classList.add("hidden"));
 savedStickerTab?.addEventListener("click",()=>setStickerTab("saved"));
 searchStickerTab?.addEventListener("click",()=>setStickerTab("search"));
