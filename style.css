@@ -330,7 +330,7 @@ html,body{width:100%;max-width:100%;overflow-x:clip}
 .crop-zoom{width:100%;accent-color:var(--orange);margin:0 0 14px}
 .avatar-preview{overflow:hidden}
 
-.sticker-picker{position:absolute;left:0;bottom:58px;width:min(360px,calc(100vw - 24px));max-height:min(430px,62vh);overflow:hidden;padding:10px;border:1px solid var(--line);border-radius:18px;background:#15151a;box-shadow:0 20px 55px rgba(0,0,0,.5);z-index:20}
+.sticker-picker{position:absolute;left:0;bottom:58px;width:min(460px,calc(100vw - 32px));max-height:min(500px,68vh);overflow:hidden;display:block;padding:10px;border:1px solid var(--line);border-radius:18px;background:#15151a;box-shadow:0 20px 55px rgba(0,0,0,.5);z-index:20}
 .sticker-picker.hidden{display:none}
 .sticker-picker-head{display:flex;align-items:center;justify-content:space-between;padding:2px 3px 8px}
 .sticker-picker-head strong{font-size:13px}
