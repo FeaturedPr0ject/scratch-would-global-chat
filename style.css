@@ -310,3 +310,12 @@ html,body{width:100%;max-width:100%;overflow-x:clip}
 .profile-friend-button.unfriend-button:hover{background:#3a2323!important;border-color:#9b3b3b!important}
 
 .friend-refresh-button img{width:16px!important;height:16px!important;display:block!important;object-fit:contain!important;pointer-events:none!important}
+
+.profile-summary .owner-badge{height:13px;padding:0 4px;font-size:6px;letter-spacing:.45px;line-height:1;margin-top:2px;align-self:flex-start}
+.friend-info .owner-badge{height:11px;padding:0 3px;font-size:5px;letter-spacing:.35px;margin-left:3px}
+.friend-search-result .owner-badge{height:12px;padding:0 4px;font-size:6px;letter-spacing:.4px;margin-left:3px}
+.friend-view-button{height:28px;min-width:52px;border:1px solid rgba(255,173,0,.42);border-radius:9px;background:#ffad00;color:#171009;font-size:11px;font-weight:800;padding:0 11px;cursor:pointer;transition:transform .12s ease,background .15s ease,border-color .15s ease}
+.friend-view-button:hover{background:#ffc247;border-color:#ffc247}
+.friend-view-button:active{transform:scale(.96)}
+.friend-search-result{align-items:center;gap:9px}
+.friend-search-result>span:nth-child(2){gap:2px}
