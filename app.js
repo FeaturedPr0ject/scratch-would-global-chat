@@ -216,7 +216,7 @@ async function request(path,options={}){
   if(requests.error)throw requests.error;
   data={ok:true,message:"Friend removed."};
   error=null;
- else if(url.pathname==="/api/friends/respond"&&method==="POST"){
+ }else if(url.pathname==="/api/friends/respond"&&method==="POST"){
   const action=body.action==="accept"?"accepted":body.action==="decline"?"declined":"";
   if(!action)throw new Error("Invalid friend response");
   const result=await supabaseClient.from("friend_requests").update({status:action}).eq("id",body.request_id).eq("recipient_id",body.user_id).select("id,requester_id,recipient_id,status,created_at,updated_at").single();
