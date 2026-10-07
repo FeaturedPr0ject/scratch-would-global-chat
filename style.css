@@ -22,8 +22,11 @@ button{cursor:pointer}
 .status-dot{width:9px;height:9px;border-radius:50%;display:inline-block;background:#666}
 .status-dot.online{background:#4ade80;box-shadow:0 0 12px rgba(74,222,128,.7)}
 .status-dot.offline{background:#777}
-.chat-layout{width:100%;margin:0;display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:0;flex:1;min-height:calc(100vh - 76px);transition:grid-template-columns .22s ease}
+.chat-layout{width:100%;margin:0;display:grid;position:relative;grid-template-columns:minmax(0,1fr) 270px;gap:0;flex:1;min-height:calc(100vh - 76px);transition:grid-template-columns .22s ease}
 .chat-layout.sidebar-collapsed{grid-template-columns:minmax(0,1fr) 0}
+.sidebar-toggle{position:absolute;right:269px;top:50%;transform:translateY(-50%);width:22px;height:64px;border:1px solid var(--line);border-right:0;border-radius:10px 0 0 10px;background:#15151a;color:var(--muted);font-size:18px;font-weight:900;line-height:1;display:grid;place-items:center;z-index:10;cursor:pointer;transition:right .22s ease,background .15s ease,color .15s ease}
+.sidebar-toggle:hover{background:#202027;color:var(--orange2)}
+.chat-layout.sidebar-collapsed .sidebar-toggle{right:0;border-right:1px solid var(--line);border-radius:10px 0 0 10px;color:var(--orange2)}
 .sidebar,.chat-panel{background:var(--panel);border:1px solid var(--line);overflow:hidden}
 .sidebar{padding:16px;display:flex;flex-direction:column;gap:12px;border-right:0;border-top:0;border-bottom:0;border-left:1px solid var(--line);border-radius:0;position:sticky;top:76px;height:calc(100vh - 76px);min-width:0;transition:transform .22s ease}
 .profile-card,.server-card{background:var(--panel2);border:1px solid var(--line);border-radius:16px;padding:12px;display:flex;align-items:center;gap:11px}
@@ -353,13 +356,16 @@ html,body{width:100%;max-width:100%;overflow-x:clip}
 .sticker-tile img{width:100%;height:100%;object-fit:contain;display:block}
 .sticker-empty{display:grid;place-items:center;min-height:96px;color:var(--muted);font-size:10px}
 .sticker-empty.hidden{display:none}
-.sticker-result{display:flex;flex-direction:column;gap:4px;min-width:0}
+.sticker-result{position:relative;min-width:0}
 .sticker-result .sticker-tile{aspect-ratio:1}
-.sticker-save{height:24px;border:1px solid var(--line);border-radius:7px;background:#1c1c22;color:var(--muted);font-size:9px;font-weight:800}
-.sticker-save:hover{border-color:rgba(255,173,0,.5);color:var(--orange2)}
+.sticker-save{position:absolute;right:6px;bottom:6px;width:27px;height:27px;border:1px solid rgba(255,255,255,.16);border-radius:9px;background:rgba(17,17,22,.88);color:var(--white);font-size:0;font-weight:800;display:grid;place-items:center;padding:0;z-index:2;backdrop-filter:blur(4px)}
+.sticker-save::before{content:"☆";font-size:17px;line-height:1}
+.sticker-save.saved::before{content:"★";color:var(--orange)}
+.sticker-save:hover{border-color:rgba(255,173,0,.65);background:rgba(24,24,30,.96);color:var(--orange2)}
 .message-sticker{display:block;width:min(190px,55vw);margin-top:3px}
 .message-sticker img{display:block;width:100%;max-height:190px;object-fit:contain;border-radius:12px}
 @media(max-width:760px){
+.sidebar-toggle{display:none}
 .sticker-picker{position:fixed;left:8px;right:8px;bottom:62px;width:auto;max-height:58vh;border-radius:20px;padding:10px;z-index:100}
 .sticker-grid{grid-template-columns:repeat(4,minmax(0,1fr));max-height:34vh;gap:6px}
 .sticker-picker-head{padding:2px 3px 7px}

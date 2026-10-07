@@ -59,6 +59,7 @@ const friendRefreshButton=document.querySelector("#friendRefreshButton");
 const addFriendButton=document.querySelector("#addFriendButton");
 const friendActionMessage=document.querySelector("#friendActionMessage");
 const mobileMenuButton=document.querySelector("#mobileMenuButton");
+const sidebarToggleButton=document.querySelector("#sidebarToggle");
 const mobileMenuBackdrop=document.querySelector("#mobileMenuBackdrop");
 const mobileSidebar=document.querySelector(".sidebar");
 const chatLayout=document.querySelector(".chat-layout");
@@ -712,6 +713,11 @@ avatarCropCanvas?.addEventListener("pointercancel",()=>{avatarCropDragging=false
 avatarCropCancel?.addEventListener("click",closeAvatarCrop);
 avatarCropSave?.addEventListener("click",saveAvatarCrop);
 
+sidebarToggleButton?.addEventListener("click",()=>{
+ const mobile=window.innerWidth<=760;
+ const open=mobile?mobileSidebar?.classList.contains("mobile-open"):!chatLayout?.classList.contains("sidebar-collapsed");
+ setMobileMenu(!open);
+});
 mobileMenuButton?.addEventListener("click",()=>{
  const mobile=window.innerWidth<=760;
  const open=mobile?mobileSidebar?.classList.contains("mobile-open"):!chatLayout?.classList.contains("sidebar-collapsed");
@@ -757,6 +763,7 @@ stickerSearchGrid?.addEventListener("click",event=>{
  const send=event.target.closest("[data-sticker-url]");
  if(save){
   saveSticker(save.dataset.saveSticker);
+  save.classList.add("saved");
   save.textContent="Saved";
   return;
  }
