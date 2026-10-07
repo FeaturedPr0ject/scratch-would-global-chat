@@ -64,8 +64,19 @@ function stopPolling(){
  pendingNonce="";
 }
 
+function showAuthNotReachable(){
+ stopPolling();
+ submitButton.disabled=false;
+ message.innerHTML='Auth not reachable. <a href="./troubleshoot.html?reason=Account%20or%20login&error=AUTH_NOT_REACHABLE">Open Troubleshoot</a>';
+ window.turnstile?.reset?.();
+}
+
 function pollAuth(nonce,startedAt){
  if(nonce!==pendingNonce)return;
+ if(Date.now()-startedAt>=10000){
+  showAuthNotReachable();
+  return;
+ }
  const callbackName="swgcAuth_"+crypto.randomUUID().replaceAll("-","");
  const script=document.createElement("script");
  let finished=false;
@@ -79,14 +90,11 @@ function pollAuth(nonce,startedAt){
  window[callbackName]=data=>{
   if(data?.pending){
    finish(()=>{});
-   if(Date.now()-startedAt<30000){
+   if(Date.now()-startedAt<10000){
     pendingTimer=setTimeout(()=>pollAuth(nonce,startedAt),300);
     return;
    }
-   stopPolling();
-   submitButton.disabled=false;
-   message.textContent="The authentication server did not respond. Check the Apps Script deployment and try again.";
-   window.turnstile?.reset?.();
+   showAuthNotReachable();
    return;
   }
   finish(()=>{});
@@ -103,14 +111,11 @@ function pollAuth(nonce,startedAt){
  };
  script.onerror=()=>{
   finish(()=>{});
-  if(Date.now()-startedAt<30000){
+  if(Date.now()-startedAt<10000){
    pendingTimer=setTimeout(()=>pollAuth(nonce,startedAt),300);
    return;
   }
-  stopPolling();
-  submitButton.disabled=false;
-  message.textContent="The authentication server could not be reached.";
-  window.turnstile?.reset?.();
+  showAuthNotReachable();
  };
  const query=new URLSearchParams({
   action:"poll",
