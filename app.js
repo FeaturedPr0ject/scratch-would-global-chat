@@ -33,6 +33,15 @@ const publicProfileNote=document.querySelector("#publicProfileNote");
 const profileAvatar=document.querySelector("#profileAvatar");
 const profileDisplayName=document.querySelector("#profileDisplayName");
 const profileUsername=document.querySelector("#profileUsername");
+const friendSearchInput=document.querySelector("#friendSearchInput");
+const friendSearchButton=document.querySelector("#friendSearchButton");
+const friendSearchStatus=document.querySelector("#friendSearchStatus");
+const friendSearchResult=document.querySelector("#friendSearchResult");
+const friendList=document.querySelector("#friendList");
+const addFriendButton=document.querySelector("#addFriendButton");
+const friendActionMessage=document.querySelector("#friendActionMessage");
+let friends=[];
+let selectedProfileId="";
 const connectionDot=document.querySelector("#connectionDot");
 const connectionText=document.querySelector("#connectionText");
 let serverUrl="";
@@ -155,6 +164,7 @@ function connectSocket(){
      renderMessages();
     }
    }
+   if(data.type==="friend.updated"&&data.friend){loadFriends();}
    if((data.type==="profile.created"||data.type==="profile.updated")&&data.profile){
     if(data.profile.id===userId){
      profile=data.profile;
@@ -315,13 +325,19 @@ async function openPublicProfile(userIdValue){
   const result=await request("/api/profiles");
   const data=result.profiles.find(item=>item.id===userIdValue);
   if(!data)return;
+  selectedProfileId=data.id;
   setProfileAvatar(publicProfileAvatar,data,"public-avatar");
   publicProfileDisplayName.textContent=data.display_name||data.username;
   publicProfileUsername.textContent=data.username?"@"+data.username:"";
   publicProfileNote.textContent=data.note||"No profile note.";
+  friendActionMessage.textContent="";
+  const relation=friends.find(item=>item.user_id===data.id);
+  addFriendButton.textContent=data.id===userId?"This is you":relation?.status==="accepted"?"Friends":relation?.status==="pending"?"Request pending":"Add Friend";
+  addFriendButton.disabled=data.id===userId||relation?.status==="accepted"||relation?.status==="pending";
   userProfileModal.classList.remove("hidden");
  }catch{}
 }
+
 
 avatarPreview.addEventListener("click",()=>avatarInput.click());
 avatarInput.addEventListener("change",()=>{
@@ -354,12 +370,61 @@ sendButton.addEventListener("click",()=>sendMessage());
 stickerButton?.addEventListener("click",event=>{event.stopPropagation();stickerPicker?.classList.toggle("hidden")});
 stickerButtons.forEach(button=>button.addEventListener("click",()=>sendMessage("sticker",button.dataset.sticker||"")));
 document.addEventListener("click",event=>{if(!event.target.closest(".sticker-picker")&&!event.target.closest("#stickerButton"))stickerPicker?.classList.add("hidden")});
+friendSearchButton?.addEventListener("click",searchFriend);
+friendSearchInput?.addEventListener("keydown",event=>{if(event.key==="Enter")searchFriend()});
+addFriendButton?.addEventListener("click",addFriend);
+friendSearchResult?.addEventListener("click",event=>{const button=event.target.closest("[data-search-id]");if(button)openPublicProfile(button.dataset.searchId)});
+friendList?.addEventListener("click",event=>{const button=event.target.closest("[data-friend-id]");if(button)openPublicProfile(button.dataset.friendId)});
 messagesEl.addEventListener("click",event=>{
  const button=event.target.closest("[data-user-id]");
  if(button)openPublicProfile(button.dataset.userId);
 });
 profileModal.addEventListener("click",event=>{if(event.target===profileModal)closeProfileModal()});
 userProfileModal.addEventListener("click",event=>{if(event.target===userProfileModal)userProfileModal.classList.add("hidden")});
+
+async function loadFriends(){
+ try{
+  const result=await request("/api/friends?user_id="+encodeURIComponent(userId));
+  friends=result.friends||[];
+  renderFriendList();
+ }catch{friendList.innerHTML="";}
+}
+
+function renderFriendList(){
+ const accepted=friends.filter(item=>item.status==="accepted");
+ if(!accepted.length){friendList.innerHTML='<span class="friend-empty">No friends yet.</span>';return;}
+ friendList.innerHTML=accepted.map(item=>'<button class="friend-item" type="button" data-friend-id="'+escapeText(item.user_id)+'">'+avatarMarkup(item,"friend-avatar")+'<span><strong>'+escapeText(item.display_name||item.username)+'</strong><small>@'+escapeText(item.username)+'</small></span></button>').join("");
+}
+
+async function searchFriend(){
+ const username=friendSearchInput.value.trim();
+ friendSearchStatus.textContent="";
+ friendSearchResult.classList.add("hidden");
+ if(username.length<2){friendSearchStatus.textContent="Enter at least 2 characters.";return;}
+ friendSearchStatus.textContent="Searching...";
+ try{
+  const result=await request("/api/users/search?username="+encodeURIComponent(username));
+  if(!result.profile){friendSearchStatus.textContent="Username not found.";return;}
+  const item=result.profile;
+  friendSearchStatus.textContent="";
+  friendSearchResult.classList.remove("hidden");
+  friendSearchResult.innerHTML=avatarMarkup(item,"friend-search-avatar")+'<span><strong>'+escapeText(item.display_name||item.username)+'</strong><small>@'+escapeText(item.username)+'</small></span><button type="button" class="friend-view-button" data-search-id="'+escapeText(item.id)+'">View</button>';
+ }catch(error){friendSearchStatus.textContent=error instanceof Error?error.message:"Search failed."}
+}
+
+async function addFriend(){
+ if(!selectedProfileId||selectedProfileId===userId)return;
+ addFriendButton.disabled=true;
+ friendActionMessage.textContent="Sending...";
+ try{
+  const result=await request("/api/friends/request",{method:"POST",body:JSON.stringify({user_id:userId,target_user_id:selectedProfileId})});
+  friendActionMessage.textContent=result.message||"Friend request sent.";
+  addFriendButton.textContent="Request pending";
+ }catch(error){
+  friendActionMessage.textContent=error instanceof Error?error.message:"Could not send friend request.";
+  addFriendButton.disabled=false;
+ }
+}
 
 async function start(){
  setConnection("Connecting");
