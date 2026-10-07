@@ -40,6 +40,9 @@ const friendSearchResult=document.querySelector("#friendSearchResult");
 const friendList=document.querySelector("#friendList");
 const addFriendButton=document.querySelector("#addFriendButton");
 const friendActionMessage=document.querySelector("#friendActionMessage");
+const mobileMenuButton=document.querySelector("#mobileMenuButton");
+const mobileMenuBackdrop=document.querySelector("#mobileMenuBackdrop");
+const mobileSidebar=document.querySelector(".sidebar");
 let friends=[];
 let selectedProfileId="";
 const connectionDot=document.querySelector("#connectionDot");
@@ -52,6 +55,13 @@ let socket=null;
 let avatarFile=null;
 let usernameTimer=null;
 let savingProfile=false;
+
+function setMobileMenu(open){
+ mobileSidebar?.classList.toggle("mobile-open",open);
+ mobileMenuBackdrop?.classList.toggle("mobile-open",open);
+ mobileMenuButton?.setAttribute("aria-expanded",open?"true":"false");
+}
+
 
 function escapeText(value){
  return String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[char]));
@@ -349,7 +359,9 @@ avatarInput.addEventListener("change",()=>{
  reader.readAsDataURL(avatarFile);
 });
 
-openProfileButton.addEventListener("click",openMyProfile);
+mobileMenuButton?.addEventListener("click",()=>setMobileMenu(!mobileSidebar?.classList.contains("mobile-open")));
+mobileMenuBackdrop?.addEventListener("click",()=>setMobileMenu(false));
+openProfileButton.addEventListener("click",()=>{setMobileMenu(false);openMyProfile();});
 closeProfileButton.addEventListener("click",closeProfileModal);
 closeUserProfileButton.addEventListener("click",()=>userProfileModal.classList.add("hidden"));
 saveProfileButton.addEventListener("click",saveProfile);
@@ -371,12 +383,13 @@ stickerButton?.addEventListener("click",event=>{event.stopPropagation();stickerP
 stickerButtons.forEach(button=>button.addEventListener("click",()=>sendMessage("sticker",button.dataset.sticker||"")));
 document.addEventListener("click",event=>{if(!event.target.closest(".sticker-picker")&&!event.target.closest("#stickerButton"))stickerPicker?.classList.add("hidden")});
 friendSearchButton?.addEventListener("click",searchFriend);
+window.addEventListener("resize",()=>{if(window.innerWidth>760)setMobileMenu(false);});
 friendSearchInput?.addEventListener("keydown",event=>{if(event.key==="Enter")searchFriend()});
 addFriendButton?.addEventListener("click",addFriend);
 friendSearchResult?.addEventListener("click",event=>{const button=event.target.closest("[data-search-id]");if(button)openPublicProfile(button.dataset.searchId)});
 friendList?.addEventListener("click",async event=>{
  const button=event.target.closest("[data-friend-id]");
- if(button)openPublicProfile(button.dataset.friendId);
+ if(button){setMobileMenu(false);openPublicProfile(button.dataset.friendId);}
  const accept=event.target.closest("[data-accept-id]");
  const decline=event.target.closest("[data-decline-id]");
  if(accept||decline){
