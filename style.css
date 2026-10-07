@@ -22,9 +22,9 @@ button{cursor:pointer}
 .status-dot{width:9px;height:9px;border-radius:50%;display:inline-block;background:#666}
 .status-dot.online{background:#4ade80;box-shadow:0 0 12px rgba(74,222,128,.7)}
 .status-dot.offline{background:#777}
-.chat-layout{width:min(1180px,calc(100% - 32px));margin:22px auto;display:grid;grid-template-columns:290px minmax(0,1fr);gap:18px;flex:1}
-.sidebar,.chat-panel{background:var(--panel);border:1px solid var(--line);border-radius:20px;overflow:hidden}
-.sidebar{padding:16px;display:flex;flex-direction:column;gap:12px}
+.chat-layout{width:100%;margin:0;display:grid;grid-template-columns:270px minmax(0,1fr);gap:0;flex:1;min-height:calc(100vh - 76px)}
+.sidebar,.chat-panel{background:var(--panel);border:1px solid var(--line);overflow:hidden}
+.sidebar{padding:16px;display:flex;flex-direction:column;gap:12px;border-left:0;border-top:0;border-bottom:0;border-radius:0;position:sticky;top:76px;height:calc(100vh - 76px)}
 .profile-card,.server-card{background:var(--panel2);border:1px solid var(--line);border-radius:16px;padding:12px;display:flex;align-items:center;gap:11px}
 .profile-card{position:relative}
 .profile-card>div:nth-child(2),.server-card>div:nth-child(2){display:flex;flex-direction:column;min-width:0}
@@ -38,7 +38,7 @@ button{cursor:pointer}
 .sidebar-note{margin-top:auto;padding:13px;border-radius:14px;background:rgba(255,173,0,.08);border:1px solid rgba(255,173,0,.16);display:flex;flex-direction:column;gap:4px}
 .sidebar-note strong{font-size:13px;color:var(--orange2)}
 .sidebar-note span{font-size:12px;color:var(--muted);line-height:1.45}
-.chat-panel{display:flex;flex-direction:column;min-height:calc(100vh - 120px)}
+.chat-panel{display:flex;flex-direction:column;min-height:calc(100vh - 76px);border-right:0;border-top:0;border-bottom:0;border-radius:0}
 .chat-head{height:76px;padding:0 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
 .chat-head h1{font-size:18px;margin:0}
 .chat-head p{font-size:12px;color:var(--muted);margin:4px 0 0}
@@ -58,7 +58,14 @@ button{cursor:pointer}
 .message-time{font-size:10px;color:#696972}
 .message-text{margin-top:3px;color:#dedee4;font-size:14px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}
 .composer{border-top:1px solid var(--line);padding:14px 16px;background:#0e0e12}
-.composer-row{display:flex;gap:10px;align-items:flex-end}
+.composer-row{display:flex;gap:10px;align-items:flex-end;position:relative}
+.sticker-button{width:46px;height:46px;flex:none;border:1px solid var(--line);border-radius:13px;background:#18181d;color:var(--orange2);font-size:23px;display:grid;place-items:center}
+.sticker-button:hover{border-color:rgba(255,173,0,.55);background:#1d1d23}
+.sticker-picker{position:absolute;left:0;bottom:56px;width:250px;padding:10px;display:grid;grid-template-columns:repeat(4,1fr);gap:7px;background:#111116;border:1px solid var(--line);border-radius:15px;box-shadow:0 18px 45px rgba(0,0,0,.45);z-index:5}
+.sticker-picker.hidden{display:none}
+.sticker-picker button{height:48px;border:1px solid var(--line);border-radius:10px;background:#1a1a20;font-size:24px}
+.sticker-picker button:hover{background:#24242b;border-color:rgba(255,173,0,.5)}
+.message-sticker{display:block;font-size:52px;line-height:1.1;margin-top:5px}
 #messageInput{width:100%;resize:none;max-height:130px;min-height:46px;background:#18181d;border:1px solid var(--line);outline:none;color:var(--white);border-radius:13px;padding:12px 13px}
 #messageInput:focus{border-color:rgba(255,173,0,.55);box-shadow:0 0 0 3px rgba(255,173,0,.08)}
 .send-button,.primary-button{border:0;background:var(--orange);color:#171009;font-weight:900;border-radius:12px;padding:12px 18px;min-height:46px}
@@ -76,7 +83,7 @@ button{cursor:pointer}
 .primary-button{width:100%}
 @media(max-width:760px){
 .topbar{padding:0 14px}
-.chat-layout{width:calc(100% - 16px);margin:8px auto;display:block}
+.chat-layout{width:100%;margin:0;display:block;min-height:calc(100vh - 76px)}
 .sidebar{display:none}
 .chat-panel{min-height:calc(100vh - 92px);border-radius:16px}
 .chat-head{height:68px;padding:0 15px}
