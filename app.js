@@ -374,7 +374,19 @@ friendSearchButton?.addEventListener("click",searchFriend);
 friendSearchInput?.addEventListener("keydown",event=>{if(event.key==="Enter")searchFriend()});
 addFriendButton?.addEventListener("click",addFriend);
 friendSearchResult?.addEventListener("click",event=>{const button=event.target.closest("[data-search-id]");if(button)openPublicProfile(button.dataset.searchId)});
-friendList?.addEventListener("click",event=>{const button=event.target.closest("[data-friend-id]");if(button)openPublicProfile(button.dataset.friendId)});
+friendList?.addEventListener("click",async event=>{
+ const button=event.target.closest("[data-friend-id]");
+ if(button)openPublicProfile(button.dataset.friendId);
+ const accept=event.target.closest("[data-accept-id]");
+ const decline=event.target.closest("[data-decline-id]");
+ if(accept||decline){
+  const requestId=(accept||decline).dataset.acceptId||(accept||decline).dataset.declineId;
+  try{
+   await request("/api/friends/respond",{method:"POST",body:JSON.stringify({user_id:userId,request_id:requestId,action:accept?"accept":"decline"})});
+   await loadFriends();
+  }catch{}
+ }
+});
 messagesEl.addEventListener("click",event=>{
  const button=event.target.closest("[data-user-id]");
  if(button)openPublicProfile(button.dataset.userId);
@@ -391,9 +403,11 @@ async function loadFriends(){
 }
 
 function renderFriendList(){
+ const incoming=friends.filter(item=>item.status==="pending"&&item.incoming);
  const accepted=friends.filter(item=>item.status==="accepted");
- if(!accepted.length){friendList.innerHTML='<span class="friend-empty">No friends yet.</span>';return;}
- friendList.innerHTML=accepted.map(item=>'<button class="friend-item" type="button" data-friend-id="'+escapeText(item.user_id)+'">'+avatarMarkup(item,"friend-avatar")+'<span><strong>'+escapeText(item.display_name||item.username)+'</strong><small>@'+escapeText(item.username)+'</small></span></button>').join("");
+ const incomingMarkup=incoming.map(item=>'<div class="friend-request"><button class="friend-item" type="button" data-friend-id="'+escapeText(item.user_id)+'">'+avatarMarkup(item,"friend-avatar")+'<span><strong>'+escapeText(item.display_name||item.username)+'</strong><small>@'+escapeText(item.username)+'</small></span></button><div class="friend-request-actions"><button type="button" data-accept-id="'+escapeText(item.id)+'">Accept</button><button type="button" data-decline-id="'+escapeText(item.id)+'">Decline</button></div></div>').join("");
+ const acceptedMarkup=accepted.map(item=>'<button class="friend-item" type="button" data-friend-id="'+escapeText(item.user_id)+'">'+avatarMarkup(item,"friend-avatar")+'<span><strong>'+escapeText(item.display_name||item.username)+'</strong><small>@'+escapeText(item.username)+'</small></span></button>').join("");
+ friendList.innerHTML=incomingMarkup+acceptedMarkup+(!incomingMarkup&&!acceptedMarkup?'<span class="friend-empty">No friends yet.</span>':"");
 }
 
 async function searchFriend(){
