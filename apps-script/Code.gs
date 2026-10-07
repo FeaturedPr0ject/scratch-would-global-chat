@@ -84,8 +84,8 @@ function verifySession(token){
 
 function validateTurnstile(token){
   const secret=PropertiesService.getScriptProperties().getProperty("TURNSTILE_SECRET")||"";
-  if(!secret)return {success:false,error:"Turnstile backend is not configured"};
-  if(!token||typeof token!=="string"||token.length>2048)return {success:false,error:"Invalid CAPTCHA token"};
+  if(!secret)return {success:false};
+  if(!token||typeof token!=="string"||token.length>2048)return {success:false};
   try{
     const response=UrlFetchApp.fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify",{
       method:"post",
@@ -97,39 +97,60 @@ function validateTurnstile(token){
     });
     const result=JSON.parse(response.getContentText()||"{}");
     const expectedHostname=PropertiesService.getScriptProperties().getProperty("TURNSTILE_HOSTNAME")||"";
-    if(result.success&&expectedHostname&&result.hostname!==expectedHostname){
-      return {success:false,error:"CAPTCHA hostname mismatch"};
-    }
+    if(result.success&&expectedHostname&&result.hostname!==expectedHostname)return {success:false};
     return result;
-  }catch(error){
-    return {success:false,error:"CAPTCHA verification failed"};
+  }catch{
+    return {success:false};
   }
 }
 
-function authResponse(payload){
-  const data=JSON.stringify(payload).replace(/</g,"\\u003c");
-  return HtmlService.createHtmlOutput("<!doctype html><html><body><script>window.parent.postMessage("+data+",'*');</script></body></html>")
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+function isValidCallback(callback){
+  return /^[A-Za-z_$][0-9A-Za-z_$]*$/.test(String(callback||""));
+}
+
+function jsonp(callback,payload){
+  if(!isValidCallback(callback)){
+    return ContentService.createTextOutput(JSON.stringify({ok:false,error:"Invalid callback"})).setMimeType(ContentService.MimeType.JSON);
+  }
+  return ContentService.createTextOutput(callback+"("+JSON.stringify(payload)+")").setMimeType(ContentService.MimeType.JAVASCRIPT);
+}
+
+function queueAuthResponse(nonce,payload){
+  if(!nonce||String(nonce).length>128)return;
+  CacheService.getScriptCache().put("swgc-auth-"+nonce,JSON.stringify(payload),120);
+}
+
+function pollAuth(e){
+  const nonce=String(e.parameter.nonce||"");
+  if(!nonce||nonce.length>128)return {pending:false,ok:false,error:"Invalid authentication request."};
+  const cache=CacheService.getScriptCache();
+  const key="swgc-auth-"+nonce;
+  const raw=cache.get(key);
+  if(!raw)return {pending:true};
+  cache.remove(key);
+  try{
+    return JSON.parse(raw);
+  }catch{
+    return {pending:false,ok:false,error:"Invalid authentication response."};
+  }
 }
 
 function doGet(e){
   try{
     const action=e&&e.parameter&&e.parameter.action||"";
+    if(action==="poll")return jsonp(e.parameter.callback,pollAuth(e));
     if(action==="validate"){
       const session=verifySession(e.parameter.token||"");
-      return authResponse({
+      return jsonp(e.parameter.callback,{
         type:"swgc-session-response",
         ok:Boolean(session),
         email:session?session.email:""
       });
     }
-    return HtmlService.createHtmlOutput("SWGC backend is online.");
-  }catch(error){
-    return authResponse({
-      type:"swgc-session-response",
-      ok:false,
-      email:""
-    });
+    return ContentService.createTextOutput("SWGC backend is online.");
+  }catch{
+    if(e&&e.parameter&&e.parameter.callback)return jsonp(e.parameter.callback,{ok:false,error:"Backend error. Please try again."});
+    return ContentService.createTextOutput("Backend error. Please try again.");
   }
 }
 
@@ -138,60 +159,44 @@ function handleAuth(e){
   const email=normalizeEmail(e.parameter.email);
   const password=String(e.parameter.password||"");
   const turnstileToken=String(e.parameter.turnstileToken||"");
-  if(!email||!password){
-    return authResponse({type:"swgc-auth-response",ok:false,error:"Enter your email and password."});
-  }
-  if(password.length<8){
-    return authResponse({type:"swgc-auth-response",ok:false,error:"Password must be at least 8 characters."});
-  }
-  const captcha=validateTurnstile(turnstileToken);
-  if(!captcha.success){
-    return authResponse({type:"swgc-auth-response",ok:false,error:"CAPTCHA verification failed. Please try again."});
-  }
+  if(!email||!password)return {ok:false,error:"Enter your email and password."};
+  if(password.length<8)return {ok:false,error:"Password must be at least 8 characters."};
+  if(!validateTurnstile(turnstileToken).success)return {ok:false,error:"CAPTCHA verification failed. Please try again."};
   const users=getUsers();
   if(action==="signIn"){
-    if(users[email]){
-      return authResponse({type:"swgc-auth-response",ok:false,error:"An account with this email already exists. Use Log In instead."});
-    }
-    const salt=Utilities.getUuid();
-    users[email]={
-      salt,
-      passwordHash:hashPassword(password,salt),
+    if(users[email])return {ok:false,error:"An account with this email already exists. Use Log In instead."};
+    const user={
+      salt:Utilities.getUuid(),
       createdAt:new Date().toISOString()
     };
+    user.passwordHash=hashPassword(password,user.salt);
     const lock=LockService.getScriptLock();
     lock.waitLock(10000);
     try{
       const latestUsers=getUsers();
-      if(latestUsers[email]){
-        return authResponse({type:"swgc-auth-response",ok:false,error:"An account with this email already exists. Use Log In instead."});
-      }
-      latestUsers[email]=users[email];
+      if(latestUsers[email])return {ok:false,error:"An account with this email already exists. Use Log In instead."};
+      latestUsers[email]=user;
       saveUsers(latestUsers);
     }finally{
       lock.releaseLock();
     }
   }else if(action==="logIn"){
     const user=users[email];
-    if(!user||hashPassword(password,user.salt)!==user.passwordHash){
-      return authResponse({type:"swgc-auth-response",ok:false,error:"Invalid email or password."});
-    }
+    if(!user||hashPassword(password,user.salt)!==user.passwordHash)return {ok:false,error:"Invalid email or password."};
   }else{
-    return authResponse({type:"swgc-auth-response",ok:false,error:"Invalid authentication action."});
+    return {ok:false,error:"Invalid authentication action."};
   }
-  return authResponse({
-    type:"swgc-auth-response",
-    ok:true,
-    email,
-    token:createSession(email)
-  });
+  return {ok:true,email,token:createSession(email)};
 }
 
 function doPost(e){
   try{
     const action=e&&e.parameter&&e.parameter.action||"";
     if(action==="signIn"||action==="logIn"){
-      return handleAuth(e);
+      const nonce=String(e.parameter.nonce||"");
+      const result=handleAuth(e);
+      queueAuthResponse(nonce,result);
+      return ContentService.createTextOutput(JSON.stringify({ok:true,queued:true})).setMimeType(ContentService.MimeType.JSON);
     }
     const data={
       product:e.parameter.product||"SWGC Room Chats",
@@ -204,19 +209,12 @@ function doPost(e){
       language:e.parameter.language||"",
       createdAt:e.parameter.createdAt||new Date().toISOString()
     };
-    if(!data.reason||!data.details){
-      return ContentService.createTextOutput(JSON.stringify({ok:false,error:"Missing required fields"})).setMimeType(ContentService.MimeType.JSON);
-    }
-    if(data.reason==="Other"&&!data.otherReason){
-      return ContentService.createTextOutput(JSON.stringify({ok:false,error:"Missing other reason"})).setMimeType(ContentService.MimeType.JSON);
-    }
+    if(!data.reason||!data.details)return ContentService.createTextOutput(JSON.stringify({ok:false,error:"Missing required fields"})).setMimeType(ContentService.MimeType.JSON);
+    if(data.reason==="Other"&&!data.otherReason)return ContentService.createTextOutput(JSON.stringify({ok:false,error:"Missing other reason"})).setMimeType(ContentService.MimeType.JSON);
     const supportEmail=getSupportEmail();
-    if(!supportEmail){
-      return ContentService.createTextOutput(JSON.stringify({ok:false,error:"Support email is not configured"})).setMimeType(ContentService.MimeType.JSON);
-    }
+    if(!supportEmail)return ContentService.createTextOutput(JSON.stringify({ok:false,error:"Support email is not configured"})).setMimeType(ContentService.MimeType.JSON);
     const fileName="swgc-troubleshoot-request-"+Utilities.formatDate(new Date(),Session.getScriptTimeZone(),"yyyyMMdd-HHmmss")+".json";
-    const json=JSON.stringify(data,null,2);
-    const attachment=Utilities.newBlob(json,"application/json",fileName);
+    const attachment=Utilities.newBlob(JSON.stringify(data,null,2),"application/json",fileName);
     const subject="[SWGC Troubleshoot] "+data.reason;
     const body=[
       "A new SWGC Room Chats troubleshooting request was submitted.",
@@ -239,7 +237,7 @@ function doPost(e){
       name:"SWGC Room Chats Support"
     });
     return ContentService.createTextOutput(JSON.stringify({ok:true})).setMimeType(ContentService.MimeType.JSON);
-  }catch(error){
-    return authResponse({type:"swgc-auth-response",ok:false,error:"Backend error. Please try again."});
+  }catch{
+    return ContentService.createTextOutput(JSON.stringify({ok:false,error:"Backend error. Please try again."})).setMimeType(ContentService.MimeType.JSON);
   }
 }
