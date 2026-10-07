@@ -1,3 +1,5 @@
+import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
 const CONFIG_ENDPOINT="/api/config";
 const STORAGE_NAME="swgc-room-chats-name";
 const STORAGE_PROFILE="swgc-room-chats-profile";
@@ -47,7 +49,7 @@ let friends=[];
 let selectedProfileId="";
 const connectionDot=document.querySelector("#connectionDot");
 const connectionText=document.querySelector("#connectionText");
-let serverUrl="";
+let supabaseClient=null;
 let userId="";
 let profile=null;
 let messages=[];
@@ -125,14 +127,117 @@ function renderMessages(){
 }
 
 async function request(path,options={}){
- const response=await fetch(serverUrl+path,{
-  ...options,
-  headers:{"Content-Type":"application/json",...(options.headers||{})}
- });
- let result={};
- try{result=await response.json();}catch{}
- if(!response.ok)throw new Error(result.error||"Server request failed");
- return result;
+ const method=options.method||"GET";
+ const url=new URL(path,"https://swgc.local");
+ const body=options.body?JSON.parse(options.body):{};
+ let data=null;
+ let error=null;
+
+ if(url.pathname==="/api/profiles"&&method==="GET"){
+  const result=await supabaseClient.from("profiles").select("async function initializeSupabase(){
+ const configResponse=await fetch(CONFIG_ENDPOINT,{cache:"no-store"});
+ if(!configResponse.ok)throw new Error("Supabase is not configured");
+ const config=await configResponse.json();
+ const supabaseUrl=String(config.supabaseUrl||"").trim();
+ const publishableKey=String(config.supabasePublishableKey||"").trim();
+ if(!supabaseUrl||!publishableKey)throw new Error("Supabase is not configured");
+ supabaseClient=createClient(supabaseUrl,publishableKey);
+ let sessionResult=await supabaseClient.auth.getSession();
+ if(!sessionResult.data.session){
+  const signInResult=await supabaseClient.auth.signInAnonymously();
+  if(signInResult.error)throw signInResult.error;
+  sessionResult={data:{session:signInResult.data.session}};
+ }
+ userId=sessionResult.data.session.user.id;
+ localStorage.setItem("swgc-room-chats-user-id",userId);
+ const profiles=await request("/api/profiles");
+ profile=profiles.profiles.find(item=>item.id===userId)||null;
+ if(profile)localStorage.setItem(STORAGE_PROFILE,JSON.stringify(profile));
+ renderProfile();
+ if(!profile)openFirstProfile();
+ const history=await request("/api/messages?limit=100");
+ messages=history.messages||[];
+ renderMessages();
+ connectRealtime();
+ await loadFriends();
+}
+
+earchParams.get("username")||"").trim();
+  const result=await supabaseClient.from("profiles").select("id,username,display_name,note,avatar_url").eq("username_key",username.toLowerCase()).maybeSingle();
+  data={ok:true,profile:result.data||null};
+  error=result.error;
+ }else if(url.pathname==="/api/friends"&&method==="GET"){
+  const result=await supabaseClient.from("friend_requests").select("id,requester_id,recipient_id,status,created_at,updated_at").or("requester_id.eq."+userId+",recipient_id.eq."+userId).order("updated_at",{ascending:false});
+  if(!result.error){
+   const ids=[...new Set((result.data||[]).map(item=>item.requester_id===userId?item.recipient_id:item.requester_id))];
+   const profilesResult=ids.length?await supabaseClient.from("profiles").select("id,username,display_name,avatar_url").in("id",ids):{data:[],error:null};
+   const profilesMap=new Map((profilesResult.data||[]).map(item=>[item.id,item]));
+   data={ok:true,friends:(result.data||[]).map(item=>{
+    const otherId=item.requester_id===userId?item.recipient_id:item.requester_id;
+    const other=profilesMap.get(otherId);
+    return {id:item.id,user_id:otherId,status:item.status,username:other?.username||"",display_name:other?.display_name||"",avatar_url:other?.avatar_url||"",incoming:item.recipient_id===userId};
+   })};
+   error=profilesResult.error;
+  }else{
+   error=result.error;
+  }
+ }else if(url.pathname==="/api/friends/request"&&method==="POST"){
+  const requesterId=String(body.user_id||"");
+  const targetId=String(body.target_user_id||"");
+  if(!requesterId||!targetId||requesterId===targetId)throw new Error("Invalid friend request");
+  const existing=await supabaseClient.from("friend_requests").select("id,status,requester_id,recipient_id").or("and(requester_id.eq."+requesterId+",recipient_id.eq."+targetId+"),and(requester_id.eq."+targetId+",recipient_id.eq."+requesterId+")").in("status",["pending","accepted"]).limit(1).maybeSingle();
+  if(existing.error)throw existing.error;
+  if(existing.data?.status==="accepted")throw new Error("You are already friends.");
+  if(existing.data?.status==="pending")throw new Error("Friend request already exists.");
+  const result=await supabaseClient.from("friend_requests").insert({requester_id:requesterId,recipient_id:targetId,status:"pending"}).select("id,requester_id,recipient_id,status,created_at,updated_at").single();
+  data={ok:true,message:"Friend request sent.",friend:result.data};
+  error=result.error;
+ }else if(url.pathname==="/api/friends/respond"&&method==="POST"){
+  const action=body.action==="accept"?"accepted":body.action==="decline"?"declined":"";
+  if(!action)throw new Error("Invalid friend response");
+  const result=await supabaseClient.from("friend_requests").update({status:action}).eq("id",body.request_id).eq("recipient_id",body.user_id).select("id,requester_id,recipient_id,status,created_at,updated_at").single();
+  data={ok:true,friend:result.data};
+  error=result.error;
+ }else if(url.pathname==="/api/profiles"&&method==="POST"){
+  const id=String(body.id||"");
+  const username=String(body.username||"").trim().replace(/\s+/g," ");
+  const displayName=String(body.display_name||"").trim().replace(/\s+/g," ");
+  const note=String(body.note||"").trim().slice(0,1000);
+  const avatarUrl=String(body.avatar_url||"").trim().slice(0,6000000);
+  if(!id||username.length<2)throw new Error("Username is required");
+  const existing=await supabaseClient.from("profiles").select("id").eq("id",id).maybeSingle();
+  if(existing.error)throw existing.error;
+  const payload={id,username,display_name:displayName||username,note,avatar_url:avatarUrl};
+  const result=existing.data
+   ? await supabaseClient.from("profiles").update({username,display_name:payload.display_name,note,avatar_url:avatarUrl}).eq("id",id).select("id,username,display_name,note,avatar_url,created_at,updated_at").single()
+   : await supabaseClient.from("profiles").insert(payload).select("id,username,display_name,note,avatar_url,created_at,updated_at").single();
+  data={ok:true,profile:result.data};
+  error=result.error;
+ }else if(url.pathname==="/api/messages"&&method==="POST"){
+  const messageText=String(body.text||"").trim().slice(0,500);
+  const type=body.type==="sticker"?"sticker":"text";
+  if(!messageText)throw new Error("Message cannot be empty");
+  const currentProfile=profile;
+  if(!currentProfile)throw new Error("Profile not found");
+  const result=await supabaseClient.from("messages").insert({
+   user_id:currentProfile.id,
+   username:currentProfile.username,
+   display_name:currentProfile.display_name,
+   avatar_url:currentProfile.avatar_url,
+   text:messageText,
+   type
+  }).select("id,user_id,username,display_name,avatar_url,text,type,created_at").single();
+  data={ok:true,message:result.data};
+  error=result.error;
+ }else{
+  throw new Error("Unsupported request");
+ }
+
+ if(error){
+  const message=error.code==="23505"?"Name already exists. Choose another.":error.message||"Database request failed";
+  throw new Error(message);
+ }
+ return data;
 }
 
 async function initializeServer(){
@@ -160,38 +265,47 @@ async function initializeServer(){
  connectSocket();
 }
 
-function connectSocket(){
- const wsUrl=serverUrl.replace(/^http/,"ws")+"/ws";
- socket=new WebSocket(wsUrl);
- socket.addEventListener("open",()=>setConnection("Connected"));
- socket.addEventListener("message",event=>{
-  try{
-   const data=JSON.parse(event.data);
-   if(data.type==="message.created"){
-    if(!messages.some(item=>item.id===data.message.id)){
-     messages.push(data.message);
-     messages=messages.slice(-100);
-     renderMessages();
-    }
-   }
-   if(data.type==="friend.updated"&&data.friend){loadFriends();}
-   if((data.type==="profile.created"||data.type==="profile.updated")&&data.profile){
-    if(data.profile.id===userId){
-     profile=data.profile;
-     localStorage.setItem(STORAGE_PROFILE,JSON.stringify(profile));
-     localStorage.setItem(STORAGE_NAME,profile.username);
-     renderProfile();
-    }
-    messages=messages.map(item=>item.user_id===data.profile.id?{...item,username:data.profile.username,display_name:data.profile.display_name,avatar_url:data.profile.avatar_url}:item);
+function connectRealtime(){
+ if(!supabaseClient)return;
+ const channel=supabaseClient.channel("swgc-room");
+ channel
+  .on("postgres_changes",{event:"INSERT",schema:"public",table:"messages"},payload=>{
+   const message=payload.new;
+   if(message&&!messages.some(item=>item.id===message.id)){
+    messages.push(message);
+    messages=messages.slice(-100);
     renderMessages();
    }
-  }catch{}
- });
- socket.addEventListener("close",()=>{
-  setConnection("Reconnecting");
-  setTimeout(()=>connectSocket(),1500);
- });
- socket.addEventListener("error",()=>setConnection("Reconnecting"));
+  })
+  .on("postgres_changes",{event:"INSERT",schema:"public",table:"friend_requests"},()=>loadFriends())
+  .on("postgres_changes",{event:"UPDATE",schema:"public",table:"friend_requests"},()=>loadFriends())
+  .on("postgres_changes",{event:"INSERT",schema:"public",table:"profiles"},payload=>{
+   if(payload.new?.id===userId){
+    profile=payload.new;
+    localStorage.setItem(STORAGE_PROFILE,JSON.stringify(profile));
+    localStorage.setItem(STORAGE_NAME,profile.username);
+    renderProfile();
+   }
+   if(payload.new){
+    messages=messages.map(item=>item.user_id===payload.new.id?{...item,username:payload.new.username,display_name:payload.new.display_name,avatar_url:payload.new.avatar_url}:item);
+    renderMessages();
+   }
+  })
+  .on("postgres_changes",{event:"UPDATE",schema:"public",table:"profiles"},payload=>{
+   if(payload.new?.id===userId){
+    profile=payload.new;
+    localStorage.setItem(STORAGE_PROFILE,JSON.stringify(profile));
+    localStorage.setItem(STORAGE_NAME,profile.username);
+    renderProfile();
+   }
+   if(payload.new){
+    messages=messages.map(item=>item.user_id===payload.new.id?{...item,username:payload.new.username,display_name:payload.new.display_name,avatar_url:payload.new.avatar_url}:item);
+    renderMessages();
+   }
+  })
+  .subscribe(state=>{
+   setConnection(state==="SUBSCRIBED"?"Connected":"Connecting");
+  });
 }
 
 async function checkUsername(value,first=false){
@@ -456,10 +570,10 @@ async function addFriend(){
 async function start(){
  setConnection("Connecting");
  try{
-  await initializeServer();
+  await initializeSupabase();
  }catch(error){
   console.error(error);
-  setConnection("Server offline");
+  setConnection("Database offline");
   profile=JSON.parse(localStorage.getItem(STORAGE_PROFILE)||"null");
   if(profile)renderProfile();else openFirstProfile();
   messages=[];
