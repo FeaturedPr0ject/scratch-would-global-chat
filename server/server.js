@@ -45,7 +45,7 @@ function readBody(request){
   let body="";
   request.on("data",chunk=>{
    body+=chunk;
-   if(body.length>200000)request.destroy();
+   if(body.length>7000000){request.destroy();return;}
   });
   request.on("end",()=>{
    try{resolve(body?JSON.parse(body):{});}catch{reject(new Error("Invalid JSON"));}
@@ -123,16 +123,17 @@ const server=http.createServer(async(request,response)=>{
    const username=clean(body.username,24);
    const displayName=clean(body.display_name,32);
    const note=String(body.note??"").trim().slice(0,1000);
-   const avatarUrl=clean(body.avatar_url,2000);
+   const avatarUrl=String(body.avatar_url??"").trim().slice(0,6000000);
    if(!id||username.length<2){
     sendJson(response,400,{ok:false,error:"Username is required"});
     return;
    }
-   if(findProfile(username)){
+   const existing=data.profiles.find(item=>item.id===id);
+   const usernameOwner=findProfile(username);
+   if(usernameOwner&&usernameOwner.id!==id){
     sendJson(response,409,{ok:false,error:"Name already exists. Choose another."});
     return;
    }
-   const existing=data.profiles.find(item=>item.id===id);
    if(existing){
     existing.username=username;
     existing.username_key=usernameKey(username);
