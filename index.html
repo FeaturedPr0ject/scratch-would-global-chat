@@ -80,7 +80,7 @@
 <span id="usernameCheck" class="field-status"></span>
 </div>
 <label for="displayNameInput">Display name</label>
-<input id="displayNameInput" maxlength="32" autocomplete="name" placeholder="Fake name or display name">
+<input id="displayNameInput" maxlength="32" autocomplete="name" placeholder="Fake name or display name (optional)">
 <label for="profileNoteInput">Profile note</label>
 <textarea id="profileNoteInput" maxlength="1000" rows="7" placeholder="Write something about yourself..."></textarea>
 <div id="profileMessage" class="profile-message"></div>
@@ -103,13 +103,13 @@
 <div class="modal-card">
 <div class="modal-logo"><img class="logo-image" src="./assests/logo.png" alt="SWG"></div>
 <h2>Choose your username</h2>
-<p>Your username must be unique. You can use a different display name.</p>
+<p>Your username must be unique. Display name is optional. If empty, your username will be shown.</p>
 <input id="firstUsernameInput" maxlength="24" autocomplete="nickname" placeholder="Unique username">
 <div id="firstUsernameCheck" class="field-status first-check"></div>
-<input id="firstDisplayNameInput" maxlength="32" autocomplete="name" placeholder="Display name">
+<input id="firstDisplayNameInput" maxlength="32" autocomplete="name" placeholder="Display name (optional)">
 <button id="joinRoomButton" class="primary-button" type="button">Join Room</button>
 </div>
 </div>
-<script type="module" src="app.js"></script>
+<script type="module" src="app.js?v=20261007-optional-display"></script>
 </body>
 </html>
