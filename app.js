@@ -1,15 +1,4 @@
 const STORAGE_NAME="swgc-room-chats-name";
-const SESSION_COOKIE="swgc_session";
-function getSession(){
- const raw=document.cookie.split("; ").find(item=>item.startsWith(SESSION_COOKIE+"="))?.split("=").slice(1).join("=")||"";
- if(!raw)return null;
- try{
-  const session=JSON.parse(decodeURIComponent(escape(atob(raw))));
-  if(!session.expiresAt||Date.now()>=session.expiresAt){location.replace("./login.html");return null;}
-  return session;
- }catch{location.replace("./login.html");return null;}
-}
-const session=getSession();
 const messagesEl=document.querySelector("#messages");
 const input=document.querySelector("#messageInput");
 const sendButton=document.querySelector("#sendButton");
@@ -22,13 +11,13 @@ const profileName=document.querySelector("#profileName");
 const profileAvatar=document.querySelector("#profileAvatar");
 const connectionDot=document.querySelector("#connectionDot");
 const connectionText=document.querySelector("#connectionText");
-let username=localStorage.getItem(STORAGE_NAME)||session?.email?.split("@")[0]||"";
+let username=localStorage.getItem(STORAGE_NAME)||"";
 let messages=JSON.parse(localStorage.getItem("swgc-room-chats-messages")||"[]");
 function escapeText(value){
  return String(value).replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[char]));
 }
 function initials(name){
- const parts=name.trim().split(/\s+/).filter(Boolean);
+ const parts=name.trim().split(/s+/).filter(Boolean);
  return (parts.length>1?parts[0][0]+parts[1][0]:name.slice(0,2)).toUpperCase();
 }
 function setConnection(online){
@@ -54,7 +43,7 @@ function openName(){
  setTimeout(()=>nameInput.focus(),20);
 }
 function saveUsername(){
- const value=nameInput.value.trim().replace(/\s+/g," ");
+ const value=nameInput.value.trim().replace(/s+/g," ");
  if(value.length<2||value.length>24)return;
  username=value;
  localStorage.setItem(STORAGE_NAME,username);
