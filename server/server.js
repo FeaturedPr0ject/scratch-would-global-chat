@@ -124,7 +124,7 @@ const server=http.createServer(async(request,response)=>{
    const displayName=clean(body.display_name,32);
    const note=String(body.note??"").trim().slice(0,1000);
    const avatarUrl=clean(body.avatar_url,2000);
-   if(!id||username.length<2||displayName.length<2){
+   if(!id||username.length<2){
     sendJson(response,400,{ok:false,error:"Username and display name are required"});
     return;
    }
@@ -149,7 +149,7 @@ const server=http.createServer(async(request,response)=>{
     id,
     username,
     username_key:usernameKey(username),
-    display_name:displayName,
+    display_name:displayName||username,
     note,
     avatar_url:avatarUrl,
     created_at:new Date().toISOString(),
