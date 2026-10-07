@@ -50,6 +50,8 @@ const chatLayout=document.querySelector(".chat-layout");
 const scrollToBottomButton=document.querySelector("#scrollToBottom");
 let friends=[];
 let selectedProfileId="";
+const onlineUsers=new Set();
+let presenceChannel=null;
 const connectionDot=document.querySelector("#connectionDot");
 const connectionText=document.querySelector("#connectionText");
 let supabaseClient=null;
@@ -333,6 +335,22 @@ function connectRealtime(){
   .subscribe(state=>{
    setConnection(state==="SUBSCRIBED"?"Connected":"Connecting");
   });
+ presenceChannel=supabaseClient.channel("swgc-presence",{config:{presence:{key:userId}}});
+ const refreshPresence=()=>{
+  onlineUsers.clear();
+  const state=presenceChannel.presenceState();
+  Object.keys(state||{}).forEach(key=>onlineUsers.add(key));
+  renderFriendList();
+ };
+ presenceChannel
+  .on("presence",{event:"sync"},refreshPresence)
+  .on("presence",{event:"join"},refreshPresence)
+  .on("presence",{event:"leave"},refreshPresence)
+  .subscribe(async state=>{
+   if(state==="SUBSCRIBED"){
+    await presenceChannel.track({user_id:userId,online_at:new Date().toISOString()});
+   }
+  });
 }
 
 async function checkUsername(value,first=false){
@@ -574,6 +592,7 @@ async function loadFriends(){
 }
 
 function renderFriendList(){
+ friends=friends.map(item=>({...item,online:onlineUsers.has(item.user_id)}));
  const incoming=friends.filter(item=>item.status==="pending"&&item.incoming);
  const accepted=friends.filter(item=>item.status==="accepted");
  const incomingMarkup=incoming.map(item=>'<div class="friend-request"><button class="friend-item" type="button" data-friend-id="'+escapeText(item.user_id)+'">'+avatarMarkup(item,"friend-avatar")+'<span><strong>'+escapeText(item.display_name||item.username)+ownerBadgeMarkup(item.user_id,item.user_number)+'</strong><small>@'+escapeText(item.username)+(item.user_number?" · ID #"+item.user_number:"")+'</small></span></button><div class="friend-request-actions"><button type="button" data-accept-id="'+escapeText(item.id)+'">Accept</button><button type="button" data-decline-id="'+escapeText(item.id)+'">Decline</button></div></div>').join("");
