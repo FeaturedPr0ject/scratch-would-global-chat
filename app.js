@@ -134,40 +134,25 @@ async function request(path,options={}){
  let error=null;
 
  if(url.pathname==="/api/profiles"&&method==="GET"){
-  const result=await supabaseClient.from("profiles").select("async function initializeSupabase(){
- const configResponse=await fetch(CONFIG_ENDPOINT,{cache:"no-store"});
- if(!configResponse.ok)throw new Error("Supabase is not configured");
- const config=await configResponse.json();
- const supabaseUrl=String(config.supabaseUrl||"").trim();
- const publishableKey=String(config.supabasePublishableKey||"").trim();
- if(!supabaseUrl||!publishableKey)throw new Error("Supabase is not configured");
- supabaseClient=createClient(supabaseUrl,publishableKey);
- let sessionResult=await supabaseClient.auth.getSession();
- if(!sessionResult.data.session){
-  const signInResult=await supabaseClient.auth.signInAnonymously();
-  if(signInResult.error)throw signInResult.error;
-  sessionResult={data:{session:signInResult.data.session}};
- }
- userId=sessionResult.data.session.user.id;
- localStorage.setItem("swgc-room-chats-user-id",userId);
- const profiles=await request("/api/profiles");
- profile=profiles.profiles.find(item=>item.id===userId)||null;
- if(profile)localStorage.setItem(STORAGE_PROFILE,JSON.stringify(profile));
- renderProfile();
- if(!profile)openFirstProfile();
- const history=await request("/api/messages?limit=100");
- messages=history.messages||[];
- renderMessages();
- connectRealtime();
- await loadFriends();
-}
-
-earchParams.get("username")||"").trim();
+  const result=await supabaseClient.from("profiles").select("id,username,display_name,note,avatar_url,created_at,updated_at").order("created_at",{ascending:true});
+  data={ok:true,profiles:result.data||[]};
+  error=result.error;
+ }else if(url.pathname==="/api/username"&&method==="GET"){
+  const username=new URLSearchParams(url.search).get("username")?.trim()||"";
+  const result=await supabaseClient.from("profiles").select("id").eq("username_key",username.toLowerCase()).maybeSingle();
+  data={ok:true,taken:Boolean(result.data)};
+  error=result.error;
+ }else if(url.pathname==="/api/users/search"&&method==="GET"){
+  const username=new URLSearchParams(url.search).get("username")?.trim()||"";
   const result=await supabaseClient.from("profiles").select("id,username,display_name,note,avatar_url").eq("username_key",username.toLowerCase()).maybeSingle();
   data={ok:true,profile:result.data||null};
   error=result.error;
+ }else if(url.pathname==="/api/messages"&&method==="GET"){
+  const result=await supabaseClient.from("messages").select("id,user_id,username,display_name,avatar_url,text,type,created_at").order("created_at",{ascending:false}).limit(100);
+  data={ok:true,messages:(result.data||[]).reverse()};
+  error=result.error;
  }else if(url.pathname==="/api/friends"&&method==="GET"){
-  const result=await supabaseClient.from("friend_requests").select("id,requester_id,recipient_id,status,created_at,updated_at").or("requester_id.eq."+userId+",recipient_id.eq."+userId).order("updated_at",{ascending:false});
+  const result=await supabaseClient.from("friend_requests").select("id,requester_id,recipient_id,status,created_at,updated_at").or("requester_id.eq."+userId+",recipient_id.eq."+userId).in("status",["pending","accepted"]).order("updated_at",{ascending:false});
   if(!result.error){
    const ids=[...new Set((result.data||[]).map(item=>item.requester_id===userId?item.recipient_id:item.requester_id))];
    const profilesResult=ids.length?await supabaseClient.from("profiles").select("id,username,display_name,avatar_url").in("id",ids):{data:[],error:null};
@@ -217,13 +202,12 @@ earchParams.get("username")||"").trim();
   const messageText=String(body.text||"").trim().slice(0,500);
   const type=body.type==="sticker"?"sticker":"text";
   if(!messageText)throw new Error("Message cannot be empty");
-  const currentProfile=profile;
-  if(!currentProfile)throw new Error("Profile not found");
+  if(!profile)throw new Error("Profile not found");
   const result=await supabaseClient.from("messages").insert({
-   user_id:currentProfile.id,
-   username:currentProfile.username,
-   display_name:currentProfile.display_name,
-   avatar_url:currentProfile.avatar_url,
+   user_id:profile.id,
+   username:profile.username,
+   display_name:profile.display_name,
+   avatar_url:profile.avatar_url,
    text:messageText,
    type
   }).select("id,user_id,username,display_name,avatar_url,text,type,created_at").single();
@@ -240,20 +224,22 @@ earchParams.get("username")||"").trim();
  return data;
 }
 
-async function initializeServer(){
+async function initializeSupabase(){
  const configResponse=await fetch(CONFIG_ENDPOINT,{cache:"no-store"});
- if(!configResponse.ok)throw new Error("Chat server is not configured");
+ if(!configResponse.ok)throw new Error("Supabase is not configured");
  const config=await configResponse.json();
- serverUrl=String(config.chatServerUrl||"").replace(/\/$/,"");
- if(!serverUrl)throw new Error("Chat server is not configured");
- let savedId=localStorage.getItem("swgc-room-chats-user-id")||"";
- if(savedId){
-  userId=savedId;
- }else{
-  const session=await request("/api/session",{method:"POST",body:"{}"});
-  userId=session.userId;
-  localStorage.setItem("swgc-room-chats-user-id",userId);
+ const supabaseUrl=String(config.supabaseUrl||"").trim();
+ const publishableKey=String(config.supabasePublishableKey||"").trim();
+ if(!supabaseUrl||!publishableKey)throw new Error("Supabase is not configured");
+ supabaseClient=createClient(supabaseUrl,publishableKey);
+ let sessionResult=await supabaseClient.auth.getSession();
+ if(!sessionResult.data.session){
+  const signInResult=await supabaseClient.auth.signInAnonymously();
+  if(signInResult.error)throw signInResult.error;
+  sessionResult={data:{session:signInResult.data.session}};
  }
+ userId=sessionResult.data.session.user.id;
+ localStorage.setItem("swgc-room-chats-user-id",userId);
  const profiles=await request("/api/profiles");
  profile=profiles.profiles.find(item=>item.id===userId)||null;
  if(profile)localStorage.setItem(STORAGE_PROFILE,JSON.stringify(profile));
@@ -262,7 +248,8 @@ async function initializeServer(){
  const history=await request("/api/messages?limit=100");
  messages=history.messages||[];
  renderMessages();
- connectSocket();
+ connectRealtime();
+ await loadFriends();
 }
 
 function connectRealtime(){
