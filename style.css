@@ -96,7 +96,7 @@ button{cursor:pointer}
 .auth-form label{font-size:12px;font-weight:900;color:#222;margin-top:4px}
 .auth-form input{height:48px;border:2px solid #e5e5e8;border-radius:13px;background:#fff;color:#111;padding:0 13px;outline:none}
 .auth-form input:focus{border-color:var(--orange);box-shadow:0 0 0 4px rgba(255,173,0,.13)}
-.turnstile-wrap{min-height:65px;display:grid;place-items:center;margin:7px 0}
+.turnstile-wrap{min-height:0;display:block;margin:0}
 .auth-message{min-height:18px;margin:0;color:#a34e00;font-size:12px;text-align:center}
 .auth-foot{display:flex;justify-content:space-between;gap:12px;margin-top:17px;color:#666;font-size:11px}
 .auth-foot a{color:#a45e00;font-weight:800;text-decoration:none}
