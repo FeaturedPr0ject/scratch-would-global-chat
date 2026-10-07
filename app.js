@@ -17,7 +17,7 @@ function escapeText(value){
  return String(value).replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[char]));
 }
 function initials(name){
- const parts=name.trim().split(/s+/).filter(Boolean);
+ const parts=name.trim().split(/\s+/).filter(Boolean);
  return (parts.length>1?parts[0][0]+parts[1][0]:name.slice(0,2)).toUpperCase();
 }
 function setConnection(online){
@@ -43,7 +43,7 @@ function openName(){
  setTimeout(()=>nameInput.focus(),20);
 }
 function saveUsername(){
- const value=nameInput.value.trim().replace(/s+/g," ");
+ const value=nameInput.value.trim().replace(/\s+/g," ");
  if(value.length<2||value.length>24)return;
  username=value;
  localStorage.setItem(STORAGE_NAME,username);
