@@ -5,6 +5,18 @@ const otherReasonInput=document.querySelector("#otherReasonInput");
 const requestMessage=document.querySelector("#requestMessage");
 const submitButton=form.querySelector("button[type=submit]");
 const detailsInput=document.querySelector("#detailsInput");
+
+const params=new URLSearchParams(location.search);
+const presetReason=params.get("reason");
+const presetError=params.get("error");
+if(presetReason){
+ reasonInput.value=presetReason;
+ reasonInput.dispatchEvent(new Event("change"));
+}
+if(presetError){
+ const prefix="Error code: "+presetError;
+ detailsInput.value=detailsInput.value?prefix+"\\n\\n"+detailsInput.value:prefix;
+}
 const ENDPOINT="https://script.google.com/macros/s/AKfycbw7x_9kSRpck2bO_iEOC5M13pU07N_q0VVbVa6BaQeAgVfbe_cIs139Vv_7XP6g1pQo/exec";
 
 reasonInput.addEventListener("change",()=>{
