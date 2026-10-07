@@ -1,12 +1,10 @@
 # SWGC Room Chats
 
-A dark SWGC Room Chats interface using the SWG orange and white visual style.
+A SWGC Room Chats interface using the SWG orange and white visual style.
 
 ## Current Build
 
-The frontend is ready for GitHub Pages.
-
-The current build includes:
+The frontend includes:
 
 - SWGC Room Chats interface
 - SWG logo branding
@@ -15,14 +13,25 @@ The current build includes:
 - Message composer
 - Responsive mobile layout
 - Local demo message storage
-- Sign In and Log In authentication tabs
+- Server-side troubleshooting email delivery
+- No client-side authentication
 
-## Realtime Backend
+## Troubleshooting Email
 
-GitHub Pages only hosts static files. To make messages global and realtime for every visitor, connect a realtime backend such as Firebase Realtime Database or Supabase.
+The browser sends troubleshooting requests only to the same-origin API endpoint:
 
-The current frontend intentionally keeps the backend layer separate so a realtime service can be added without rebuilding the UI.
+`/api/troubleshoot`
 
-## GitHub Pages
+The support Gmail address and email provider API key stay on the server in Vercel Environment Variables.
 
-Enable GitHub Pages from the repository settings and select the main branch as the deployment source.
+Required server environment variables:
+
+- `SUPPORT_EMAIL`
+- `RESEND_API_KEY`
+- `RESEND_FROM`
+
+The browser never receives the support email address or email API key.
+
+## Deployment
+
+Deploy the repository with Vercel and configure the environment variables before testing the Troubleshoot form.
