@@ -156,6 +156,10 @@ function drawAvatarCrop(){
  const scale=baseScale*avatarCropScale;
  const width=image.width*scale;
  const height=image.height*scale;
+ const maxOffsetX=Math.max(0,(width-size)/2);
+ const maxOffsetY=Math.max(0,(height-size)/2);
+ avatarCropOffsetX=Math.max(-maxOffsetX,Math.min(maxOffsetX,avatarCropOffsetX));
+ avatarCropOffsetY=Math.max(-maxOffsetY,Math.min(maxOffsetY,avatarCropOffsetY));
  const x=(size-width)/2+avatarCropOffsetX;
  const y=(size-height)/2+avatarCropOffsetY;
  ctx.drawImage(image,x,y,width,height);
