@@ -505,8 +505,8 @@ messagesEl.addEventListener("click",event=>{
  const button=event.target.closest("[data-user-id]");
  if(button)openPublicProfile(button.dataset.userId);
 });
-profileModal.addEventListener("click",event=>{if(event.target===profileModal)closeProfileModal()});
-userProfileModal.addEventListener("click",event=>{if(event.target===userProfileModal)userProfileModal.classList.add("hidden")});
+
+
 
 async function loadFriends(){
  try{
