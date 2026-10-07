@@ -5,10 +5,9 @@ export default function handler(request,response){
  }
  const supabaseUrl=process.env.SUPABASE_URL||"";
  const supabasePublishableKey=process.env.SUPABASE_PUBLISHABLE_KEY||"";
- const ownerUserId=process.env.SWGC_OWNER_USER_ID||"";
  if(!supabaseUrl||!supabasePublishableKey){
   response.status(503).json({ok:false,error:"Supabase is not configured"});
   return;
  }
- response.status(200).json({ok:true,supabaseUrl,supabasePublishableKey,ownerUserId});
+ response.status(200).json({ok:true,supabaseUrl,supabasePublishableKey});
 }
