@@ -32,11 +32,11 @@ const profileDisplayName=document.querySelector("#profileDisplayName");
 const profileUsername=document.querySelector("#profileUsername");
 const connectionDot=document.querySelector("#connectionDot");
 const connectionText=document.querySelector("#connectionText");
-let supabase=null;
-let user=null;
+let serverUrl="";
+let userId="";
 let profile=null;
 let messages=[];
-let realtimeChannel=null;
+let socket=null;
 let avatarFile=null;
 let usernameTimer=null;
 let savingProfile=false;
@@ -48,10 +48,8 @@ function escapeText(value){
 function safeUrl(value){
  try{
   const url=new URL(value);
-  return url.protocol==="http:"||url.protocol==="https:"?url.href:"";
- }catch{
-  return "";
- }
+  return url.protocol==="http:"||url.protocol==="https:"||url.protocol==="data:"?url.href:"";
+ }catch{return "";}
 }
 
 function initials(name){
@@ -104,76 +102,73 @@ function renderMessages(){
  if(wasNearBottom)messagesEl.scrollTop=messagesEl.scrollHeight;
 }
 
-async function loadConfig(){
- const response=await fetch(CONFIG_ENDPOINT,{cache:"no-store"});
- if(!response.ok)throw new Error("Supabase configuration is missing");
- return response.json();
+async function request(path,options={}){
+ const response=await fetch(serverUrl+path,{
+  ...options,
+  headers:{"Content-Type":"application/json",...(options.headers||{})}
+ });
+ let result={};
+ try{result=await response.json();}catch{}
+ if(!response.ok)throw new Error(result.error||"Server request failed");
+ return result;
 }
 
-async function initializeRealtime(){
- const config=await loadConfig();
- const module=await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm");
- supabase=module.createClient(config.url,config.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
- const sessionResult=await supabase.auth.getSession();
- if(!sessionResult.data.session){
-  const signIn=await supabase.auth.signInAnonymously();
-  if(signIn.error)throw signIn.error;
-  user=signIn.data.user;
+async function initializeServer(){
+ const configResponse=await fetch(CONFIG_ENDPOINT,{cache:"no-store"});
+ if(!configResponse.ok)throw new Error("Chat server is not configured");
+ const config=await configResponse.json();
+ serverUrl=String(config.chatServerUrl||"").replace(/\/$/,"");
+ if(!serverUrl)throw new Error("Chat server is not configured");
+ let savedId=localStorage.getItem("swgc-room-chats-user-id")||"";
+ if(savedId){
+  userId=savedId;
  }else{
-  user=sessionResult.data.session.user;
+  const session=await request("/api/session",{method:"POST",body:"{}"});
+  userId=session.userId;
+  localStorage.setItem("swgc-room-chats-user-id",userId);
  }
- if(!user)throw new Error("Could not create a chat session");
- await loadProfile();
- await loadMessages();
- subscribeRealtime();
- setConnection("Connected");
-}
-
-async function loadProfile(){
- const result=await supabase.from("profiles").select("*").eq("id",user.id).maybeSingle();
- if(result.error)throw result.error;
- profile=result.data;
- if(profile)localStorage.setItem(STORAGE_NAME,profile.username);
+ const profiles=await request("/api/profiles");
+ profile=profiles.profiles.find(item=>item.id===userId)||null;
+ if(profile)localStorage.setItem(STORAGE_PROFILE,JSON.stringify(profile));
  renderProfile();
  if(!profile)openFirstProfile();
-}
-
-async function loadMessages(){
- const result=await supabase.from("messages").select("*").order("created_at",{ascending:false}).limit(100);
- if(result.error)throw result.error;
- messages=(result.data||[]).reverse();
+ const history=await request("/api/messages?limit=100");
+ messages=history.messages||[];
  renderMessages();
+ connectSocket();
 }
 
-function subscribeRealtime(){
- realtimeChannel=supabase.channel("swgc-room-realtime")
- .on("postgres_changes",{event:"INSERT",schema:"public",table:"messages"},payload=>{
-  if(messages.some(item=>String(item.id)===String(payload.new.id)))return;
-  messages.push(payload.new);
-  messages=messages.slice(-100);
-  renderMessages();
- })
- .on("postgres_changes",{event:"INSERT",schema:"public",table:"profiles"},payload=>{
-  if(payload.new.id===user.id){
-   profile=payload.new;
-   renderProfile();
-  }
- })
- .on("postgres_changes",{event:"UPDATE",schema:"public",table:"profiles"},payload=>{
-  if(payload.new.id===user.id){
-   profile=payload.new;
-   renderProfile();
-  }
-  messages=messages.map(item=>item.user_id===payload.new.id?{...item,display_name:payload.new.display_name,avatar_url:payload.new.avatar_url,username:payload.new.username}:item);
-  renderMessages();
- })
- .subscribe((status,error)=>{
-  if(status==="SUBSCRIBED")setConnection("Connected");
-  if(status==="CHANNEL_ERROR"||status==="TIMED_OUT"){
-   console.error(status,error);
-   setConnection("Realtime retrying");
-  }
+function connectSocket(){
+ const wsUrl=serverUrl.replace(/^http/,"ws")+"/ws";
+ socket=new WebSocket(wsUrl);
+ socket.addEventListener("open",()=>setConnection("Connected"));
+ socket.addEventListener("message",event=>{
+  try{
+   const data=JSON.parse(event.data);
+   if(data.type==="message.created"){
+    if(!messages.some(item=>item.id===data.message.id)){
+     messages.push(data.message);
+     messages=messages.slice(-100);
+     renderMessages();
+    }
+   }
+   if((data.type==="profile.created"||data.type==="profile.updated")&&data.profile){
+    if(data.profile.id===userId){
+     profile=data.profile;
+     localStorage.setItem(STORAGE_PROFILE,JSON.stringify(profile));
+     localStorage.setItem(STORAGE_NAME,profile.username);
+     renderProfile();
+    }
+    messages=messages.map(item=>item.user_id===data.profile.id?{...item,username:data.profile.username,display_name:data.profile.display_name,avatar_url:data.profile.avatar_url}:item);
+    renderMessages();
+   }
+  }catch{}
  });
+ socket.addEventListener("close",()=>{
+  setConnection("Reconnecting");
+  setTimeout(()=>connectSocket(),1500);
+ });
+ socket.addEventListener("error",()=>setConnection("Reconnecting"));
 }
 
 async function checkUsername(value,first=false){
@@ -184,22 +179,19 @@ async function checkUsername(value,first=false){
   output.className="field-status";
   return false;
  }
- if(!supabase){
-  output.textContent="";
-  return true;
- }
  output.textContent="Checking...";
  output.className="field-status checking";
- const result=await supabase.from("profiles").select("id").ilike("username",clean).limit(1);
- if(result.error){
-  output.textContent="Could not check";
+ try{
+  const result=await request("/api/username?username="+encodeURIComponent(clean));
+  const taken=result.taken&&clean.toLowerCase()!==(profile?.username||"").toLowerCase();
+  output.textContent=taken?"Name already exists. Choose another.":"Username available";
+  output.className="field-status "+(taken?"taken":"available");
+  return !taken;
+ }catch{
+  output.textContent="Server unavailable";
   output.className="field-status taken";
   return false;
  }
- const taken=Boolean(result.data?.length&&result.data[0].id!==user?.id);
- output.textContent=taken?"Name already exists. Choose another.":"Username available";
- output.className="field-status "+(taken?"taken":"available");
- return !taken;
 }
 
 function scheduleUsernameCheck(first=false){
@@ -222,10 +214,7 @@ function closeProfileModal(){
 }
 
 function openMyProfile(){
- if(!profile){
-  openFirstProfile();
-  return;
- }
+ if(!profile){openFirstProfile();return;}
  usernameInput.value=profile.username;
  displayNameInput.value=profile.display_name;
  profileNoteInput.value=profile.note||"";
@@ -237,19 +226,17 @@ function openMyProfile(){
  profileModal.classList.remove("hidden");
 }
 
-function showProfileMessage(message){
- profileMessage.textContent=message;
-}
+function showProfileMessage(message){profileMessage.textContent=message;}
 
-async function uploadAvatar(){
+async function avatarDataUrl(){
  if(!avatarFile)return profile?.avatar_url||"";
  if(avatarFile.size>4*1024*1024)throw new Error("Avatar must be smaller than 4 MB");
- if(!avatarFile.type.startsWith("image/"))throw new Error("Choose an image file");
- const extension=(avatarFile.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"")||"jpg";
- const path=user.id+"/"+crypto.randomUUID()+"."+extension;
- const result=await supabase.storage.from("avatars").upload(path,avatarFile,{contentType:avatarFile.type,cacheControl:"3600",upsert:false});
- if(result.error)throw result.error;
- return supabase.storage.from("avatars").getPublicUrl(path).data.publicUrl;
+ return new Promise((resolve,reject)=>{
+  const reader=new FileReader();
+  reader.onload=()=>resolve(String(reader.result));
+  reader.onerror=()=>reject(new Error("Could not read avatar"));
+  reader.readAsDataURL(avatarFile);
+ });
 }
 
 async function saveProfile(){
@@ -257,135 +244,86 @@ async function saveProfile(){
  const username=usernameInput.value.trim().replace(/\s+/g," ");
  const displayName=displayNameInput.value.trim().replace(/\s+/g," ");
  const note=profileNoteInput.value.trim();
- if(username.length<2||username.length>24){
-  showProfileMessage("Username must be 2-24 characters.");
-  return;
- }
- if(displayName.length<2||displayName.length>32){
-  showProfileMessage("Display name must be 2-32 characters.");
-  return;
- }
- if(note.length>1000){
-  showProfileMessage("Profile note is too long.");
-  return;
- }
- if(!supabase){
-  profile={...(profile||{}),username,display_name:displayName,note,avatar_url:profile?.avatar_url||""};
-  localStorage.setItem(STORAGE_NAME,username);
-  localStorage.setItem(STORAGE_PROFILE,JSON.stringify(profile));
-  renderProfile();
-  closeProfileModal();
-  return;
- }
+ if(username.length<2||username.length>24){showProfileMessage("Username must be 2-24 characters.");return;}
+ if(displayName.length<2||displayName.length>32){showProfileMessage("Display name must be 2-32 characters.");return;}
+ if(note.length>1000){showProfileMessage("Profile note is too long.");return;}
  savingProfile=true;
  saveProfileButton.disabled=true;
  showProfileMessage("Saving...");
  try{
-  const available=await checkUsername(username);
-  if(!available)throw new Error("Name already exists. Choose another.");
-  const avatarUrl=await uploadAvatar();
-  const result=await supabase.from("profiles").upsert({id:user.id,username,display_name:displayName,note,avatar_url:avatarUrl},{onConflict:"id"}).select().single();
-  if(result.error){
-   if(result.error.code==="23505")throw new Error("Name already exists. Choose another.");
-   throw result.error;
-  }
-  profile=result.data;
+  if(!await checkUsername(username))throw new Error("Name already exists. Choose another.");
+  const avatarUrl=await avatarDataUrl();
+  const result=await request("/api/profiles",{method:"POST",body:JSON.stringify({id:userId,username,display_name:displayName,note,avatar_url:avatarUrl})});
+  profile=result.profile;
   localStorage.setItem(STORAGE_NAME,profile.username);
+  localStorage.setItem(STORAGE_PROFILE,JSON.stringify(profile));
   renderProfile();
   closeProfileModal();
   nameModal.classList.add("hidden");
- }catch(error){
-  showProfileMessage(error instanceof Error?error.message:"Could not save profile.");
- }finally{
-  savingProfile=false;
-  saveProfileButton.disabled=false;
- }
+ }catch(error){showProfileMessage(error instanceof Error?error.message:"Could not save profile.");}
+ finally{savingProfile=false;saveProfileButton.disabled=false;}
 }
 
 async function joinRoom(){
  const username=firstUsernameInput.value.trim().replace(/\s+/g," ");
  const displayName=firstDisplayNameInput.value.trim().replace(/\s+/g," ");
- if(username.length<2||username.length>24){
-  firstUsernameCheck.textContent="Use 2-24 characters";
-  firstUsernameCheck.className="field-status taken first-check";
-  return;
- }
- if(displayName.length<2||displayName.length>32){
-  firstUsernameCheck.textContent="Choose a display name";
-  firstUsernameCheck.className="field-status taken first-check";
-  return;
- }
- if(!supabase){
-  profile={username,display_name:displayName,note:"",avatar_url:""};
-  localStorage.setItem(STORAGE_NAME,username);
-  localStorage.setItem(STORAGE_PROFILE,JSON.stringify(profile));
-  renderProfile();
-  nameModal.classList.add("hidden");
-  input.focus();
-  return;
- }
+ if(username.length<2||username.length>24){firstUsernameCheck.textContent="Use 2-24 characters";firstUsernameCheck.className="field-status taken first-check";return;}
+ if(displayName.length<2||displayName.length>32){firstUsernameCheck.textContent="Choose a display name";firstUsernameCheck.className="field-status taken first-check";return;}
  joinRoomButton.disabled=true;
  try{
-  const available=await checkUsername(username,true);
-  if(!available)return;
-  const result=await supabase.from("profiles").insert({id:user.id,username,display_name:displayName,note:"",avatar_url:""}).select().single();
-  if(result.error){
-   if(result.error.code==="23505")throw new Error("Name already exists. Choose another.");
-   throw result.error;
-  }
-  profile=result.data;
+  if(!await checkUsername(username,true))return;
+  const result=await request("/api/profiles",{method:"POST",body:JSON.stringify({id:userId,username,display_name:displayName,note:"",avatar_url:""})});
+  profile=result.profile;
   localStorage.setItem(STORAGE_NAME,profile.username);
+  localStorage.setItem(STORAGE_PROFILE,JSON.stringify(profile));
   renderProfile();
   nameModal.classList.add("hidden");
   input.focus();
  }catch(error){
   firstUsernameCheck.textContent=error instanceof Error?error.message:"Could not create profile.";
   firstUsernameCheck.className="field-status taken first-check";
- }finally{
-  joinRoomButton.disabled=false;
- }
+ }finally{joinRoomButton.disabled=false;}
 }
 
 async function sendMessage(){
  const text=input.value.trim();
- if(!text||!profile||!supabase||!user)return;
+ if(!text||!profile||!userId)return;
  sendButton.disabled=true;
  try{
-  const result=await supabase.from("messages").insert({user_id:user.id,text});
-  if(result.error)throw result.error;
+  const result=await request("/api/messages",{method:"POST",body:JSON.stringify({user_id:userId,text})});
+  if(result.message&&!messages.some(item=>item.id===result.message.id)){
+   messages.push(result.message);
+   messages=messages.slice(-100);
+   renderMessages();
+  }
   input.value="";
   input.style.height="auto";
   charCount.textContent="0 / 500";
  }catch(error){
-  setConnection("Message failed");
-  setTimeout(()=>setConnection("Connected"),1500);
- }finally{
-  sendButton.disabled=false;
- }
+  setConnection(error instanceof Error?error.message:"Message failed");
+  setTimeout(()=>setConnection("Connected"),1800);
+ }finally{sendButton.disabled=false;}
 }
 
-async function openPublicProfile(userId){
- if(!supabase||!userId)return;
- const result=await supabase.from("profiles").select("id,username,display_name,note,avatar_url").eq("id",userId).maybeSingle();
- if(result.error||!result.data)return;
- const data=result.data;
- setProfileAvatar(publicProfileAvatar,data,"public-avatar");
- publicProfileDisplayName.textContent=data.display_name||data.username;
- publicProfileUsername.textContent=data.username?"@"+data.username:"";
- publicProfileNote.textContent=data.note||"No profile note.";
- userProfileModal.classList.remove("hidden");
+async function openPublicProfile(userIdValue){
+ if(!userIdValue)return;
+ try{
+  const result=await request("/api/profiles");
+  const data=result.profiles.find(item=>item.id===userIdValue);
+  if(!data)return;
+  setProfileAvatar(publicProfileAvatar,data,"public-avatar");
+  publicProfileDisplayName.textContent=data.display_name||data.username;
+  publicProfileUsername.textContent=data.username?"@"+data.username:"";
+  publicProfileNote.textContent=data.note||"No profile note.";
+  userProfileModal.classList.remove("hidden");
+ }catch{}
 }
 
 avatarPreview.addEventListener("click",()=>avatarInput.click());
 avatarInput.addEventListener("change",()=>{
  avatarFile=avatarInput.files?.[0]||null;
  if(!avatarFile)return;
- if(avatarFile.size>4*1024*1024){
-  showProfileMessage("Avatar must be smaller than 4 MB.");
-  avatarFile=null;
-  avatarInput.value="";
-  return;
- }
+ if(avatarFile.size>4*1024*1024){showProfileMessage("Avatar must be smaller than 4 MB.");avatarFile=null;avatarInput.value="";return;}
  const reader=new FileReader();
  reader.onload=()=>avatarPreview.innerHTML='<img src="'+escapeText(String(reader.result))+'" alt="">';
  reader.readAsDataURL(avatarFile);
@@ -406,10 +344,7 @@ input.addEventListener("input",()=>{
  input.style.height=Math.min(input.scrollHeight,130)+"px";
 });
 input.addEventListener("keydown",event=>{
- if(event.key==="Enter"&&!event.shiftKey){
-  event.preventDefault();
-  sendMessage();
- }
+ if(event.key==="Enter"&&!event.shiftKey){event.preventDefault();sendMessage();}
 });
 sendButton.addEventListener("click",sendMessage);
 messagesEl.addEventListener("click",event=>{
@@ -418,35 +353,18 @@ messagesEl.addEventListener("click",event=>{
 });
 profileModal.addEventListener("click",event=>{if(event.target===profileModal)closeProfileModal()});
 userProfileModal.addEventListener("click",event=>{if(event.target===userProfileModal)userProfileModal.classList.add("hidden")});
-nameModal.addEventListener("click",event=>{if(event.target===nameModal&&!profile)event.preventDefault()});
 
 async function start(){
  setConnection("Connecting");
  try{
-  await initializeRealtime();
+  await initializeServer();
  }catch(error){
   console.error(error);
-  setConnection("Local demo");
-  const cachedProfile=JSON.parse(localStorage.getItem(STORAGE_PROFILE)||"null");
-  const cachedName=localStorage.getItem(STORAGE_NAME)||"";
-  if(cachedProfile||cachedName){
-   profile=cachedProfile||{username:cachedName,display_name:cachedName,note:"",avatar_url:""};
-   renderProfile();
-  }else{
-   profile={username:"",display_name:"Guest",note:"",avatar_url:""};
-   renderProfile();
-   nameModal.classList.remove("hidden");
-  }
-  messages=JSON.parse(localStorage.getItem("swgc-room-chats-messages")||"[]").map(item=>({
-   user_id:"local",
-   username:item.name,
-   display_name:item.name,
-   avatar_url:"",
-   text:item.text,
-   created_at:new Date().toISOString()
-  }));
+  setConnection("Server offline");
+  profile=JSON.parse(localStorage.getItem(STORAGE_PROFILE)||"null");
+  if(profile)renderProfile();else openFirstProfile();
+  messages=[];
   renderMessages();
  }
 }
-
 start();
