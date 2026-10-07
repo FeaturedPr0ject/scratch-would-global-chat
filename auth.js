@@ -79,8 +79,8 @@ function pollAuth(nonce,startedAt){
  window[callbackName]=data=>{
   if(data?.pending){
    finish(()=>{});
-   if(Date.now()-startedAt<15000){
-    pendingTimer=setTimeout(()=>pollAuth(nonce,startedAt),500);
+   if(Date.now()-startedAt<30000){
+    pendingTimer=setTimeout(()=>pollAuth(nonce,startedAt),300);
     return;
    }
    stopPolling();
@@ -103,8 +103,8 @@ function pollAuth(nonce,startedAt){
  };
  script.onerror=()=>{
   finish(()=>{});
-  if(Date.now()-startedAt<15000){
-   pendingTimer=setTimeout(()=>pollAuth(nonce,startedAt),500);
+  if(Date.now()-startedAt<30000){
+   pendingTimer=setTimeout(()=>pollAuth(nonce,startedAt),300);
    return;
   }
   stopPolling();
