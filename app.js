@@ -62,6 +62,7 @@ const connectionText=document.querySelector("#connectionText");
 let supabaseClient=null;
 let userId="";
 let profile=null;
+const profileDirectory=new Map();
 let messages=[];
 let socket=null;
 let avatarFile=null;
@@ -224,12 +225,15 @@ function renderMessages(forceScroll=false){
  }
  const wasNearBottom=isNearBottom();
  messagesEl.innerHTML=messages.map(item=>{
-  const displayName=item.display_name||item.username||"Guest";
-  const username=item.username?("@"+item.username):"";
+  const liveProfile=profileDirectory.get(item.user_id)||{};
+  const displayName=liveProfile.display_name||item.display_name||liveProfile.username||item.username||"Guest";
+  const username=liveProfile.username||item.username||"";
+  const userNumber=liveProfile.user_number||item.user_number;
+  const avatarItem={...item,...liveProfile};
   const content=item.type==="sticker"?'<span class="message-sticker">'+escapeText(item.text)+'</span>':'<span class="message-text">'+escapeText(item.text)+'</span>';
   return '<button class="message-profile-button" type="button" data-user-id="'+escapeText(item.user_id)+'">'+
-   avatarMarkup(item)+
-   '<span class="message-body"><span class="message-meta"><span class="message-name-wrap"><span class="message-display-name">'+escapeText(displayName)+'</span>'+ownerBadgeMarkup(item.user_id,item.user_number)+'<span class="message-username">'+escapeText(username)+'</span></span><time class="message-time">'+escapeText(new Date(item.created_at||Date.now()).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}))+'</time></span>'+content+'</span></button>';
+   avatarMarkup(avatarItem)+
+   '<span class="message-body"><span class="message-meta"><span class="message-name-wrap"><span class="message-display-name">'+escapeText(displayName)+'</span>'+ownerBadgeMarkup(item.user_id,userNumber)+'<span class="message-username">'+escapeText(username?"@"+username:"")+'</span></span><time class="message-time">'+escapeText(new Date(item.created_at||Date.now()).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}))+'</time></span>'+content+'</span></button>';
  }).join("");
  if(forceScroll||wasNearBottom)scrollToBottom(false);
  updateScrollButton();
@@ -362,6 +366,8 @@ async function initializeSupabase(){
  userId=sessionResult.data.session.user.id;
  localStorage.setItem("swgc-room-chats-user-id",userId);
  const profiles=await request("/api/profiles");
+ profileDirectory.clear();
+ (profiles.profiles||[]).forEach(item=>profileDirectory.set(item.id,item));
  profile=profiles.profiles.find(item=>item.id===userId)||null;
  if(profile)localStorage.setItem(STORAGE_PROFILE,JSON.stringify(profile));
  renderProfile();
@@ -395,8 +401,8 @@ function connectRealtime(){
     renderProfile();
    }
    if(payload.new){
+    profileDirectory.set(payload.new.id,payload.new);
     friends=friends.map(item=>item.user_id===payload.new.id?{...item,user_number:payload.new.user_number,username:payload.new.username,display_name:payload.new.display_name,avatar_url:payload.new.avatar_url}:item);
-    messages=messages.map(item=>item.user_id===payload.new.id?{...item,user_number:payload.new.user_number,username:payload.new.username,display_name:payload.new.display_name,avatar_url:payload.new.avatar_url}:item);
     renderFriendList();
     renderMessages();
    }
@@ -409,8 +415,8 @@ function connectRealtime(){
     renderProfile();
    }
    if(payload.new){
+    profileDirectory.set(payload.new.id,payload.new);
     friends=friends.map(item=>item.user_id===payload.new.id?{...item,user_number:payload.new.user_number,username:payload.new.username,display_name:payload.new.display_name,avatar_url:payload.new.avatar_url}:item);
-    messages=messages.map(item=>item.user_id===payload.new.id?{...item,user_number:payload.new.user_number,username:payload.new.username,display_name:payload.new.display_name,avatar_url:payload.new.avatar_url}:item);
     renderFriendList();
     renderMessages();
    }
