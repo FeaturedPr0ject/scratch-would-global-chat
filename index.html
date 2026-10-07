@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#ffad00">
 <title>SWGC Room Chats</title>
 <link rel="icon" type="image/png" href="./assests/logo.png">
-<link rel="stylesheet" href="style.css?v=20261007-ui-v2">
+<link rel="stylesheet" href="style.css?v=20261007-ui-v6">
 </head>
 <body>
 <div class="app-shell">
@@ -15,6 +15,14 @@
 <img class="logo-image logo-main" src="./assests/logo.png" alt="SWG">
 <span>SWGC Room Chats</span>
 </a>
+<div class="top-search-wrap">
+<div class="top-search-box">
+<input id="friendSearchInput" class="top-search-input" maxlength="32" placeholder="Search users or UID" autocomplete="off">
+<button id="friendSearchButton" class="top-search-button" type="button" aria-label="Search users"><img src="./assests/search.png" alt=""></button>
+</div>
+<div id="friendSearchStatus" class="top-search-status"></div>
+<div id="friendSearchResult" class="friend-search-result top-search-result hidden"></div>
+</div>
 <div class="top-actions">
 <a class="support-link" href="./troubleshoot.html">Troubleshoot</a>
 <span id="connectionDot" class="status-dot offline"></span>
@@ -122,6 +130,6 @@
 <button id="joinRoomButton" class="primary-button" type="button">Join Room</button>
 </div>
 </div>
-<script type="module" src="app.js?v=20261007-supabase-v7"></script>
+<script type="module" src="app.js?v=20261007-supabase-v11"></script>
 </body>
 </html>
