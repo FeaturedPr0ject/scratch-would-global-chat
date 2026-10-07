@@ -3,10 +3,11 @@ export default function handler(request,response){
   response.status(405).json({ok:false,error:"Method not allowed"});
   return;
  }
- const chatServerUrl=process.env.CHAT_SERVER_URL||"";
- if(!chatServerUrl){
-  response.status(503).json({ok:false,error:"Chat server is not configured"});
+ const supabaseUrl=process.env.SUPABASE_URL||"";
+ const supabasePublishableKey=process.env.SUPABASE_PUBLISHABLE_KEY||"";
+ if(!supabaseUrl||!supabasePublishableKey){
+  response.status(503).json({ok:false,error:"Supabase is not configured"});
   return;
  }
- response.status(200).json({ok:true,chatServerUrl});
+ response.status(200).json({ok:true,supabaseUrl,supabasePublishableKey});
 }
