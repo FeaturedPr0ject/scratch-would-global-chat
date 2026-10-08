@@ -370,7 +370,8 @@ html,body{width:100%;max-width:100%;overflow-x:clip}
 .friends-card-head{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px}
 .friends-card-head>strong{min-width:0}
 .friend-refresh-button,.friends-card-head #friendRefreshButton{box-sizing:border-box!important;width:32px!important;height:32px!important;min-width:32px!important;min-height:32px!important;max-width:32px!important;max-height:32px!important;flex:0 0 32px!important;margin-left:auto!important;border:1px solid rgba(var(--accent-rgb),.42)!important;border-radius:10px!important;background:#1b1b20!important;color:#ffad00!important;padding:0!important;display:grid!important;place-items:center!important;font-family:Arial,sans-serif!important;font-size:19px!important;font-weight:700!important;line-height:1!important;appearance:none!important;-webkit-appearance:none!important;cursor:pointer!important;box-shadow:none!important}
-.friend-refresh-button:hover,.friends-card-head #friendRefreshButton:hover{background:#25252c!important;border-color:#ffad00!important;box-shadow:0 0 12px rgba(var(--accent-rgb),.16)!important}
+.friend-refresh-button:hover,.friends-card-head #friendRefreshButton:hover{background:rgba(var(--accent-rgb),.08)!important;border-color:rgba(var(--accent-rgb),.55)!important;box-shadow:0 0 10px rgba(var(--accent-rgb),.12)!important}
+.friend-refresh-button:focus,.friend-refresh-button:focus-visible,.friends-card-head #friendRefreshButton:focus,.friends-card-head #friendRefreshButton:focus-visible{outline:none!important;border-color:rgba(var(--accent-rgb),.55)!important;box-shadow:0 0 0 2px rgba(var(--accent-rgb),.08),0 0 10px rgba(var(--accent-rgb),.12)!important}
 .friend-refresh-button:active,.friends-card-head #friendRefreshButton:active{transform:scale(.94)!important}
 .friend-refresh-button.refreshing{animation:friendRefreshSpin .4s ease!important}
 @keyframes friendRefreshSpin{to{transform:rotate(360deg)}}
