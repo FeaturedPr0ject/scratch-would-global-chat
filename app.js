@@ -955,10 +955,10 @@ async function openPublicProfile(userIdValue){
   setProfileAvatar(publicProfileAvatar,data,"public-avatar");
   publicProfileDisplayName.innerHTML=escapeText(data.display_name||data.username)+ownerBadgeMarkup(data.id,data.user_number);
   publicProfileUsername.textContent=data.username?"@"+data.username+(data.user_number?" · ID #"+data.user_number:""):"";
-  publicProfileNote.textContent=data.note||"No profile note.";
+  publicProfileNote.textContent=data.note||(currentLanguage==="vi"?"Chưa có ghi chú hồ sơ.":"No profile note.");
   friendActionMessage.textContent="";
   const relation=friends.find(item=>item.user_id===data.id);
-  addFriendButton.textContent=data.id===userId?"This is you":relation?.status==="accepted"?"Unfriend":relation?.status==="pending"?"Request pending":"Add Friend";
+  addFriendButton.textContent=data.id===userId?(currentLanguage==="vi"?"Đây là bạn":"This is you"):relation?.status==="accepted"?(currentLanguage==="vi"?"Xóa bạn":"Unfriend"):relation?.status==="pending"?(currentLanguage==="vi"?"Đang chờ":"Request pending"):(currentLanguage==="vi"?"Thêm bạn":"Add Friend");
   addFriendButton.disabled=data.id===userId||relation?.status==="pending";
   userProfileModal.classList.remove("hidden");
  }catch{}
@@ -1134,31 +1134,31 @@ async function searchFriend(){
  const query=friendSearchInput.value.trim();
  friendSearchStatus.textContent="";
  friendSearchResult.classList.add("hidden");
- if(query.length<1){friendSearchStatus.textContent="Enter a username or UID.";return;}
- if(!/^\d+$/.test(query)&&query.length<2){friendSearchStatus.textContent="Enter at least 2 characters.";return;}
- friendSearchStatus.textContent="Searching...";
+ if(query.length<1){friendSearchStatus.textContent=currentLanguage==="vi"?"Nhập tên người dùng hoặc UID.":"Enter a username or UID.";return;}
+ if(!/^\d+$/.test(query)&&query.length<2){friendSearchStatus.textContent=currentLanguage==="vi"?"Nhập ít nhất 2 ký tự.":"Enter at least 2 characters.";return;}
+ friendSearchStatus.textContent=currentLanguage==="vi"?"Đang tìm kiếm...":"Searching...";
  try{
   const result=await request("/api/users/search?q="+encodeURIComponent(query));
-  if(!result.profile){friendSearchStatus.textContent="User not found.";return;}
+  if(!result.profile){friendSearchStatus.textContent=currentLanguage==="vi"?"Không tìm thấy người dùng.":"User not found.";return;}
   const item=result.profile;
   friendSearchStatus.textContent="";
   friendSearchResult.classList.remove("hidden");
   friendSearchResult.innerHTML=avatarMarkup(item,"friend-search-avatar")+'<span><strong>'+escapeText(item.display_name||item.username)+ownerBadgeMarkup(item.user_id,item.user_number)+'</strong><small>@'+escapeText(item.username)+(item.user_number?" · ID #"+item.user_number:"")+'</small></span><button type="button" class="friend-view-button" data-search-id="'+escapeText(item.id)+'">View</button>';
- }catch(error){friendSearchStatus.textContent=error instanceof Error?error.message:"Search failed."}
+ }catch(error){friendSearchStatus.textContent=error instanceof Error?error.message:(currentLanguage==="vi"?"Tìm kiếm thất bại.":"Search failed.")}
 }
 
 async function unfriend(){
  if(!selectedProfileId||selectedProfileId===userId)return;
  addFriendButton.disabled=true;
- friendActionMessage.textContent="Removing friend...";
+ friendActionMessage.textContent=currentLanguage==="vi"?"Đang xóa bạn...":"Removing friend...";
  try{
   const result=await request("/api/friends/unfriend",{method:"POST",body:JSON.stringify({user_id:userId,target_user_id:selectedProfileId})});
-  friendActionMessage.textContent=result.message||"Friend removed.";
-  addFriendButton.textContent="Add Friend";
+  friendActionMessage.textContent=result.message||(currentLanguage==="vi"?"Đã xóa bạn.":"Friend removed.");
+  addFriendButton.textContent=currentLanguage==="vi"?"Thêm bạn":"Add Friend";
   addFriendButton.disabled=false;
   await loadFriends();
  }catch(error){
-  friendActionMessage.textContent=error instanceof Error?error.message:"Could not remove friend.";
+  friendActionMessage.textContent=error instanceof Error?error.message:(currentLanguage==="vi"?"Không thể xóa bạn.":"Could not remove friend.");
   addFriendButton.disabled=false;
  }
 }
@@ -1166,13 +1166,13 @@ async function unfriend(){
 async function addFriend(){
  if(!selectedProfileId||selectedProfileId===userId)return;
  addFriendButton.disabled=true;
- friendActionMessage.textContent="Sending...";
+ friendActionMessage.textContent=currentLanguage==="vi"?"Đang gửi...":"Sending...";
  try{
   const result=await request("/api/friends/request",{method:"POST",body:JSON.stringify({user_id:userId,target_user_id:selectedProfileId})});
-  friendActionMessage.textContent=result.message||"Friend request sent.";
+  friendActionMessage.textContent=result.message||(currentLanguage==="vi"?"Đã gửi lời mời kết bạn.":"Friend request sent.");
   addFriendButton.textContent="Request pending";
  }catch(error){
-  friendActionMessage.textContent=error instanceof Error?error.message:"Could not send friend request.";
+  friendActionMessage.textContent=error instanceof Error?error.message:(currentLanguage==="vi"?"Không thể gửi lời mời kết bạn.":"Could not send friend request.");
   addFriendButton.disabled=false;
  }
 }
