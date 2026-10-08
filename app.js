@@ -100,6 +100,7 @@ let stickerSearchPos="";
 let stickerSearchLoading=false;
 let stickerSearchHasMore=true;
 let stickerSearchQuery="";
+let currentLanguage=localStorage.getItem(LANGUAGE_STORAGE)||"en";
 let stickerSearchRequest=0;
 let avatarFile=null;
 let avatarCropImage=null;
@@ -155,67 +156,115 @@ function applyLanguage(language,save=true){
  document.documentElement.lang=value;
  if(languageSelect)languageSelect.value=value;
  const labels=value==="vi"?{
-  color:"Kiểu màu",
-  theme:"Chủ đề",
-  language:"Ngôn ngữ",
-  colorTitle:"Kiểu màu",
-  colorDescription:"Chọn màu nhấn chính cho SWGC Room Chats.",
-  themeTitle:"Chủ đề",
-  themeDescription:"Chọn chế độ Sáng hoặc Tối.",
-  languageTitle:"Ngôn ngữ",
-  languageDescription:"Chọn ngôn ngữ được sử dụng trong SWGC Room Chats.",
-  languageLabel:"Ngôn ngữ",
-  profile:"Hồ sơ",
-  settings:"Cài đặt",
-  light:"Sáng",
-  dark:"Tối"
+  color:"Kiểu màu",theme:"Chủ đề",language:"Ngôn ngữ",
+  colorTitle:"Kiểu màu",colorDescription:"Chọn màu nhấn chính cho SWGC Room Chats.",
+  themeTitle:"Chủ đề",themeDescription:"Chọn chế độ Sáng hoặc Tối.",
+  languageTitle:"Ngôn ngữ",languageDescription:"Chọn ngôn ngữ được sử dụng trong SWGC Room Chats.",
+  languageLabel:"Ngôn ngữ",profile:"Hồ sơ",settings:"Cài đặt",light:"Sáng",dark:"Tối",
+  troubleshoot:"Khắc phục sự cố",connected:"Đã kết nối",connecting:"Đang kết nối",offline:"Ngoại tuyến",
+  publicRoom:"Phòng công khai",everyone:"Mọi người đều có thể tham gia",friends:"Bạn bè",
+  edit:"Sửa",report:"Báo cáo sự cố",respectTitle:"Hãy tôn trọng nhau.",respectText:"Giữ cuộc trò chuyện thân thiện và an toàn.",
+  searchUsers:"Tìm người dùng hoặc UID",searchUsersAria:"Tìm người dùng",message:"Gửi tin nhắn...",
+  send:"Gửi",enterHint:"Enter để gửi · Shift+Enter để xuống dòng",stickers:"Sticker",recent:"Gần đây",
+  search:"Tìm kiếm",recommended:"Đề xuất",reactions:"Cảm xúc",cute:"Dễ thương",meme:"Meme",animals:"Động vật",
+  noRecent:"Chưa có sticker gần đây.",saved:"Đã lưu",unsaveAll:"Bỏ lưu tất cả",noSaved:"Chưa có sticker đã lưu.",
+  searchKlipy:"Tìm kiếm KLIPY",powered:"Được cung cấp bởi KLIPY",username:"Tên người dùng",
+  displayName:"Tên hiển thị",displayPlaceholder:"Tên giả hoặc tên hiển thị (tùy chọn)",profileNote:"Ghi chú hồ sơ",
+  profileNotePlaceholder:"Viết gì đó về bạn...",saveProfile:"Lưu hồ sơ",cropAvatar:"Cắt ảnh đại diện",
+  cropHint:"Kéo ảnh để điều chỉnh vị trí và dùng thanh thu phóng.",zoom:"Thu phóng",useAvatar:"Dùng ảnh đại diện",
+  cancel:"Hủy",chooseUsername:"Chọn tên người dùng",uniqueHint:"Tên người dùng phải là duy nhất. Tên hiển thị là tùy chọn. Nếu để trống, tên người dùng sẽ được hiển thị.",
+  uniqueUsername:"Tên người dùng duy nhất",joinRoom:"Tham gia phòng",addFriend:"Thêm bạn",noNote:"Chưa có ghi chú hồ sơ.",
+  profileTab:"Hồ sơ",settingsTab:"Cài đặt"
  }:{
-  color:"Color Style",
-  theme:"Theme",
-  language:"Language",
-  colorTitle:"Color Style",
-  colorDescription:"Choose the main accent color for SWGC Room Chats.",
-  themeTitle:"Theme",
-  themeDescription:"Choose between Light and Dark mode.",
-  languageTitle:"Language",
-  languageDescription:"Choose the language used by SWGC Room Chats.",
-  languageLabel:"Language",
-  profile:"Profile",
-  settings:"Settings",
-  light:"Light",
-  dark:"Dark"
+  color:"Color Style",theme:"Theme",language:"Language",
+  colorTitle:"Color Style",colorDescription:"Choose the main accent color for SWGC Room Chats.",
+  themeTitle:"Theme",themeDescription:"Choose between Light and Dark mode.",
+  languageTitle:"Language",languageDescription:"Choose the language used by SWGC Room Chats.",
+  languageLabel:"Language",profile:"Profile",settings:"Settings",light:"Light",dark:"Dark",
+  troubleshoot:"Troubleshoot",connected:"Connected",connecting:"Connecting",offline:"Offline",
+  publicRoom:"Public room",everyone:"Everyone can join",friends:"Friends",
+  edit:"Edit",report:"Report a problem",respectTitle:"Be respectful.",respectText:"Keep room chats friendly and safe.",
+  searchUsers:"Search users or UID",searchUsersAria:"Search users",message:"Send a message...",
+  send:"Send",enterHint:"Enter to send · Shift+Enter for a new line",stickers:"Stickers",recent:"Recent",
+  search:"Search",recommended:"Recommended",reactions:"Reactions",cute:"Cute",meme:"Meme",animals:"Animals",
+  noRecent:"No recent stickers yet.",saved:"Saved",unsaveAll:"Unsave all",noSaved:"No saved stickers yet.",
+  searchKlipy:"Search KLIPY",powered:"Powered by KLIPY",username:"Username",
+  displayName:"Display name",displayPlaceholder:"Fake name or display name (optional)",profileNote:"Profile note",
+  profileNotePlaceholder:"Write something about yourself...",saveProfile:"Save Profile",cropAvatar:"Crop Avatar",
+  cropHint:"Drag the image to position it and use the zoom control.",zoom:"Zoom",useAvatar:"Use Avatar",
+  cancel:"Cancel",chooseUsername:"Choose your username",uniqueHint:"Your username must be unique. Display name is optional. If empty, your username will be shown.",
+  uniqueUsername:"Unique username",joinRoom:"Join Room",addFriend:"Add Friend",noNote:"No profile note.",
+  profileTab:"Profile",settingsTab:"Settings"
  };
- const colorCategory=document.querySelector('[data-settings-category="color"]');
- const themeCategory=document.querySelector('[data-settings-category="theme"]');
- const languageCategory=document.querySelector('[data-settings-category="language"]');
- const colorTitle=document.querySelector('[data-settings-panel="color"] .settings-section-head strong');
- const colorDescription=document.querySelector('[data-settings-panel="color"] .settings-section-head span');
- const themeTitle=document.querySelector('[data-settings-panel="theme"] .settings-section-head strong');
- const themeDescription=document.querySelector('[data-settings-panel="theme"] .settings-section-head span');
- const languageTitle=document.querySelector('[data-settings-panel="language"] .settings-section-head strong');
- const languageDescription=document.querySelector('[data-settings-panel="language"] .settings-section-head span');
- const languageLabel=document.querySelector(".settings-select-label");
- colorCategory&&(colorCategory.textContent=labels.color);
- themeCategory&&(themeCategory.textContent=labels.theme);
- languageCategory&&(languageCategory.textContent=labels.language);
- colorTitle&&(colorTitle.textContent=labels.colorTitle);
- colorDescription&&(colorDescription.textContent=labels.colorDescription);
- themeTitle&&(themeTitle.textContent=labels.themeTitle);
- themeDescription&&(themeDescription.textContent=labels.themeDescription);
- languageTitle&&(languageTitle.textContent=labels.languageTitle);
- languageDescription&&(languageDescription.textContent=labels.languageDescription);
- languageLabel&&(languageLabel.textContent=labels.languageLabel);
- const profileTab=document.querySelector('[data-profile-section="profile"]');
- const settingsTab=document.querySelector('[data-profile-section="settings"]');
- profileTab&&(profileTab.textContent=labels.profile);
- settingsTab&&(settingsTab.textContent=labels.settings);
- const lightLabel=document.querySelector('[data-theme-mode="light"] span:last-child');
- const darkLabel=document.querySelector('[data-theme-mode="dark"] span:last-child');
- lightLabel&&(lightLabel.textContent=labels.light);
- darkLabel&&(darkLabel.textContent=labels.dark);
+ const setText=(selector,text)=>document.querySelectorAll(selector).forEach(element=>element.textContent=text);
+ const setPlaceholder=(selector,text)=>document.querySelectorAll(selector).forEach(element=>element.setAttribute("placeholder",text));
+ const setAria=(selector,text)=>document.querySelectorAll(selector).forEach(element=>element.setAttribute("aria-label",text));
+ setText('[data-settings-category="color"]',labels.color);
+ setText('[data-settings-category="theme"]',labels.theme);
+ setText('[data-settings-category="language"]',labels.language);
+ setText('[data-settings-panel="color"] .settings-section-head strong',labels.colorTitle);
+ setText('[data-settings-panel="color"] .settings-section-head span',labels.colorDescription);
+ setText('[data-settings-panel="theme"] .settings-section-head strong',labels.themeTitle);
+ setText('[data-settings-panel="theme"] .settings-section-head span',labels.themeDescription);
+ setText('[data-settings-panel="language"] .settings-section-head strong',labels.languageTitle);
+ setText('[data-settings-panel="language"] .settings-section-head span',labels.languageDescription);
+ setText(".settings-select-label",labels.languageLabel);
+ setText('[data-profile-section="profile"]',labels.profile);
+ setText('[data-profile-section="settings"]',labels.settings);
+ setText('[data-theme-mode="light"] span:last-child',labels.light);
+ setText('[data-theme-mode="dark"] span:last-child',labels.dark);
+ setText(".support-link",labels.troubleshoot);
+ setText("#roomStatus",labels.publicRoom);
+ setText(".server-card strong",labels.publicRoom);
+ setText(".server-card span span",labels.everyone);
+ setText(".sidebar-head strong",labels.friends);
+ setText(".friends-card-head>strong",labels.friends);
+ setText(".profile-edit",labels.edit);
+ setText(".sidebar-note strong",labels.respectTitle);
+ setText(".sidebar-note span",labels.respectText);
+ setText('.sidebar-note a',labels.report);
+ setPlaceholder("#friendSearchInput",labels.searchUsers);
+ setAria("#friendSearchButton",labels.searchUsersAria);
+ setPlaceholder("#messageInput",labels.message);
+ setText("#sendButton",labels.send);
+ setText(".composer-foot span:last-child",labels.enterHint);
+ setAria("#stickerButton",labels.stickers);
+ setText(".sticker-picker-head strong",labels.stickers);
+ setText("#savedStickerTab",labels.recent);
+ setText("#searchStickerTab",labels.search);
+ setText('[data-sticker-query=""]',labels.recommended);
+ setText('[data-sticker-query="reaction sticker"]',labels.reactions);
+ setText('[data-sticker-query="cute sticker"]',labels.cute);
+ setText('[data-sticker-query="meme sticker"]',labels.meme);
+ setText('[data-sticker-query="animal sticker"]',labels.animals);
+ setText("#recentStickerEmpty",labels.noRecent);
+ setText(".sticker-saved-section .sticker-section-title strong",labels.saved);
+ setText("#clearSavedStickers",labels.unsaveAll);
+ setText("#savedStickerEmpty",labels.noSaved);
+ setPlaceholder("#stickerSearchInput",labels.searchKlipy);
+ setText(".sticker-picker .sticker-search-status + div",labels.powered);
+ setText('label[for="usernameInput"]',labels.username);
+ setText('label[for="displayNameInput"]',labels.displayName);
+ setText('label[for="profileNoteInput"]',labels.profileNote);
+ setPlaceholder("#displayNameInput",labels.displayPlaceholder);
+ setPlaceholder("#profileNoteInput",labels.profileNotePlaceholder);
+ setText("#saveProfile",labels.saveProfile);
+ setText("#avatarCropModal h2",labels.cropAvatar);
+ setText("#avatarCropModal p",labels.cropHint);
+ setText('label[for="avatarCropZoom"]',labels.zoom);
+ setText("#avatarCropSave",labels.useAvatar);
+ setText("#avatarCropCancel",labels.cancel);
+ setText("#nameModal h2",labels.chooseUsername);
+ setText("#nameModal p",labels.uniqueHint);
+ setPlaceholder("#firstUsernameInput",labels.uniqueUsername);
+ setPlaceholder("#firstDisplayNameInput",labels.displayName+" (optional)");
+ setText("#joinRoomButton",labels.joinRoom);
+ setText("#addFriendButton",labels.addFriend);
+ setText("#publicProfileNote",labels.noNote);
+ setText("#profileModal .modal-close",labels.cancel==="Hủy"?"×":"×");
  if(save)localStorage.setItem(LANGUAGE_STORAGE,value);
+ currentLanguage=value;
 }
-
 function loadLanguage(){
  applyLanguage(localStorage.getItem(LANGUAGE_STORAGE)||"en",false);
 }
