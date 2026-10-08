@@ -927,3 +927,19 @@ html[data-color-mode="light"] .message-delete-button:hover{background:#fff0f0;bo
  .sticker-search-row input{font-size:16px!important}
 }
 
+
+.message-sticker{width:min(180px,55vw)!important;max-width:180px!important;height:auto!important;max-height:none!important}
+.message-sticker img{width:auto!important;height:auto!important;max-width:180px!important;max-height:180px!important;object-fit:contain!important;border-radius:12px!important}
+.sticker-button{color:var(--accent)!important}
+.sticker-button svg{stroke:currentColor!important;fill:none!important}
+html[data-color-mode="light"] .sticker-button{background:transparent!important;color:var(--accent)!important;border-color:var(--line)!important}
+html[data-color-mode="light"] .sticker-picker{background:var(--panel)!important;color:var(--white)!important}
+html[data-color-mode="light"] .sticker-picker-head button#stickerPickerClose{color:var(--white)!important}
+html[data-color-mode="light"] .sticker-tile,
+html[data-color-mode="light"] .recent-sticker-feature,
+html[data-color-mode="light"] .sticker-tabs{background:var(--panel2)!important;color:var(--white)!important}
+@media(max-width:760px){
+ .message-sticker{width:40px!important;max-width:40px!important;height:40px!important;max-height:40px!important}
+ .message-sticker img{width:40px!important;height:40px!important;max-width:40px!important;max-height:40px!important}
+ .sticker-button{color:var(--accent)!important}
+}
