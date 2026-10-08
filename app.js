@@ -76,6 +76,7 @@ let presenceChannel=null;
 const connectionDot=document.querySelector("#connectionDot");
 const connectionText=document.querySelector("#connectionText");
 let supabaseClient=null;
+let klipyApiKey="";
 let userId="";
 let profile=null;
 const profileDirectory=new Map();
@@ -412,6 +413,7 @@ async function initializeSupabase(){
  const config=await configResponse.json();
  const supabaseUrl=String(config.supabaseUrl||"").trim();
  const publishableKey=String(config.supabasePublishableKey||"").trim();
+ klipyApiKey=String(config.klipyApiKey||"").trim();
  if(!supabaseUrl||!publishableKey)throw new Error("Supabase is not configured");
  supabaseClient=createClient(supabaseUrl,publishableKey);
  let sessionResult=await supabaseClient.auth.getSession();
@@ -657,14 +659,37 @@ async function searchStickers(queryOverride=null){
   stickerSearchGrid.innerHTML="";
   return;
  }
- stickerSearchStatus.textContent="Searching Tenor...";
+ if(!klipyApiKey){
+  stickerSearchStatus.textContent="KLIPY is not configured.";
+  stickerSearchGrid.innerHTML="";
+  return;
+ }
+ stickerSearchStatus.textContent="Searching KLIPY...";
  stickerSearchGrid.innerHTML="";
  try{
-  const endpoint="/api/tenor"+(query?"?q="+encodeURIComponent(query):"");
-  const response=await fetch(endpoint);
+  const endpoint=query?"https://api.klipy.com/v2/search":"https://api.klipy.com/v2/featured";
+  const params=new URLSearchParams({
+   key:klipyApiKey,
+   searchfilter:"sticker",
+   country:"VN",
+   locale:"vi_VN",
+   contentfilter:"medium",
+   media_filter:"tinywebp_transparent,nanowebp_transparent,webp_transparent,tinygif_transparent,nanogif_transparent,gif_transparent",
+   limit:"24"
+  });
+  if(query)params.set("q",query);
+  const response=await fetch(endpoint+"?"+params.toString());
   const data=await response.json();
   if(!response.ok)throw new Error(data.error||"Sticker search failed");
-  const stickers=Array.isArray(data.stickers)?data.stickers:[];
+  const stickers=(Array.isArray(data.results)?data.results:[]).map(item=>{
+   const media=item?.media_formats||{};
+   const keys=["tinywebp_transparent","nanowebp_transparent","webp_transparent","tinygif_transparent","nanogif_transparent","gif_transparent"];
+   for(const key of keys){
+    const url=media[key]?.url;
+    if(url)return url;
+   }
+   return "";
+  }).filter(Boolean);
   if(!stickers.length){
    stickerSearchStatus.textContent="No stickers found.";
    return;
@@ -672,7 +697,7 @@ async function searchStickers(queryOverride=null){
   stickerSearchStatus.textContent=stickers.length+" results";
   stickerSearchGrid.innerHTML=stickers.map(url=>'<div class="sticker-result"><button class="sticker-tile" type="button" data-sticker-url="'+escapeText(url)+'"><img src="'+escapeText(url)+'" alt="Sticker" loading="lazy"></button><button class="sticker-save" type="button" data-save-sticker="'+escapeText(url)+'" aria-label="Save sticker" title="Save sticker"></button></div>').join("");
  }catch{
-  stickerSearchStatus.textContent="Could not load Tenor stickers.";
+  stickerSearchStatus.textContent="Could not load KLIPY stickers.";
  }
 }
 
