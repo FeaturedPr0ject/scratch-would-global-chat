@@ -372,6 +372,7 @@ create table if not exists public.groups (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references public.profiles(id) on delete cascade,
   name text not null,
+  avatar_url text,
   created_at timestamptz not null default now(),
   deleted_at timestamptz,
   constraint groups_name_length check (char_length(name) between 2 and 48)
