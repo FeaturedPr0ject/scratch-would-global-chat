@@ -73,6 +73,14 @@ const closeGroupModalButton=document.querySelector("#closeGroupModal");
 const groupNameInput=document.querySelector("#groupNameInput");
 const groupFriendList=document.querySelector("#groupFriendList");
 const groupModalMessage=document.querySelector("#groupModalMessage");
+const groupSettingsModal=document.querySelector("#groupSettingsModal");
+const closeGroupSettingsButton=document.querySelector("#closeGroupSettings");
+const groupSettingsNameInput=document.querySelector("#groupSettingsNameInput");
+const groupSettingsAvatar=document.querySelector("#groupSettingsAvatar");
+const groupSettingsAvatarInput=document.querySelector("#groupSettingsAvatarInput");
+const groupSettingsMessage=document.querySelector("#groupSettingsMessage");
+const groupSettingsSaveButton=document.querySelector("#groupSettingsSave");
+const groupSettingsDeleteButton=document.querySelector("#groupSettingsDelete");
 const createGroupButton=document.querySelector("#createGroupButton");
 const groupCreateSubmit=document.querySelector("#groupCreateSubmit");
 const publicRoomButton=document.querySelector("#publicRoomButton");
@@ -500,7 +508,7 @@ async function request(path,options={}){
   data={ok:true,profile:result.data||null};
   error=result.error;
  }else if(url.pathname==="/api/groups"&&method==="GET"){
-  const result=await supabaseClient.from("groups").select("id,owner_id,name,created_at,deleted_at").order("created_at",{ascending:true});
+  const result=await supabaseClient.from("groups").select("id,owner_id,name,avatar_url,created_at,deleted_at").order("created_at",{ascending:true});
   data={ok:true,groups:result.data||[]};
   error=result.error;
  }else if(url.pathname==="/api/groups"&&method==="POST"){
@@ -509,6 +517,17 @@ async function request(path,options={}){
   const result=await supabaseClient.from("groups").insert({owner_id:userId,name}).select("id,owner_id,name,created_at,deleted_at").single();
   data={ok:true,group:result.data};
   error=result.error;
+ }else if(url.pathname==="/api/groups/update"&&method==="POST"){
+  const groupId=String(body.group_id||"").trim();
+  const name=String(body.name||"").trim().replace(/\\s+/g," ").slice(0,48);
+  const avatarUrl=String(body.avatar_url||"").trim();
+  if(!groupId)throw new Error("Group ID is required");
+  if(name.length<2||name.length>48)throw new Error("Group name must be 2-48 characters.");
+  if(avatarUrl.length>1500000)throw new Error("Group avatar is too large.");
+  const result=await supabaseClient.from("groups").update({name,avatar_url:avatarUrl||null}).eq("id",groupId).eq("owner_id",userId).is("deleted_at",null).select("id,owner_id,name,avatar_url,created_at,deleted_at").single();
+  if(result.error)throw result.error;
+  data={ok:true,group:result.data};
+  error=null;
  }else if(url.pathname==="/api/groups/delete"&&method==="POST"){
   const groupId=String(body.group_id||"").trim();
   if(!groupId)throw new Error("Group ID is required");
@@ -1084,7 +1103,7 @@ function renderGroupCard(){
  const activeGroups=groups.filter(item=>!item.deleted_at);
  if(!activeGroups.length){
   if(groupCreationUsed){
-   groupCard.innerHTML='<div class="group-card-head"><strong>Group</strong></div><div class="group-card-empty">'+escapeText(currentLanguage==="vi"?"Bạn đã dùng lượt tạo nhóm. Nhóm đã xóa không thể tạo lại.":"You already used your one group creation. A deleted group cannot be recreated.")+'</div>';
+   groupCard.innerHTML='<div class="group-card-head"><strong>Group</strong></div><div class="group-card-empty">'+escapeText(currentLanguage==="vi"?"Bạn đã dùng lượt tạo nhóm. Hãy xóa nhóm hiện tại để tạo nhóm mới.":"You already have a group. Delete it before creating another group.")+'</div>';
   }else{
    groupCard.innerHTML='<div class="group-card-head"><strong>Group</strong></div><div class="group-card-empty">'+escapeText(currentLanguage==="vi"?"Bạn chưa có nhóm.":"You do not have a group yet.")+'</div><button class="primary-button group-create-button" type="button">'+escapeText(currentLanguage==="vi"?"Tạo nhóm":"Create Group")+'</button>';
    groupCard.querySelector(".group-create-button")?.addEventListener("click",openGroupModal);
@@ -1093,10 +1112,13 @@ function renderGroupCard(){
  }
  groupCard.innerHTML=activeGroups.map(item=>{
   const owned=item.owner_id===userId;
-  return '<div class="group-item'+(activeGroupId===item.id?' active':'')+'"><button class="group-open-button" type="button" data-group-open="'+escapeText(item.id)+'"><span class="group-icon">G</span><span class="group-info"><strong>'+escapeText(item.name)+'</strong><small>'+escapeText(owned?(currentLanguage==="vi"?"Nhóm của bạn":"Your group"):(currentLanguage==="vi"?"Nhóm":"Group"))+'</small></span></button>'+(owned?'<button class="group-delete-button" type="button" data-group-delete="'+escapeText(item.id)+'" aria-label="'+escapeText(currentLanguage==="vi"?"Xóa nhóm":"Delete group")+'" title="'+escapeText(currentLanguage==="vi"?"Xóa nhóm":"Delete group")+'">×</button>':"")+'</div>';
+  const avatar=safeUrl(item.avatar_url);
+  const icon=avatar?'<span class="group-icon group-icon-image"><img src="'+escapeText(avatar)+'" alt=""></span>':'<span class="group-icon">'+escapeText(initials(item.name))+'</span>';
+  return '<div class="group-item'+(activeGroupId===item.id?' active':'')+'"><button class="group-open-button" type="button" data-group-open="'+escapeText(item.id)+'">'+icon+'<span class="group-info"><strong>'+escapeText(item.name)+'</strong><small>'+escapeText(owned?(currentLanguage==="vi"?"Nhóm của bạn":"Your group"):(currentLanguage==="vi"?"Nhóm":"Group"))+'</small></span></button>'+(owned?'<button class="group-settings-button" type="button" data-group-settings="'+escapeText(item.id)+'" aria-label="'+escapeText(currentLanguage==="vi"?"Cài đặt nhóm":"Group settings")+'" title="'+escapeText(currentLanguage==="vi"?"Cài đặt nhóm":"Group settings")+'">⚙</button>':"")+'</div>';
  }).join("");
+ groupCard.querySelectorAll("[data-group-open]").forEach(button=>button.addEventListener("click",()=>openGroup(button.dataset.groupOpen)));
+ groupCard.querySelectorAll("[data-group-settings]").forEach(button=>button.addEventListener("click",()=>openGroupSettings(button.dataset.groupSettings)));
 }
-
 async function loadGroups(){
  try{
   const result=await request("/api/groups?user_id="+encodeURIComponent(userId));
@@ -1131,6 +1153,61 @@ function openGroupModal(){
 function closeGroupModal(){
  groupModal?.classList.add("hidden");
  if(groupModalMessage)groupModalMessage.textContent="";
+}
+
+function openGroupSettings(groupId){
+ const group=groups.find(item=>item.id===groupId&&item.owner_id===userId&&!item.deleted_at);
+ if(!group||!groupSettingsModal)return;
+ groupSettingsModal.dataset.groupId=group.id;
+ groupSettingsNameInput.value=group.name||"";
+ groupSettingsMessage.textContent="";
+ const avatar=safeUrl(group.avatar_url);
+ groupSettingsAvatar.innerHTML=avatar?'<img src="'+escapeText(avatar)+'" alt="">':escapeText(initials(group.name));
+ groupSettingsAvatarInput.value="";
+ groupSettingsModal.classList.remove("hidden");
+ setTimeout(()=>groupSettingsNameInput?.focus(),30);
+}
+
+function closeGroupSettings(){
+ groupSettingsModal?.classList.add("hidden");
+ if(groupSettingsMessage)groupSettingsMessage.textContent="";
+ if(groupSettingsAvatarInput)groupSettingsAvatarInput.value="";
+}
+
+async function saveGroupSettings(){
+ const groupId=groupSettingsModal?.dataset.groupId||"";
+ const group=groups.find(item=>item.id===groupId&&item.owner_id===userId&&!item.deleted_at);
+ if(!group)return;
+ const name=groupSettingsNameInput.value.trim().replace(/\s+/g," ");
+ if(name.length<2||name.length>48){
+  groupSettingsMessage.textContent=currentLanguage==="vi"?"Tên nhóm phải từ 2-48 ký tự.":"Group name must be 2-48 characters.";
+  return;
+ }
+ let avatarUrl=group.avatar_url||"";
+ const file=groupSettingsAvatarInput.files?.[0]||null;
+ if(file){
+  if(file.size>2*1024*1024){
+   groupSettingsMessage.textContent=currentLanguage==="vi"?"Ảnh nhóm phải nhỏ hơn 2 MB.":"Group avatar must be smaller than 2 MB.";
+   return;
+  }
+  avatarUrl=await new Promise((resolve,reject)=>{
+   const reader=new FileReader();
+   reader.onload=()=>resolve(String(reader.result||""));
+   reader.onerror=()=>reject(new Error("Could not read group avatar."));
+   reader.readAsDataURL(file);
+  });
+ }
+ groupSettingsSaveButton.disabled=true;
+ groupSettingsMessage.textContent=currentLanguage==="vi"?"Đang lưu...":"Saving...";
+ try{
+  const result=await request("/api/groups/update",{method:"POST",body:JSON.stringify({group_id:groupId,name,avatar_url:avatarUrl})});
+  if(!result.group)throw new Error("Group update failed.");
+  closeGroupSettings();
+  await loadGroups();
+  if(activeGroupId===groupId&&roomStatus)roomStatus.textContent=result.group.name;
+ }catch(error){
+  groupSettingsMessage.textContent=error instanceof Error?error.message:(currentLanguage==="vi"?"Không thể cập nhật nhóm.":"Could not update group.");
+ }finally{groupSettingsSaveButton.disabled=false;}
 }
 
 async function createGroup(){
@@ -1259,6 +1336,23 @@ languageSelect?.addEventListener("change",()=>changeLanguage(languageSelect.valu
 openProfileButton.addEventListener("click",()=>{setMobileMenu(false);openMyProfile();});
 closeProfileButton.addEventListener("click",closeProfileModal);
 closeGroupModalButton?.addEventListener("click",closeGroupModal);
+closeGroupSettingsButton?.addEventListener("click",closeGroupSettings);
+groupSettingsSaveButton?.addEventListener("click",saveGroupSettings);
+groupSettingsDeleteButton?.addEventListener("click",()=>{
+ const groupId=groupSettingsModal?.dataset.groupId||"";
+ closeGroupSettings();
+ if(groupId)deleteGroup(groupId);
+});
+groupSettingsAvatar?.addEventListener("click",()=>groupSettingsAvatarInput?.click());
+groupSettingsAvatarInput?.addEventListener("change",()=>{
+ const file=groupSettingsAvatarInput.files?.[0];
+ if(file){
+  const reader=new FileReader();
+  reader.onload=()=>{groupSettingsAvatar.innerHTML='<img src="'+escapeText(String(reader.result||""))+'" alt="">';};
+  reader.readAsDataURL(file);
+ }
+});
+groupSettingsModal?.addEventListener("click",event=>{if(event.target===groupSettingsModal)closeGroupSettings();});
 groupCreateSubmit?.addEventListener("click",createGroup);
 publicRoomButton?.addEventListener("click",()=>{openPublicRoom();setMobileMenu(false);});
 groupModal?.addEventListener("click",event=>{if(event.target===groupModal)closeGroupModal();});
