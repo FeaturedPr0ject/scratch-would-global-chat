@@ -650,7 +650,7 @@ function setStickerTab(tab){
 }
 
 async function searchStickers(queryOverride=null){
- const query=(queryOverride??stickerSearchInput?.value.trim()||"").trim();
+ const query=(queryOverride??(stickerSearchInput?.value.trim()||"")).trim();
  if(!stickerSearchStatus||!stickerSearchGrid)return;
  if(query&&query.length<2){
   stickerSearchStatus.textContent="Enter at least 2 characters.";
