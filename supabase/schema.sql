@@ -367,3 +367,245 @@ to authenticated
 using (user_id = auth.uid());
 
 grant delete on public.messages to authenticated;
+
+create table if not exists public.groups (
+  id uuid primary key default gen_random_uuid(),
+  owner_id uuid not null unique references public.profiles(id) on delete cascade,
+  name text not null,
+  created_at timestamptz not null default now(),
+  deleted_at timestamptz,
+  constraint groups_name_length check (char_length(name) between 2 and 48)
+);
+
+create table if not exists public.group_members (
+  group_id uuid not null references public.groups(id) on delete cascade,
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  joined_at timestamptz not null default now(),
+  primary key (group_id,user_id)
+);
+
+create index if not exists group_members_user_id_index
+on public.group_members (user_id);
+
+create table if not exists public.group_messages (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references public.groups(id) on delete cascade,
+  user_id uuid references public.profiles(id) on delete set null,
+  user_number bigint,
+  username text not null,
+  display_name text,
+  avatar_url text,
+  text text not null,
+  type text not null default 'text',
+  created_at timestamptz not null default now(),
+  constraint group_messages_type_check check (type in ('text','sticker'))
+);
+
+create index if not exists group_messages_group_created_at_index
+on public.group_messages (group_id,created_at desc);
+
+create schema if not exists private;
+
+create or replace function private.user_group_ids()
+returns setof uuid
+language sql
+security definer
+set search_path = ''
+stable
+as $$
+  select group_id
+  from public.group_members
+  where user_id=(select auth.uid())
+$$;
+
+revoke execute on function private.user_group_ids() from public;
+grant usage on schema private to authenticated;
+grant execute on function private.user_group_ids() to authenticated;
+
+create or replace function public.add_group_owner()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  insert into public.group_members(group_id,user_id)
+  values(new.id,new.owner_id)
+  on conflict do nothing;
+  return new;
+end;
+$$;
+
+drop trigger if exists groups_add_owner on public.groups;
+
+create trigger groups_add_owner
+after insert on public.groups
+for each row
+execute function public.add_group_owner();
+
+create or replace function public.delete_group(group_id_value uuid)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  deleted_group_id uuid;
+begin
+  if not exists (
+    select 1
+    from public.groups
+    where id=group_id_value
+      and owner_id=(select auth.uid())
+      and deleted_at is null
+  ) then
+    raise exception 'Group not found or you are not allowed to delete it.';
+  end if;
+
+  delete from public.group_messages where group_id=group_id_value;
+  delete from public.group_members where group_id=group_id_value;
+
+  update public.groups
+  set deleted_at=now()
+  where id=group_id_value
+    and owner_id=(select auth.uid())
+    and deleted_at is null
+  returning id into deleted_group_id;
+
+  return deleted_group_id is not null;
+end;
+$$;
+
+revoke execute on function public.delete_group(uuid) from public;
+revoke execute on function public.delete_group(uuid) from anon;
+grant execute on function public.delete_group(uuid) to authenticated;
+
+alter table public.groups enable row level security;
+alter table public.group_members enable row level security;
+alter table public.group_messages enable row level security;
+
+drop policy if exists groups_select on public.groups;
+create policy groups_select
+on public.groups
+for select
+to authenticated
+using (
+  owner_id=(select auth.uid())
+  or id in (select private.user_group_ids())
+);
+
+drop policy if exists groups_insert on public.groups;
+create policy groups_insert
+on public.groups
+for insert
+to authenticated
+with check (owner_id=(select auth.uid()));
+
+drop policy if exists groups_update on public.groups;
+create policy groups_update
+on public.groups
+for update
+to authenticated
+using (owner_id=(select auth.uid()))
+with check (owner_id=(select auth.uid()));
+
+drop policy if exists group_members_select on public.group_members;
+create policy group_members_select
+on public.group_members
+for select
+to authenticated
+using (group_id in (select private.user_group_ids()));
+
+drop policy if exists group_members_insert on public.group_members;
+create policy group_members_insert
+on public.group_members
+for insert
+to authenticated
+with check (
+  user_id=(select auth.uid())
+  or group_id in (
+    select id
+    from public.groups
+    where owner_id=(select auth.uid())
+      and deleted_at is null
+  )
+);
+
+drop policy if exists group_members_delete on public.group_members;
+create policy group_members_delete
+on public.group_members
+for delete
+to authenticated
+using (
+  user_id=(select auth.uid())
+  or group_id in (
+    select id
+    from public.groups
+    where owner_id=(select auth.uid())
+      and deleted_at is null
+  )
+);
+
+drop policy if exists group_messages_select on public.group_messages;
+create policy group_messages_select
+on public.group_messages
+for select
+to authenticated
+using (group_id in (select private.user_group_ids()));
+
+drop policy if exists group_messages_insert on public.group_messages;
+create policy group_messages_insert
+on public.group_messages
+for insert
+to authenticated
+with check (
+  user_id=(select auth.uid())
+  and group_id in (select private.user_group_ids())
+);
+
+drop policy if exists group_messages_delete on public.group_messages;
+create policy group_messages_delete
+on public.group_messages
+for delete
+to authenticated
+using (user_id=(select auth.uid()));
+
+grant select,insert,update on public.groups to authenticated;
+grant select,insert,delete on public.group_members to authenticated;
+grant select,insert,delete on public.group_messages to authenticated;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname='supabase_realtime'
+      and schemaname='public'
+      and tablename='groups'
+  ) then
+    alter publication supabase_realtime add table public.groups;
+  end if;
+
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname='supabase_realtime'
+      and schemaname='public'
+      and tablename='group_members'
+  ) then
+    alter publication supabase_realtime add table public.group_members;
+  end if;
+
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname='supabase_realtime'
+      and schemaname='public'
+      and tablename='group_messages'
+  ) then
+    alter publication supabase_realtime add table public.group_messages;
+  end if;
+end;
+$$;
+
+alter table public.group_messages replica identity full;
