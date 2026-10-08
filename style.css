@@ -534,8 +534,8 @@ html[data-color-mode="light"]{
 }
 html[data-color-mode="light"] body{background:var(--bg);color:var(--white)}
 html[data-color-mode="light"] .topbar{background:#ffffff}
-html[data-color-mode="light"] .sidebar,.html[data-color-mode="light"] .chat-panel{background:var(--panel)}
-html[data-color-mode="light"] .sidebar,.html[data-color-mode="light"] .chat-panel{border-color:var(--line)}
+html[data-color-mode="light"] .sidebar,html[data-color-mode="light"] .chat-panel{background:var(--panel)}
+html[data-color-mode="light"] .sidebar,html[data-color-mode="light"] .chat-panel{border-color:var(--line)}
 html[data-color-mode="light"] .top-search-input,
 html[data-color-mode="light"] #messageInput,
 html[data-color-mode="light"] .profile-form input,
