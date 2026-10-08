@@ -1257,6 +1257,9 @@ languageSelect?.addEventListener("change",()=>changeLanguage(languageSelect.valu
 
 openProfileButton.addEventListener("click",()=>{setMobileMenu(false);openMyProfile();});
 closeProfileButton.addEventListener("click",closeProfileModal);
+closeGroupModalButton?.addEventListener("click",closeGroupModal);
+groupCreateSubmit?.addEventListener("click",createGroup);
+groupModal?.addEventListener("click",event=>{if(event.target===groupModal)closeGroupModal();});
 avatarCropModal?.addEventListener("click",event=>{if(event.target===avatarCropModal)closeAvatarCrop()});
 closeUserProfileButton.addEventListener("click",()=>userProfileModal.classList.add("hidden"));
 friendRefreshButton?.addEventListener("click",async()=>{friendRefreshButton.classList.add("refreshing");await loadFriends();setTimeout(()=>friendRefreshButton.classList.remove("refreshing"),280);});
