@@ -370,7 +370,7 @@ grant delete on public.messages to authenticated;
 
 create table if not exists public.groups (
   id uuid primary key default gen_random_uuid(),
-  owner_id uuid not null unique references public.profiles(id) on delete cascade,
+  owner_id uuid not null references public.profiles(id) on delete cascade,
   name text not null,
   created_at timestamptz not null default now(),
   deleted_at timestamptz,
