@@ -1000,3 +1000,21 @@ html[data-color-mode="light"] .message-time{
   object-fit:contain!important;
  }
 }
+
+.message-attachment-image-link{display:inline-flex;max-width:min(280px,70vw);margin-top:3px}
+.message-attachment-image{display:block;width:auto;max-width:100%;max-height:280px;border-radius:10px;object-fit:contain}
+.message-file{display:flex;align-items:center;gap:9px;max-width:min(330px,78vw);margin-top:3px;padding:9px 11px;border:1px solid var(--line);border-radius:11px;background:var(--panel2);color:var(--white);text-decoration:none}
+.message-file:hover{border-color:rgba(var(--accent-rgb),.45)}
+.message-file-icon{width:28px;height:28px;border-radius:8px;background:rgba(var(--accent-rgb),.12);color:var(--orange2);display:grid;place-items:center;font-size:13px;font-weight:900;flex:none}
+.message-file-info{display:flex;flex-direction:column;min-width:0}
+.message-file-info strong{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.message-file-info small{font-size:9px;color:var(--muted);margin-top:2px}
+.file-button svg{width:19px;height:19px}
+@media(max-width:760px){
+ input,textarea,select{font-size:16px!important}
+ .message-sticker{width:56px;max-width:56px;height:56px}
+ .message-sticker img{width:56px;height:56px;max-width:56px;max-height:56px;object-fit:contain;border-radius:7px}
+ .message-attachment-image-link{max-width:78vw}
+ .message-attachment-image{max-height:220px}
+ .message-file{max-width:82vw}
+}
