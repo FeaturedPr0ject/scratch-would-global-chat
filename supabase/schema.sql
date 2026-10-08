@@ -357,3 +357,13 @@ begin
   end if;
 end;
 $$;
+
+
+drop policy if exists messages_delete on public.messages;
+create policy messages_delete
+on public.messages
+for delete
+to authenticated
+using (user_id = auth.uid());
+
+grant delete on public.messages to authenticated;

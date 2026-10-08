@@ -792,3 +792,10 @@ html[data-color-mode="light"] .mobile-menu-backdrop{background:rgba(0,0,0,.35)}
 .top-search-input{height:44px;font-size:12px;padding-left:14px;padding-right:48px}
 .top-search-button{right:5px;width:34px;height:34px;border-radius:10px;font-size:13px}
 @media(max-width:760px){.topbar .logo-main.logo-image{width:54px;height:34px}.top-search-wrap{width:min(48vw,270px)}.top-search-input{height:38px;font-size:11px;padding-left:12px;padding-right:43px}.top-search-button{right:4px;width:30px;height:30px;border-radius:9px;font-size:12px}}
+
+.message-row{position:relative;display:block}
+.message-delete-button{position:absolute;top:8px;right:8px;width:26px;height:26px;border:1px solid transparent;border-radius:8px;background:transparent;color:#777780;font-size:16px;line-height:1;display:grid;place-items:center;opacity:0;transition:opacity .15s ease,background .15s ease,border-color .15s ease,color .15s ease}
+.message-row:hover .message-delete-button,.message-delete-button:focus-visible{opacity:1}
+.message-delete-button:hover{background:#2a2020;border-color:#6b3030;color:#ff8c8c}
+@media(max-width:760px){.message-delete-button{opacity:1;width:24px;height:24px;top:7px;right:6px;font-size:15px}}
+html[data-color-mode="light"] .message-delete-button:hover{background:#fff0f0;border-color:#e4aaaa;color:#c34b4b}

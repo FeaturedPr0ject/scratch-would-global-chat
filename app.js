@@ -443,9 +443,13 @@ function renderMessages(forceScroll=false){
   const avatarItem={...item,...liveProfile};
   const stickerUrl=item.type==="sticker"?safeUrl(item.text):"";
   const content=item.type==="sticker"&&stickerUrl?'<span class="message-sticker"><img src="'+escapeText(stickerUrl)+'" alt="Sticker" loading="lazy"></span>':item.type==="sticker"?'<span class="message-sticker">'+escapeText(item.text)+'</span>':'<span class="message-text">'+escapeText(item.text)+'</span>';
-  return '<button class="message-profile-button" type="button" data-user-id="'+escapeText(item.user_id)+'">'+
+  const canDelete=item.user_id===userId;
+  const deleteLabel=currentLanguage==="vi"?"Xóa tin nhắn":"Delete message";
+  const deleteMarkup=canDelete?'<button class="message-delete-button" type="button" data-message-id="'+escapeText(item.id)+'" aria-label="'+escapeText(deleteLabel)+'" title="'+escapeText(deleteLabel)+'">×</button>':"";
+  return '<div class="message-row">'+
+   '<button class="message-profile-button" type="button" data-user-id="'+escapeText(item.user_id)+'">'+
    avatarMarkup(avatarItem)+
-   '<span class="message-body"><span class="message-meta"><span class="message-name-wrap"><span class="message-display-name">'+escapeText(displayName)+'</span>'+ownerBadgeMarkup(item.user_id,userNumber)+'<span class="message-username">'+escapeText(username?"@"+username:"")+'</span></span><time class="message-time">'+escapeText(new Date(item.created_at||Date.now()).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}))+'</time></span>'+content+'</span></button>';
+   '<span class="message-body"><span class="message-meta"><span class="message-name-wrap"><span class="message-display-name">'+escapeText(displayName)+'</span>'+ownerBadgeMarkup(item.user_id,userNumber)+'<span class="message-username">'+escapeText(username?"@"+username:"")+'</span></span><time class="message-time">'+escapeText(new Date(item.created_at||Date.now()).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}))+'</time></span>'+content+'</span></button>'+deleteMarkup+'</div>';
  }).join("");
  if(shouldStickToBottom){
   scrollToBottom(false);
@@ -539,6 +543,14 @@ async function request(path,options={}){
    : await supabaseClient.from("profiles").insert(payload).select("id,user_number,username,display_name,note,avatar_url,created_at,updated_at").single();
   data={ok:true,profile:result.data};
   error=result.error;
+ }else if(url.pathname==="/api/messages"&&method==="DELETE"){
+  const messageId=String(body.id||"").trim();
+  if(!messageId)throw new Error("Message ID is required");
+  const result=await supabaseClient.from("messages").delete().eq("id",messageId).eq("user_id",userId).select("id").maybeSingle();
+  if(result.error)throw result.error;
+  if(!result.data)throw new Error("Message not found or you are not allowed to delete it.");
+  data={ok:true,message_id:result.data.id};
+  error=null;
  }else if(url.pathname==="/api/messages"&&method==="POST"){
   const messageText=String(body.text||"").trim().slice(0,500);
   const type=body.type==="sticker"?"sticker":"text";
@@ -607,6 +619,13 @@ function connectRealtime(){
    if(message&&!messages.some(item=>item.id===message.id)){
     messages.push(message);
     messages=messages.slice(-100);
+    renderMessages();
+   }
+  })
+  .on("postgres_changes",{event:"DELETE",schema:"public",table:"messages"},payload=>{
+   const messageId=payload.old?.id;
+   if(messageId){
+    messages=messages.filter(item=>item.id!==messageId);
     renderMessages();
    }
   })
@@ -951,6 +970,22 @@ async function sendMessage(type="text",sticker=""){
  }finally{sendButton.disabled=false;}
 }
 
+async function deleteMessage(messageId){
+ if(!messageId||!userId)return;
+ const confirmed=window.confirm(currentLanguage==="vi"?"Xóa tin nhắn này?":"Delete this message?");
+ if(!confirmed)return;
+ try{
+  const result=await request("/api/messages",{method:"DELETE",body:JSON.stringify({id:messageId})});
+  if(result.message_id){
+   messages=messages.filter(item=>item.id!==result.message_id);
+   renderMessages();
+  }
+ }catch(error){
+  setConnection(error instanceof Error?error.message:"Delete failed");
+  setTimeout(()=>setConnection("Connected"),1800);
+ }
+}
+
 async function openPublicProfile(userIdValue){
  if(!userIdValue)return;
  try{
@@ -1118,6 +1153,13 @@ friendList?.addEventListener("click",async event=>{
  }
 });
 messagesEl.addEventListener("click",event=>{
+ const deleteButton=event.target.closest("[data-message-id]");
+ if(deleteButton){
+  event.preventDefault();
+  event.stopPropagation();
+  deleteMessage(deleteButton.dataset.messageId);
+  return;
+ }
  const button=event.target.closest("[data-user-id]");
  if(button)openPublicProfile(button.dataset.userId);
 });
