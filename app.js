@@ -11,6 +11,8 @@ const messagesEl=document.querySelector("#messages");
 const input=document.querySelector("#messageInput");
 const sendButton=document.querySelector("#sendButton");
 const stickerButton=document.querySelector("#stickerButton");
+const fileButton=document.querySelector("#fileButton");
+const fileInput=document.querySelector("#fileInput");
 const stickerPicker=document.querySelector("#stickerPicker");
 const charCount=document.querySelector("#charCount");
 const nameModal=document.querySelector("#nameModal");
@@ -475,7 +477,10 @@ function renderMessages(forceScroll=false){
   const userNumber=liveProfile.user_number||item.user_number;
   const avatarItem={...item,...liveProfile};
   const stickerUrl=item.type==="sticker"?safeUrl(item.text):"";
-  const content=item.type==="sticker"&&stickerUrl?'<span class="message-sticker"><img src="'+escapeText(stickerUrl)+'" alt="Sticker" loading="lazy"></span>':item.type==="sticker"?'<span class="message-sticker">'+escapeText(item.text)+'</span>':'<span class="message-text">'+escapeText(item.text)+'</span>';
+  const attachmentUrl=item.type==="image"||item.type==="file"?safeUrl(item.text):"";
+  const attachmentName=escapeText(item.attachment_name||"Attachment");
+  const attachmentSizeText=formatFileSize(item.attachment_size||0);
+  const content=item.type==="sticker"&&stickerUrl?'<span class="message-sticker"><img src="'+escapeText(stickerUrl)+'" alt="Sticker" loading="lazy"></span>':item.type==="sticker"?'<span class="message-sticker">'+escapeText(item.text)+'</span>':item.type==="image"&&attachmentUrl?'<a class="message-attachment-image-link" href="'+escapeText(attachmentUrl)+'" target="_blank" rel="noopener"><img class="message-attachment-image" src="'+escapeText(attachmentUrl)+'" alt="'+attachmentName+'" loading="lazy"></a>':item.type==="file"&&attachmentUrl?'<a class="message-file" href="'+escapeText(attachmentUrl)+'" target="_blank" rel="noopener"><span class="message-file-icon">↗</span><span class="message-file-info"><strong>'+attachmentName+'</strong><small>'+escapeText(attachmentSizeText)+'</small></span></a>':'<span class="message-text">'+escapeText(item.text)+'</span>';
   const canDelete=item.user_id===userId;
   const deleteLabel=currentLanguage==="vi"?"Xóa tin nhắn":"Delete message";
   const deleteMarkup=canDelete?'<button class="message-delete-button" type="button" data-message-id="'+escapeText(item.id)+'" aria-label="'+escapeText(deleteLabel)+'" title="'+escapeText(deleteLabel)+'">×</button>':"";
@@ -557,17 +562,21 @@ async function request(path,options={}){
  }else if(url.pathname==="/api/group-messages"&&method==="GET"){
   const groupId=new URLSearchParams(url.search).get("group_id")?.trim()||"";
   if(!groupId)throw new Error("Group ID is required");
-  const result=await supabaseClient.from("group_messages").select("id,group_id,user_id,user_number,username,display_name,avatar_url,text,type,created_at").eq("group_id",groupId).order("created_at",{ascending:false}).limit(100);
+  const result=await supabaseClient.from("group_messages").select("id,group_id,user_id,user_number,username,display_name,avatar_url,text,type,attachment_name,attachment_size,attachment_mime,created_at").eq("group_id",groupId).order("created_at",{ascending:false}).limit(100);
   data={ok:true,messages:(result.data||[]).reverse()};
   error=result.error;
  }else if(url.pathname==="/api/group-messages"&&method==="POST"){
   const groupId=String(body.group_id||"").trim();
   const messageText=String(body.text||"").trim().slice(0,500);
-  const type=body.type==="sticker"?"sticker":"text";
+  const type=["sticker","image","file"].includes(body.type)?body.type:"text";
   if(!groupId)throw new Error("Group ID is required");
   if(!messageText)throw new Error("Message cannot be empty");
   if(!profile)throw new Error("Profile not found");
-  const result=await supabaseClient.from("group_messages").insert({group_id:groupId,user_id:profile.id,user_number:profile.user_number,username:profile.username,display_name:profile.display_name,avatar_url:profile.avatar_url,text:messageText,type}).select("id,group_id,user_id,user_number,username,display_name,avatar_url,text,type,created_at").single();
+  const attachmentName=String(body.attachment_name||"").trim().slice(0,255);
+  const attachmentSize=Number(body.attachment_size||0);
+  const attachmentMime=String(body.attachment_mime||"").trim().slice(0,255);
+  if((type==="image"||type==="file")&&(attachmentSize<=0||attachmentSize>2097152))throw new Error("Attachment size is invalid");
+  const result=await supabaseClient.from("group_messages").insert({group_id:groupId,user_id:profile.id,user_number:profile.user_number,username:profile.username,display_name:profile.display_name,avatar_url:profile.avatar_url,text:messageText,type,attachment_name:type==="text"||type==="sticker"?null:attachmentName||"Attachment",attachment_size:type==="text"||type==="sticker"?null:attachmentSize,attachment_mime:type==="text"||type==="sticker"?null:attachmentMime}).select("id,group_id,user_id,user_number,username,display_name,avatar_url,text,type,created_at").single();
   data={ok:true,message:result.data};
   error=result.error;
  }else if(url.pathname==="/api/group-messages"&&method==="DELETE"){
@@ -579,7 +588,7 @@ async function request(path,options={}){
   data={ok:true,message_id:result.data.id};
   error=null;
  }else if(url.pathname==="/api/messages"&&method==="GET"){
-  const result=await supabaseClient.from("messages").select("id,user_id,user_number,username,display_name,avatar_url,text,type,created_at").order("created_at",{ascending:false}).limit(100);
+  const result=await supabaseClient.from("messages").select("id,user_id,user_number,username,display_name,avatar_url,text,type,attachment_name,attachment_size,attachment_mime,created_at").order("created_at",{ascending:false}).limit(100);
   data={ok:true,messages:(result.data||[]).reverse()};
   error=result.error;
  }else if(url.pathname==="/api/friends"&&method==="GET"){
@@ -651,6 +660,10 @@ async function request(path,options={}){
   const type=body.type==="sticker"?"sticker":"text";
   if(!messageText)throw new Error("Message cannot be empty");
   if(!profile)throw new Error("Profile not found");
+  const attachmentName=String(body.attachment_name||"").trim().slice(0,255);
+  const attachmentSize=Number(body.attachment_size||0);
+  const attachmentMime=String(body.attachment_mime||"").trim().slice(0,255);
+  if((type==="image"||type==="file")&&(attachmentSize<=0||attachmentSize>2097152))throw new Error("Attachment size is invalid");
   const result=await supabaseClient.from("messages").insert({
    user_id:profile.id,
    user_number:profile.user_number,
@@ -658,6 +671,9 @@ async function request(path,options={}){
    display_name:profile.display_name,
    avatar_url:profile.avatar_url,
    text:messageText,
+   attachment_name:type==="text"||type==="sticker"?null:attachmentName||"Attachment",
+   attachment_size:type==="text"||type==="sticker"?null:attachmentSize,
+   attachment_mime:type==="text"||type==="sticker"?null:attachmentMime,
    type
   }).select("id,user_id,user_number,username,display_name,avatar_url,text,type,created_at").single();
   data={ok:true,message:result.data};
@@ -1066,6 +1082,39 @@ async function sendSticker(url){
  await sendMessage("sticker",safe);
 }
 
+function formatFileSize(size){
+ const value=Number(size||0);
+ if(value<1024)return value+" B";
+ if(value<1024*1024)return (value/1024).toFixed(1)+" KB";
+ return (value/(1024*1024)).toFixed(2)+" MB";
+}
+
+async function uploadFile(file){
+ if(!file||!profile||!userId)return;
+ if(file.size>2*1024*1024)throw new Error(currentLanguage==="vi"?"Tệp phải nhỏ hơn 2 MB.":"File must be smaller than 2 MB.");
+ const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,"_").slice(-120)||"file";
+ const path=userId+"/"+Date.now()+"-"+crypto.randomUUID()+"-"+safeName;
+ const upload=await supabaseClient.storage.from("chat-files").upload(path,file,{contentType:file.type||"application/octet-stream",upsert:false});
+ if(upload.error)throw upload.error;
+ const fileRecord=await supabaseClient.from("chat_files").insert({user_id:userId,path,original_name:file.name,mime_type:file.type||"application/octet-stream",size_bytes:file.size}).select("id").single();
+ if(fileRecord.error){
+  await supabaseClient.storage.from("chat-files").remove([path]);
+  throw fileRecord.error;
+ }
+ const publicUrl=supabaseClient.storage.from("chat-files").getPublicUrl(path).data.publicUrl;
+ const inlineImage=/^image\\/(png|jpeg)$/i.test(file.type||"")||/\\.(png|jpe?g)$/i.test(file.name);
+ const type=inlineImage?"image":"file";
+ const endpoint=activeGroupId?"/api/group-messages":"/api/messages";
+ const body={user_id:userId,group_id:activeGroupId||undefined,text:publicUrl,type,attachment_name:file.name,attachment_size:file.size,attachment_mime:file.type||"application/octet-stream"};
+ const result=await request(endpoint,{method:"POST",body:JSON.stringify(body)});
+ if(result.message&&!messages.some(item=>item.id===result.message.id)){
+  messages.push(result.message);
+  messages=messages.slice(-100);
+  if(activeGroupId)groupMessages=messages.slice();else publicMessages=messages.slice();
+  renderMessages(true);
+ }
+}
+
 async function sendMessage(type="text",sticker=""){
  const text=type==="sticker"?sticker:input.value.trim();
  if(!text||!profile||!userId)return;
@@ -1388,6 +1437,19 @@ messagesEl.addEventListener("scroll",updateScrollButton,{passive:true});
 scrollToBottomButton?.addEventListener("click",()=>scrollToBottom(true));
 sendButton.addEventListener("click",()=>sendMessage());
 stickerButton?.addEventListener("click",event=>{event.stopPropagation();openStickerPicker()});
+fileButton?.addEventListener("click",()=>fileInput?.click());
+fileInput?.addEventListener("change",async()=>{
+ const file=fileInput.files?.[0];
+ fileInput.value="";
+ if(!file)return;
+ sendButton.disabled=true;
+ try{await uploadFile(file);}
+ catch(error){
+  setConnection(error instanceof Error?error.message:(currentLanguage==="vi"?"Không thể tải tệp lên.":"Could not upload file."));
+  setTimeout(()=>setConnection("Connected"),2200);
+ }
+ finally{sendButton.disabled=false;}
+});
 stickerPickerClose?.addEventListener("click",()=>stickerPicker?.classList.add("hidden"));
 savedStickerTab?.addEventListener("click",()=>setStickerTab("saved"));
 searchStickerTab?.addEventListener("click",()=>setStickerTab("search"));
