@@ -66,6 +66,15 @@ const friendList=document.querySelector("#friendList");
 const friendRefreshButton=document.querySelector("#friendRefreshButton");
 const addFriendButton=document.querySelector("#addFriendButton");
 const friendActionMessage=document.querySelector("#friendActionMessage");
+const roomStatus=document.querySelector("#roomStatus");
+const groupCard=document.querySelector("#groupCard");
+const groupModal=document.querySelector("#groupModal");
+const closeGroupModalButton=document.querySelector("#closeGroupModal");
+const groupNameInput=document.querySelector("#groupNameInput");
+const groupFriendList=document.querySelector("#groupFriendList");
+const groupModalMessage=document.querySelector("#groupModalMessage");
+const createGroupButton=document.querySelector("#createGroupButton");
+const groupCreateSubmit=document.querySelector("#groupCreateSubmit");
 const mobileMenuButton=document.querySelector("#mobileMenuButton");
 const mobileMenuBackdrop=document.querySelector("#mobileMenuBackdrop");
 const mobileSidebar=document.querySelector(".sidebar");
@@ -81,6 +90,12 @@ const themeModeOptions=document.querySelectorAll("[data-theme-mode]");
 const languageSelect=document.querySelector("#languageSelect");
 let friends=[];
 let selectedProfileId="";
+let groups=[];
+let ownedGroup=null;
+let groupCreationUsed=false;
+let activeGroupId="";
+let publicMessages=[];
+let groupMessages=[];
 const onlineUsers=new Set();
 let presenceChannel=null;
 const connectionDot=document.querySelector("#connectionDot");
@@ -483,6 +498,57 @@ async function request(path,options={}){
    : await supabaseClient.from("profiles").select("id,user_number,username,display_name,note,avatar_url,last_seen").eq("username_key",query.toLowerCase()).maybeSingle();
   data={ok:true,profile:result.data||null};
   error=result.error;
+ }else if(url.pathname==="/api/groups"&&method==="GET"){
+  const result=await supabaseClient.from("groups").select("id,owner_id,name,created_at,deleted_at").order("created_at",{ascending:true});
+  data={ok:true,groups:result.data||[]};
+  error=result.error;
+ }else if(url.pathname==="/api/groups"&&method==="POST"){
+  const name=String(body.name||"").trim().replace(/\s+/g," ").slice(0,48);
+  if(name.length<2)throw new Error("Group name must be 2-48 characters.");
+  const result=await supabaseClient.from("groups").insert({owner_id:userId,name}).select("id,owner_id,name,created_at,deleted_at").single();
+  data={ok:true,group:result.data};
+  error=result.error;
+ }else if(url.pathname==="/api/groups/delete"&&method==="POST"){
+  const groupId=String(body.group_id||"").trim();
+  if(!groupId)throw new Error("Group ID is required");
+  const result=await supabaseClient.rpc("delete_group",{group_id_value:groupId});
+  if(result.error)throw result.error;
+  data={ok:true,deleted:Boolean(result.data)};
+  error=null;
+ }else if(url.pathname==="/api/group-members"&&method==="POST"){
+  const groupId=String(body.group_id||"").trim();
+  const memberIds=Array.isArray(body.user_ids)?[...new Set(body.user_ids.map(value=>String(value).trim()).filter(value=>value&&value!==userId))]:[];
+  if(!groupId)throw new Error("Group ID is required");
+  if(memberIds.length){
+   const result=await supabaseClient.from("group_members").insert(memberIds.map(memberId=>({group_id:groupId,user_id:memberId})));
+   if(result.error)throw result.error;
+  }
+  data={ok:true};
+  error=null;
+ }else if(url.pathname==="/api/group-messages"&&method==="GET"){
+  const groupId=new URLSearchParams(url.search).get("group_id")?.trim()||"";
+  if(!groupId)throw new Error("Group ID is required");
+  const result=await supabaseClient.from("group_messages").select("id,group_id,user_id,user_number,username,display_name,avatar_url,text,type,created_at").eq("group_id",groupId).order("created_at",{ascending:false}).limit(100);
+  data={ok:true,messages:(result.data||[]).reverse()};
+  error=result.error;
+ }else if(url.pathname==="/api/group-messages"&&method==="POST"){
+  const groupId=String(body.group_id||"").trim();
+  const messageText=String(body.text||"").trim().slice(0,500);
+  const type=body.type==="sticker"?"sticker":"text";
+  if(!groupId)throw new Error("Group ID is required");
+  if(!messageText)throw new Error("Message cannot be empty");
+  if(!profile)throw new Error("Profile not found");
+  const result=await supabaseClient.from("group_messages").insert({group_id:groupId,user_id:profile.id,user_number:profile.user_number,username:profile.username,display_name:profile.display_name,avatar_url:profile.avatar_url,text:messageText,type}).select("id,group_id,user_id,user_number,username,display_name,avatar_url,text,type,created_at").single();
+  data={ok:true,message:result.data};
+  error=result.error;
+ }else if(url.pathname==="/api/group-messages"&&method==="DELETE"){
+  const messageId=String(body.id||"").trim();
+  if(!messageId)throw new Error("Message ID is required");
+  const result=await supabaseClient.from("group_messages").delete().eq("id",messageId).eq("user_id",userId).select("id").maybeSingle();
+  if(result.error)throw result.error;
+  if(!result.data)throw new Error("Message not found or you are not allowed to delete it.");
+  data={ok:true,message_id:result.data.id};
+  error=null;
  }else if(url.pathname==="/api/messages"&&method==="GET"){
   const result=await supabaseClient.from("messages").select("id,user_id,user_number,username,display_name,avatar_url,text,type,created_at").order("created_at",{ascending:false}).limit(100);
   data={ok:true,messages:(result.data||[]).reverse()};
@@ -616,19 +682,38 @@ function connectRealtime(){
  channel
   .on("postgres_changes",{event:"INSERT",schema:"public",table:"messages"},payload=>{
    const message=payload.new;
-   if(message&&!messages.some(item=>item.id===message.id)){
-    messages.push(message);
-    messages=messages.slice(-100);
-    renderMessages();
+   if(message&&!publicMessages.some(item=>item.id===message.id)){
+    publicMessages.push(message);
+    publicMessages=publicMessages.slice(-100);
+    if(!activeGroupId){messages=publicMessages.slice();renderMessages();}
    }
   })
   .on("postgres_changes",{event:"DELETE",schema:"public",table:"messages"},payload=>{
    const messageId=payload.old?.id;
    if(messageId){
-    messages=messages.filter(item=>item.id!==messageId);
+    publicMessages=publicMessages.filter(item=>item.id!==messageId);
+    if(!activeGroupId){messages=publicMessages.slice();renderMessages();}
+   }
+  })
+  .on("postgres_changes",{event:"INSERT",schema:"public",table:"group_messages"},payload=>{
+   const message=payload.new;
+   if(message&&message.group_id===activeGroupId&&!groupMessages.some(item=>item.id===message.id)){
+    groupMessages.push(message);
+    groupMessages=groupMessages.slice(-100);
+    messages=groupMessages.slice();
     renderMessages();
    }
   })
+  .on("postgres_changes",{event:"DELETE",schema:"public",table:"group_messages"},payload=>{
+   const messageId=payload.old?.id;
+   if(messageId){
+    groupMessages=groupMessages.filter(item=>item.id!==messageId);
+    if(activeGroupId){messages=groupMessages.slice();renderMessages();}
+   }
+  })
+  .on("postgres_changes",{event:"UPDATE",schema:"public",table:"groups"},()=>loadGroups())
+  .on("postgres_changes",{event:"INSERT",schema:"public",table:"group_members"},payload=>{if(payload.new?.user_id===userId)loadGroups()})
+  .on("postgres_changes",{event:"DELETE",schema:"public",table:"group_members"},payload=>{if(payload.old?.user_id===userId)loadGroups()})
   .on("postgres_changes",{event:"INSERT",schema:"public",table:"friend_requests"},()=>loadFriends())
   .on("postgres_changes",{event:"UPDATE",schema:"public",table:"friend_requests"},()=>loadFriends())
   .on("postgres_changes",{event:"INSERT",schema:"public",table:"profiles"},payload=>{
@@ -954,10 +1039,13 @@ async function sendMessage(type="text",sticker=""){
  if(!text||!profile||!userId)return;
  sendButton.disabled=true;
  try{
-  const result=await request("/api/messages",{method:"POST",body:JSON.stringify({user_id:userId,text,type})});
+  const endpoint=activeGroupId?"/api/group-messages":"/api/messages";
+  const body=activeGroupId?{user_id:userId,group_id:activeGroupId,text,type}:{user_id:userId,text,type};
+  const result=await request(endpoint,{method:"POST",body:JSON.stringify(body)});
   if(result.message&&!messages.some(item=>item.id===result.message.id)){
    messages.push(result.message);
    messages=messages.slice(-100);
+   if(activeGroupId)groupMessages=messages.slice();else publicMessages=messages.slice();
    renderMessages(true);
   }
   input.value="";
@@ -975,13 +1063,132 @@ async function deleteMessage(messageId){
  const confirmed=window.confirm(currentLanguage==="vi"?"Xóa tin nhắn này?":"Delete this message?");
  if(!confirmed)return;
  try{
-  const result=await request("/api/messages",{method:"DELETE",body:JSON.stringify({id:messageId})});
+  const endpoint=activeGroupId?"/api/group-messages":"/api/messages";
+  const result=await request(endpoint,{method:"DELETE",body:JSON.stringify({id:messageId})});
   if(result.message_id){
    messages=messages.filter(item=>item.id!==result.message_id);
+   if(activeGroupId)groupMessages=messages.slice();else publicMessages=messages.slice();
    renderMessages();
   }
  }catch(error){
   setConnection(error instanceof Error?error.message:"Delete failed");
+  setTimeout(()=>setConnection("Connected"),1800);
+ }
+}
+
+function renderGroupCard(){
+ if(!groupCard)return;
+ const activeGroups=groups.filter(item=>!item.deleted_at);
+ if(!activeGroups.length){
+  if(groupCreationUsed){
+   groupCard.innerHTML='<div class="group-card-head"><strong>Group</strong></div><div class="group-card-empty">'+escapeText(currentLanguage==="vi"?"Bạn đã dùng lượt tạo nhóm. Nhóm đã xóa không thể tạo lại.":"You already used your one group creation. A deleted group cannot be recreated.")+'</div>';
+  }else{
+   groupCard.innerHTML='<div class="group-card-head"><strong>Group</strong></div><div class="group-card-empty">'+escapeText(currentLanguage==="vi"?"Bạn chưa có nhóm.":"You do not have a group yet.")+'</div><button class="primary-button group-create-button" type="button">'+escapeText(currentLanguage==="vi"?"Tạo nhóm":"Create Group")+'</button>';
+   groupCard.querySelector(".group-create-button")?.addEventListener("click",openGroupModal);
+  }
+  return;
+ }
+ groupCard.innerHTML=activeGroups.map(item=>{
+  const owned=item.owner_id===userId;
+  return '<div class="group-item'+(activeGroupId===item.id?' active':'')+'"><button class="group-open-button" type="button" data-group-open="'+escapeText(item.id)+'"><span class="group-icon">G</span><span class="group-info"><strong>'+escapeText(item.name)+'</strong><small>'+escapeText(owned?(currentLanguage==="vi"?"Nhóm của bạn":"Your group"):(currentLanguage==="vi"?"Nhóm":"Group"))+'</small></span></button>'+(owned?'<button class="group-delete-button" type="button" data-group-delete="'+escapeText(item.id)+'" aria-label="'+escapeText(currentLanguage==="vi"?"Xóa nhóm":"Delete group")+'" title="'+escapeText(currentLanguage==="vi"?"Xóa nhóm":"Delete group")+'">×</button>':"")+'</div>';
+ }).join("");
+}
+
+async function loadGroups(){
+ try{
+  const result=await request("/api/groups?user_id="+encodeURIComponent(userId));
+  groups=result.groups||[];
+  ownedGroup=groups.find(item=>item.owner_id===userId&&!item.deleted_at)||null;
+  groupCreationUsed=groups.some(item=>item.owner_id===userId);
+  if(activeGroupId&&!groups.some(item=>item.id===activeGroupId&&!item.deleted_at)){
+   activeGroupId="";
+   messages=publicMessages.slice();
+   if(roomStatus)roomStatus.textContent=currentLanguage==="vi"?"Phòng công khai":"Public room";
+   renderMessages(true);
+  }
+  renderGroupCard();
+ }catch{
+  groups=[];
+  ownedGroup=null;
+  groupCreationUsed=false;
+  renderGroupCard();
+ }
+}
+
+function openGroupModal(){
+ if(groupCreationUsed||!groupModal)return;
+ groupNameInput.value="";
+ groupModalMessage.textContent="";
+ const accepted=friends.filter(item=>item.status==="accepted");
+ groupFriendList.innerHTML=accepted.length?accepted.map(item=>'<label class="group-member-option"><input type="checkbox" value="'+escapeText(item.user_id)+'"><span>'+avatarMarkup(item,"group-member-avatar")+'<span><strong>'+escapeText(item.display_name||item.username)+'</strong><small>@'+escapeText(item.username)+'</small></span></span></label>').join(""):'<span class="group-member-empty">'+escapeText(currentLanguage==="vi"?"Bạn chưa có bạn bè để thêm.":"You have no friends to add yet.")+'</span>';
+ groupModal.classList.remove("hidden");
+ setTimeout(()=>groupNameInput?.focus(),30);
+}
+
+function closeGroupModal(){
+ groupModal?.classList.add("hidden");
+ if(groupModalMessage)groupModalMessage.textContent="";
+}
+
+async function createGroup(){
+ if(groupCreationUsed||!profile)return;
+ const name=groupNameInput.value.trim().replace(/\s+/g," ");
+ if(name.length<2||name.length>48){groupModalMessage.textContent=currentLanguage==="vi"?"Tên nhóm phải từ 2-48 ký tự.":"Group name must be 2-48 characters.";return;}
+ const selected=[...groupFriendList.querySelectorAll('input[type="checkbox"]:checked')].map(input=>input.value).filter(Boolean);
+ groupCreateSubmit.disabled=true;
+ groupModalMessage.textContent=currentLanguage==="vi"?"Đang tạo nhóm...":"Creating group...";
+ try{
+  const result=await request("/api/groups",{method:"POST",body:JSON.stringify({name})});
+  if(!result.group)throw new Error("Group creation failed.");
+  if(selected.length)await request("/api/group-members",{method:"POST",body:JSON.stringify({group_id:result.group.id,user_ids:selected})});
+  closeGroupModal();
+  await loadGroups();
+  await openGroup(result.group.id);
+ }catch(error){
+  groupModalMessage.textContent=error instanceof Error?error.message:(currentLanguage==="vi"?"Không thể tạo nhóm.":"Could not create group.");
+ }finally{groupCreateSubmit.disabled=false;}
+}
+
+async function openGroup(groupId){
+ const group=groups.find(item=>item.id===groupId&&!item.deleted_at);
+ if(!group)return;
+ try{
+  const result=await request("/api/group-messages?group_id="+encodeURIComponent(groupId));
+  activeGroupId=groupId;
+  groupMessages=result.messages||[];
+  messages=groupMessages.slice();
+  if(roomStatus)roomStatus.textContent=group.name;
+  renderGroupCard();
+  renderMessages(true);
+  setMobileMenu(false);
+ }catch(error){
+  setConnection(error instanceof Error?error.message:"Group failed");
+  setTimeout(()=>setConnection("Connected"),1800);
+ }
+}
+
+function openPublicRoom(){
+ activeGroupId="";
+ messages=publicMessages.slice();
+ if(roomStatus)roomStatus.textContent=currentLanguage==="vi"?"Phòng công khai":"Public room";
+ renderGroupCard();
+ renderMessages(true);
+}
+
+async function deleteGroup(groupId){
+ const group=groups.find(item=>item.id===groupId&&item.owner_id===userId&&!item.deleted_at);
+ if(!group)return;
+ const first=window.confirm((currentLanguage==="vi"?"Bạn chắc chắn muốn xóa nhóm \"":"Are you sure you want to delete \"")+group.name+(currentLanguage==="vi"?"\"? Tất cả thành viên sẽ mất quyền truy cập.":"\"? All members will lose access."));
+ if(!first)return;
+ const second=window.confirm((currentLanguage==="vi"?"Xác nhận lần cuối: xóa dữ liệu trò chuyện của nhóm \"":"Final confirmation: delete the chat data for \"")+group.name+(currentLanguage==="vi"?"\". Không thể hoàn tác và bạn sẽ không thể tạo nhóm khác.":"\". This cannot be undone, and you will not be able to create another group."));
+ if(!second)return;
+ try{
+  const result=await request("/api/groups/delete",{method:"POST",body:JSON.stringify({group_id:groupId})});
+  if(!result.deleted)throw new Error("Group deletion failed.");
+  if(activeGroupId===groupId)openPublicRoom();
+  await loadGroups();
+ }catch(error){
+  setConnection(error instanceof Error?error.message:(currentLanguage==="vi"?"Không thể xóa nhóm.":"Could not delete group."));
   setTimeout(()=>setConnection("Connected"),1800);
  }
 }
@@ -1152,6 +1359,13 @@ friendList?.addEventListener("click",async event=>{
   }catch{}
  }
 });
+groupCard?.addEventListener("click",event=>{
+ const openButton=event.target.closest("[data-group-open]");
+ const deleteButton=event.target.closest("[data-group-delete]");
+ if(openButton){openGroup(openButton.dataset.groupOpen);return;}
+ if(deleteButton){deleteGroup(deleteButton.dataset.groupDelete);return;}
+});
+
 messagesEl.addEventListener("click",event=>{
  const deleteButton=event.target.closest("[data-message-id]");
  if(deleteButton){
