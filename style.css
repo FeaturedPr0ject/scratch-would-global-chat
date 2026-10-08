@@ -879,3 +879,13 @@ html[data-color-mode="light"] .message-delete-button:hover{background:#fff0f0;bo
  .sticker-tile{padding:2px;border-radius:7px}
  #recentStickerFeature .sticker-tile{width:58px!important;height:58px!important}
 }
+
+@media(max-width:760px){
+ .message-sticker{width:56px!important;max-width:56px!important;height:56px!important;max-height:56px!important}
+ .message-sticker img{width:56px!important;height:56px!important;max-width:56px!important;max-height:56px!important;object-fit:contain!important;border-radius:6px}
+ .sticker-grid{grid-template-columns:repeat(6,minmax(0,1fr));gap:3px}
+ .sticker-tile{padding:1px;border-radius:6px}
+ .sticker-picker-head button#stickerPickerClose{appearance:none;-webkit-appearance:none;border:0!important;outline:0!important;background:transparent!important;background-color:transparent!important;color:var(--white)!important;box-shadow:none!important;-webkit-tap-highlight-color:transparent;width:28px;height:28px;padding:0;margin:0;display:grid;place-items:center;font-family:Arial,sans-serif;font-size:20px;line-height:1}
+ .sticker-button{appearance:none;-webkit-appearance:none;position:relative;display:grid!important;place-items:center!important;align-items:center!important;justify-content:center!important;width:48px;height:48px;padding:0!important;margin:0;line-height:0;font-family:Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+ .sticker-button svg{width:22px!important;height:22px!important;display:block!important;flex:none;transform:translateX(0)!important}
+}
