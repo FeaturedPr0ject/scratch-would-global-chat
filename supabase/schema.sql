@@ -42,6 +42,62 @@ create table if not exists public.username_history (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.chat_files (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  path text not null unique,
+  original_name text not null,
+  mime_type text not null,
+  size_bytes bigint not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists chat_files_created_at_index
+on public.chat_files(created_at);
+
+alter table public.chat_files enable row level security;
+
+drop policy if exists chat_files_insert on public.chat_files;
+create policy chat_files_insert
+on public.chat_files
+for insert
+to authenticated
+with check (user_id=(select auth.uid()));
+
+drop policy if exists chat_files_select on public.chat_files;
+create policy chat_files_select
+on public.chat_files
+for select
+to authenticated
+using (user_id=(select auth.uid()));
+
+grant select,insert on public.chat_files to authenticated;
+
+insert into storage.buckets(id,name,public,file_size_limit)
+values('chat-files','chat-files',true,2097152)
+on conflict(id) do update
+set public=true,file_size_limit=2097152;
+
+drop policy if exists chat_files_storage_insert on storage.objects;
+create policy chat_files_storage_insert
+on storage.objects
+for insert
+to authenticated
+with check (
+  bucket_id='chat-files'
+  and (storage.foldername(name))[1]=(select auth.uid()::text)
+);
+
+drop policy if exists chat_files_storage_delete on storage.objects;
+create policy chat_files_storage_delete
+on storage.objects
+for delete
+to authenticated
+using (
+  bucket_id='chat-files'
+  and owner_id=(select auth.uid()::text)
+);
+
 create table if not exists public.messages (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references public.profiles(id) on delete set null,
@@ -51,8 +107,11 @@ create table if not exists public.messages (
   avatar_url text,
   text text not null,
   type text not null default 'text',
+  attachment_name text,
+  attachment_size bigint,
+  attachment_mime text,
   created_at timestamptz not null default now(),
-  constraint messages_type_check check (type in ('text', 'sticker'))
+  constraint messages_type_check check (type in ('text', 'sticker', 'image', 'file'))
 );
 
 alter table public.messages add column if not exists user_number bigint;
@@ -398,8 +457,11 @@ create table if not exists public.group_messages (
   avatar_url text,
   text text not null,
   type text not null default 'text',
+  attachment_name text,
+  attachment_size bigint,
+  attachment_mime text,
   created_at timestamptz not null default now(),
-  constraint group_messages_type_check check (type in ('text','sticker'))
+  constraint group_messages_type_check check (type in ('text','sticker','image','file'))
 );
 
 create index if not exists group_messages_group_created_at_index
@@ -609,3 +671,34 @@ end;
 $$;
 
 alter table public.group_messages replica identity full;
+
+create or replace function public.get_chat_cleanup_token()
+returns text
+language sql
+security definer
+set search_path = ''
+stable
+as $$
+  select decrypted_secret
+  from vault.decrypted_secrets
+  where name='swgc_chat_cleanup_token'
+  limit 1
+$$;
+
+revoke execute on function public.get_chat_cleanup_token() from public;
+revoke execute on function public.get_chat_cleanup_token() from anon;
+revoke execute on function public.get_chat_cleanup_token() from authenticated;
+grant execute on function public.get_chat_cleanup_token() to service_role;
+
+create extension if not exists pg_cron;
+create extension if not exists pg_net;
+
+select cron.schedule(
+  'swgc-chat-files-cleanup',
+  '30 3 * * *',
+  $$select net.http_post(
+    url:='https://uwfxtjpudfljxosffmry.supabase.co/functions/v1/cleanup-chat-files',
+    headers:=jsonb_build_object('Content-Type','application/json','x-cleanup-token',(select decrypted_secret from vault.decrypted_secrets where name='swgc_chat_cleanup_token')),
+    body:=jsonb_build_object('time',now())
+  ) as request_id;$$
+);
