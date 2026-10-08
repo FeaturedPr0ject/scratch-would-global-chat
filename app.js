@@ -4,6 +4,8 @@ const CONFIG_ENDPOINT="/api/config";
 const STORAGE_NAME="swgc-room-chats-name";
 const STORAGE_PROFILE="swgc-room-chats-profile";
 const THEME_STORAGE="swgc-room-chats-theme";
+const COLOR_MODE_STORAGE="swgc-room-chats-color-mode";
+const LANGUAGE_STORAGE="swgc-room-chats-language";
 const THEME_PRESETS={orange:["#ffad00","#ffbf2f","255,173,0"],blue:["#4f8cff","#74a6ff","79,140,255"],purple:["#a970ff","#c293ff","169,112,255"],green:["#38d39f","#63e6b8","56,211,159"],red:["#ff5f6d","#ff7b86","255,95,109"]};
 const messagesEl=document.querySelector("#messages");
 const input=document.querySelector("#messageInput");
@@ -73,6 +75,10 @@ const profileSectionButtons=document.querySelectorAll("[data-profile-section]");
 const profileSectionProfile=document.querySelector("#profileSectionProfile");
 const profileSectionSettings=document.querySelector("#profileSectionSettings");
 const themeOptions=document.querySelectorAll("[data-theme]");
+const settingsCategoryButtons=document.querySelectorAll("[data-settings-category]");
+const settingsPanels=document.querySelectorAll("[data-settings-panel]");
+const themeModeOptions=document.querySelectorAll("[data-theme-mode]");
+const languageSelect=document.querySelector("#languageSelect");
 let friends=[];
 let selectedProfileId="";
 const onlineUsers=new Set();
@@ -131,6 +137,93 @@ function applyTheme(themeName,save=true){
 
 function loadTheme(){
  applyTheme(localStorage.getItem(THEME_STORAGE)||"orange",false);
+}
+
+function applyColorMode(mode,save=true){
+ const value=mode==="light"?"light":"dark";
+ document.documentElement.dataset.colorMode=value;
+ themeModeOptions.forEach(button=>button.classList.toggle("active",button.dataset.themeMode===value));
+ if(save)localStorage.setItem(COLOR_MODE_STORAGE,value);
+}
+
+function loadColorMode(){
+ applyColorMode(localStorage.getItem(COLOR_MODE_STORAGE)||"dark",false);
+}
+
+function applyLanguage(language,save=true){
+ const value=language==="vi"?"vi":"en";
+ document.documentElement.lang=value;
+ if(languageSelect)languageSelect.value=value;
+ const labels=value==="vi"?{
+  color:"Kiểu màu",
+  theme:"Chủ đề",
+  language:"Ngôn ngữ",
+  colorTitle:"Kiểu màu",
+  colorDescription:"Chọn màu nhấn chính cho SWGC Room Chats.",
+  themeTitle:"Chủ đề",
+  themeDescription:"Chọn chế độ Sáng hoặc Tối.",
+  languageTitle:"Ngôn ngữ",
+  languageDescription:"Chọn ngôn ngữ được sử dụng trong SWGC Room Chats.",
+  languageLabel:"Ngôn ngữ",
+  profile:"Hồ sơ",
+  settings:"Cài đặt",
+  light:"Sáng",
+  dark:"Tối"
+ }:{
+  color:"Color Style",
+  theme:"Theme",
+  language:"Language",
+  colorTitle:"Color Style",
+  colorDescription:"Choose the main accent color for SWGC Room Chats.",
+  themeTitle:"Theme",
+  themeDescription:"Choose between Light and Dark mode.",
+  languageTitle:"Language",
+  languageDescription:"Choose the language used by SWGC Room Chats.",
+  languageLabel:"Language",
+  profile:"Profile",
+  settings:"Settings",
+  light:"Light",
+  dark:"Dark"
+ };
+ const colorCategory=document.querySelector('[data-settings-category="color"]');
+ const themeCategory=document.querySelector('[data-settings-category="theme"]');
+ const languageCategory=document.querySelector('[data-settings-category="language"]');
+ const colorTitle=document.querySelector('[data-settings-panel="color"] .settings-section-head strong');
+ const colorDescription=document.querySelector('[data-settings-panel="color"] .settings-section-head span');
+ const themeTitle=document.querySelector('[data-settings-panel="theme"] .settings-section-head strong');
+ const themeDescription=document.querySelector('[data-settings-panel="theme"] .settings-section-head span');
+ const languageTitle=document.querySelector('[data-settings-panel="language"] .settings-section-head strong');
+ const languageDescription=document.querySelector('[data-settings-panel="language"] .settings-section-head span');
+ const languageLabel=document.querySelector(".settings-select-label");
+ colorCategory&&(colorCategory.textContent=labels.color);
+ themeCategory&&(themeCategory.textContent=labels.theme);
+ languageCategory&&(languageCategory.textContent=labels.language);
+ colorTitle&&(colorTitle.textContent=labels.colorTitle);
+ colorDescription&&(colorDescription.textContent=labels.colorDescription);
+ themeTitle&&(themeTitle.textContent=labels.themeTitle);
+ themeDescription&&(themeDescription.textContent=labels.themeDescription);
+ languageTitle&&(languageTitle.textContent=labels.languageTitle);
+ languageDescription&&(languageDescription.textContent=labels.languageDescription);
+ languageLabel&&(languageLabel.textContent=labels.languageLabel);
+ const profileTab=document.querySelector('[data-profile-section="profile"]');
+ const settingsTab=document.querySelector('[data-profile-section="settings"]');
+ profileTab&&(profileTab.textContent=labels.profile);
+ settingsTab&&(settingsTab.textContent=labels.settings);
+ const lightLabel=document.querySelector('[data-theme-mode="light"] span:last-child');
+ const darkLabel=document.querySelector('[data-theme-mode="dark"] span:last-child');
+ lightLabel&&(lightLabel.textContent=labels.light);
+ darkLabel&&(darkLabel.textContent=labels.dark);
+ if(save)localStorage.setItem(LANGUAGE_STORAGE,value);
+}
+
+function loadLanguage(){
+ applyLanguage(localStorage.getItem(LANGUAGE_STORAGE)||"en",false);
+}
+
+function setSettingsCategory(category){
+ const value=["color","theme","language"].includes(category)?category:"color";
+ settingsCategoryButtons.forEach(button=>button.classList.toggle("active",button.dataset.settingsCategory===value));
+ settingsPanels.forEach(panel=>panel.classList.toggle("hidden",panel.dataset.settingsPanel!==value));
 }
 
 function setProfileSection(section){
@@ -858,7 +951,11 @@ mobileMenuButton?.addEventListener("click",()=>{
 mobileMenuBackdrop?.addEventListener("click",()=>setMobileMenu(false));
 document.querySelector(".sidebar-menu-button")?.addEventListener("click",()=>setMobileMenu(false));
 profileSectionButtons.forEach(button=>button.addEventListener("click",()=>setProfileSection(button.dataset.profileSection||"profile")));
+settingsCategoryButtons.forEach(button=>button.addEventListener("click",()=>setSettingsCategory(button.dataset.settingsCategory||"color")));
 themeOptions.forEach(button=>button.addEventListener("click",()=>applyTheme(button.dataset.theme||"orange")));
+themeModeOptions.forEach(button=>button.addEventListener("click",()=>applyColorMode(button.dataset.themeMode||"dark")));
+languageSelect?.addEventListener("change",()=>applyLanguage(languageSelect.value));
+
 openProfileButton.addEventListener("click",()=>{setMobileMenu(false);openMyProfile();});
 closeProfileButton.addEventListener("click",closeProfileModal);
 avatarCropModal?.addEventListener("click",event=>{if(event.target===avatarCropModal)closeAvatarCrop()});
@@ -933,6 +1030,8 @@ document.querySelectorAll("[data-sticker-query]").forEach(button=>button.addEven
 document.addEventListener("click",event=>{if(!event.target.closest(".sticker-picker")&&!event.target.closest("#stickerButton"))stickerPicker?.classList.add("hidden")});
 loadSavedStickers();
 loadTheme();
+loadColorMode();
+loadLanguage();
 friendSearchButton?.addEventListener("click",searchFriend);
 window.addEventListener("resize",()=>{
  if(window.innerWidth>760){
