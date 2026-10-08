@@ -3,6 +3,8 @@ import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2
 const CONFIG_ENDPOINT="/api/config";
 const STORAGE_NAME="swgc-room-chats-name";
 const STORAGE_PROFILE="swgc-room-chats-profile";
+const THEME_STORAGE="swgc-room-chats-theme";
+const THEME_PRESETS={orange:["#ffad00","#ffbf2f","255,173,0"],blue:["#4f8cff","#74a6ff","79,140,255"],purple:["#a970ff","#c293ff","169,112,255"],green:["#38d39f","#63e6b8","56,211,159"],red:["#ff5f6d","#ff7b86","255,95,109"]};
 const messagesEl=document.querySelector("#messages");
 const input=document.querySelector("#messageInput");
 const sendButton=document.querySelector("#sendButton");
@@ -63,6 +65,10 @@ const mobileMenuBackdrop=document.querySelector("#mobileMenuBackdrop");
 const mobileSidebar=document.querySelector(".sidebar");
 const chatLayout=document.querySelector(".chat-layout");
 const scrollToBottomButton=document.querySelector("#scrollToBottom");
+const profileSectionButtons=document.querySelectorAll("[data-profile-section]");
+const profileSectionProfile=document.querySelector("#profileSectionProfile");
+const profileSectionSettings=document.querySelector("#profileSectionSettings");
+const themeOptions=document.querySelectorAll("[data-theme]");
 let friends=[];
 let selectedProfileId="";
 const onlineUsers=new Set();
@@ -90,6 +96,27 @@ let avatarCropStartOffsetX=0;
 let avatarCropStartOffsetY=0;
 let usernameTimer=null;
 let savingProfile=false;
+function applyTheme(themeName,save=true){
+ const preset=THEME_PRESETS[themeName]||THEME_PRESETS.orange;
+ document.documentElement.style.setProperty("--orange",preset[0]);
+ document.documentElement.style.setProperty("--orange2",preset[1]);
+ document.documentElement.style.setProperty("--accent-rgb",preset[2]);
+ document.querySelector('meta[name="theme-color"]')?.setAttribute("content",preset[0]);
+ themeOptions.forEach(button=>button.classList.toggle("active",button.dataset.theme===themeName));
+ if(save)localStorage.setItem(THEME_STORAGE,themeName);
+}
+
+function loadTheme(){
+ applyTheme(localStorage.getItem(THEME_STORAGE)||"orange",false);
+}
+
+function setProfileSection(section){
+ const settings=section==="settings";
+ profileSectionProfile?.classList.toggle("hidden",settings);
+ profileSectionSettings?.classList.toggle("hidden",!settings);
+ profileSectionButtons.forEach(button=>button.classList.toggle("active",button.dataset.profileSection===section));
+}
+
 function setMobileMenu(open){
  const mobile=window.innerWidth<=760;
  if(mobile){
@@ -236,6 +263,7 @@ function renderMessages(forceScroll=false){
   return;
  }
  const wasNearBottom=isNearBottom();
+ const shouldStickToBottom=forceScroll||wasNearBottom;
  messagesEl.innerHTML=messages.map(item=>{
   const liveProfile=profileDirectory.get(item.user_id)||{};
   const displayName=liveProfile.display_name||item.display_name||liveProfile.username||item.username||"Guest";
@@ -248,7 +276,12 @@ function renderMessages(forceScroll=false){
    avatarMarkup(avatarItem)+
    '<span class="message-body"><span class="message-meta"><span class="message-name-wrap"><span class="message-display-name">'+escapeText(displayName)+'</span>'+ownerBadgeMarkup(item.user_id,userNumber)+'<span class="message-username">'+escapeText(username?"@"+username:"")+'</span></span><time class="message-time">'+escapeText(new Date(item.created_at||Date.now()).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}))+'</time></span>'+content+'</span></button>';
  }).join("");
- if(forceScroll||wasNearBottom)scrollToBottom(false);
+ if(shouldStickToBottom){
+  scrollToBottom(false);
+  messagesEl.querySelectorAll(".message-sticker img").forEach(image=>{
+   if(!image.complete)image.addEventListener("load",()=>{if(isNearBottom())scrollToBottom(false)},{once:true});
+  });
+ }
  updateScrollButton();
 }
 
@@ -500,6 +533,7 @@ function closeProfileModal(){
 
 function openMyProfile(){
  if(!profile){openFirstProfile();return;}
+ setProfileSection("profile");
  usernameInput.value=profile.username;
  displayNameInput.value=profile.display_name;
  profileNoteInput.value=profile.note||"";
@@ -723,6 +757,8 @@ mobileMenuButton?.addEventListener("click",()=>{
 });
 mobileMenuBackdrop?.addEventListener("click",()=>setMobileMenu(false));
 document.querySelector(".sidebar-menu-button")?.addEventListener("click",()=>setMobileMenu(false));
+profileSectionButtons.forEach(button=>button.addEventListener("click",()=>setProfileSection(button.dataset.profileSection||"profile")));
+themeOptions.forEach(button=>button.addEventListener("click",()=>applyTheme(button.dataset.theme||"orange")));
 openProfileButton.addEventListener("click",()=>{setMobileMenu(false);openMyProfile();});
 closeProfileButton.addEventListener("click",closeProfileModal);
 avatarCropModal?.addEventListener("click",event=>{if(event.target===avatarCropModal)closeAvatarCrop()});
@@ -769,6 +805,7 @@ stickerSearchGrid?.addEventListener("click",event=>{
 });
 document.addEventListener("click",event=>{if(!event.target.closest(".sticker-picker")&&!event.target.closest("#stickerButton"))stickerPicker?.classList.add("hidden")});
 loadSavedStickers();
+loadTheme();
 friendSearchButton?.addEventListener("click",searchFriend);
 window.addEventListener("resize",()=>{
  if(window.innerWidth>760){

@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#ffad00">
 <title>SWGC Room Chats</title>
 <link rel="icon" type="image/png" href="./assests/logo.png">
-<link rel="stylesheet" href="style.css?v=20261008-sticker-v2">
+<link rel="stylesheet" href="style.css?v=20261008-ui-v1">
 </head>
 <body>
 <div class="app-shell">
@@ -116,6 +116,11 @@
 <div id="profileModal" class="modal hidden">
 <div class="modal-card profile-modal-card">
 <button id="closeProfile" class="modal-close" type="button" aria-label="Close profile">×</button>
+<div class="profile-modal-tabs" role="tablist">
+<button class="profile-modal-tab active" type="button" role="tab" data-profile-section="profile">Profile</button>
+<button class="profile-modal-tab" type="button" role="tab" data-profile-section="settings">Settings</button>
+</div>
+<div id="profileSectionProfile" class="profile-section">
 <div class="profile-avatar-editor">
 <button id="avatarPreview" class="avatar avatar-preview" type="button" aria-label="Choose avatar">?</button>
 <input id="avatarInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
@@ -132,6 +137,24 @@
 <textarea id="profileNoteInput" maxlength="1000" rows="7" placeholder="Write something about yourself..."></textarea>
 <div id="profileMessage" class="profile-message"></div>
 <button id="saveProfile" class="primary-button" type="button">Save Profile</button>
+</div>
+</div>
+<div id="profileSectionSettings" class="profile-section hidden">
+<div class="settings-main">
+<div class="settings-section">
+<div class="settings-section-head">
+<strong>Appearance</strong>
+<span>Choose the main accent color for SWGC Room Chats.</span>
+</div>
+<div class="theme-options" role="radiogroup" aria-label="Theme color">
+<button class="theme-option active" type="button" data-theme="orange" style="--theme-color:#ffad00" aria-label="Orange"><span class="theme-swatch"></span><span>Orange</span></button>
+<button class="theme-option" type="button" data-theme="blue" style="--theme-color:#4f8cff" aria-label="Blue"><span class="theme-swatch"></span><span>Blue</span></button>
+<button class="theme-option" type="button" data-theme="purple" style="--theme-color:#a970ff" aria-label="Purple"><span class="theme-swatch"></span><span>Purple</span></button>
+<button class="theme-option" type="button" data-theme="green" style="--theme-color:#38d39f" aria-label="Green"><span class="theme-swatch"></span><span>Green</span></button>
+<button class="theme-option" type="button" data-theme="red" style="--theme-color:#ff5f6d" aria-label="Red"><span class="theme-swatch"></span><span>Red</span></button>
+</div>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -168,6 +191,6 @@
 <button id="joinRoomButton" class="primary-button" type="button">Join Room</button>
 </div>
 </div>
-<script type="module" src="app.js?v=20261007-supabase-v14"></script>
+<script type="module" src="app.js?v=20261008-ui-v1"></script>
 </body>
 </html>
