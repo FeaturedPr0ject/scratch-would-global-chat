@@ -112,7 +112,7 @@
 <div class="friends-card-head"><strong>Friends</strong><button id="friendRefreshButton" class="friend-refresh-button" type="button" aria-label="Refresh friends" title="Refresh friends"><img src="./assests/refresh.png" alt="Refresh"></button></div>
 <div id="friendList" class="friend-list"></div>
 </div>
-<div class="sidebar-note">
+<div id="groupCard" class="group-card"></div><div class="sidebar-note">
 <strong>Be respectful.</strong>
 <span>Keep room chats friendly and safe.</span>
 <a href="./troubleshoot.html">Report a problem</a>
@@ -200,7 +200,7 @@
 </div>
 </div>
 </div>
-<div id="avatarCropModal" class="modal hidden avatar-crop-modal">
+<div id="groupModal" class="modal hidden"><div class="modal-card group-modal-card"><button id="closeGroupModal" class="modal-close" type="button" aria-label="Close group">×</button><h2>Create a group</h2><p>Create your one group. You can add your current friends now.</p><label for="groupNameInput">Group name</label><input id="groupNameInput" maxlength="48" autocomplete="off" placeholder="Group name"><div class="group-member-title">Members</div><div id="groupFriendList" class="group-member-list"></div><div id="groupModalMessage" class="profile-message"></div><div class="group-modal-actions"><button id="groupCreateSubmit" class="primary-button" type="button">Create Group</button></div></div></div><div id="avatarCropModal" class="modal hidden avatar-crop-modal">
 <div class="modal-card avatar-crop-card">
 <button id="avatarCropCancel" class="modal-close" type="button" aria-label="Close avatar crop">×</button>
 <h2>Crop Avatar</h2>
@@ -233,6 +233,6 @@
 <button id="joinRoomButton" class="primary-button" type="button">Join Room</button>
 </div>
 </div>
-<script type="module" src="app.js?v=20261008-theme-color-v1"></script>
+<script type="module" src="app.js?v=20261008-group-v1"></script>
 </body>
 </html>
