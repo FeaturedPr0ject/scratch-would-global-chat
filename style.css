@@ -355,8 +355,8 @@ html,body{width:100%;max-width:100%;overflow-x:clip}
 .sticker-empty.hidden{display:none}
 .sticker-result{position:relative;min-width:0}
 .sticker-result .sticker-tile{aspect-ratio:1}
-.sticker-save{position:absolute;right:6px;bottom:6px;width:27px;height:27px;border:1px solid rgba(255,255,255,.16);border-radius:9px;background:rgba(17,17,22,.88);color:var(--white);font-size:0;font-weight:800;display:grid;place-items:center;padding:0;z-index:2;backdrop-filter:blur(4px)}
-.sticker-save::before{content:"☆";font-size:17px;line-height:1}
+.sticker-save{position:absolute;right:4px;bottom:4px;width:22px;height:22px;min-width:22px;min-height:22px;border:1px solid rgba(255,255,255,.2);border-radius:7px;background:rgba(17,17,22,.9);color:var(--white);font-size:0;font-weight:800;display:grid;place-items:center;padding:0;z-index:2;backdrop-filter:blur(4px);overflow:hidden}
+.sticker-save::before{content:"☆";font-size:14px;line-height:1}
 .sticker-save.saved::before{content:"★";color:var(--orange)}
 .sticker-save:hover{border-color:rgba(255,173,0,.65);background:rgba(24,24,30,.96);color:var(--orange2)}
 .message-sticker{display:block;width:min(190px,55vw);margin-top:3px}
@@ -364,7 +364,7 @@ html,body{width:100%;max-width:100%;overflow-x:clip}
 @media(max-width:760px){
 .sidebar-toggle{display:none}
 .sticker-picker{position:fixed;left:8px;right:8px;bottom:62px;width:auto;height:min(620px,72vh);max-height:72vh;border-radius:20px;padding:10px;z-index:100}
-.sticker-grid{grid-template-columns:repeat(5,minmax(0,1fr));height:calc(100% - 54px);max-height:none;gap:6px}
+.sticker-grid{grid-template-columns:repeat(4,minmax(0,1fr));height:calc(100% - 54px);max-height:none;gap:7px}
 .sticker-picker-head{padding:2px 3px 7px}
 .sticker-search-row input{height:38px}
 .sticker-search-row button{height:38px}
@@ -373,3 +373,4 @@ html,body{width:100%;max-width:100%;overflow-x:clip}
 }
 
 @media(max-width:760px){.brand span{display:none}.topbar{padding-left:10px;padding-right:10px;padding-top:env(safe-area-inset-top);height:64px;min-height:64px}.chat-layout{min-height:calc(100dvh - 64px);height:calc(100dvh - 64px)}.chat-panel{min-height:calc(100dvh - 64px);height:calc(100dvh - 64px)}.sidebar{top:64px;bottom:env(safe-area-inset-bottom);width:min(310px,86vw)}.composer{padding-bottom:calc(8px + env(safe-area-inset-bottom))}.sticker-picker{bottom:calc(62px + env(safe-area-inset-bottom));max-height:calc(72dvh - env(safe-area-inset-bottom))}.public-profile-card{width:min(390px,calc(100vw - 24px));max-width:calc(100vw - 24px);padding:28px 22px}.modal{padding:12px;overflow:auto}}
+.sticker-result{min-width:0;overflow:hidden}.sticker-result .sticker-tile{display:block}@media(max-width:760px){.sticker-save{width:21px;height:21px;min-width:21px;min-height:21px;border-radius:7px}.sticker-save::before{font-size:13px}.sticker-tile{padding:3px}}

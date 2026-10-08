@@ -625,7 +625,7 @@ async function searchStickers(){
   stickerSearchGrid.innerHTML=pages.map(item=>{
    const info=item.imageinfo?.[0]||{};
    const url=info.thumburl||info.url;
-   return '<div class="sticker-result"><button class="sticker-tile" type="button" data-sticker-url="'+escapeText(url)+'"><img src="'+escapeText(url)+'" alt="Sticker" loading="lazy"></button><button class="sticker-save" type="button" data-save-sticker="'+escapeText(url)+'">Save</button></div>';
+   return '<div class="sticker-result"><button class="sticker-tile" type="button" data-sticker-url="'+escapeText(url)+'"><img src="'+escapeText(url)+'" alt="Sticker" loading="lazy"></button><button class="sticker-save" type="button" data-save-sticker="'+escapeText(url)+'" aria-label="Save sticker" title="Save sticker"></button></div>';
   }).join("");
  }catch{
   stickerSearchStatus.textContent="Could not search stickers.";
