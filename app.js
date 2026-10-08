@@ -16,6 +16,7 @@ const charCount=document.querySelector("#charCount");
 const nameModal=document.querySelector("#nameModal");
 const firstUsernameInput=document.querySelector("#firstUsernameInput");
 const firstDisplayNameInput=document.querySelector("#firstDisplayNameInput");
+const firstLanguageSelect=document.querySelector("#firstLanguageSelect");
 const firstUsernameCheck=document.querySelector("#firstUsernameCheck");
 const joinRoomButton=document.querySelector("#joinRoomButton");
 const openProfileButton=document.querySelector("#openProfile");
@@ -256,8 +257,11 @@ function applyLanguage(language,save=true){
  setText("#avatarCropCancel",labels.cancel);
  setText("#nameModal h2",labels.chooseUsername);
  setText("#nameModal p",labels.uniqueHint);
+ setText('label[for="firstLanguageSelect"]',labels.language);
+ setAria("#firstLanguageSelect",labels.language);
  setPlaceholder("#firstUsernameInput",labels.uniqueUsername);
  setPlaceholder("#firstDisplayNameInput",labels.displayName+" (optional)");
+ if(firstLanguageSelect)firstLanguageSelect.value=value;
  setText("#joinRoomButton",labels.joinRoom);
  setText("#addFriendButton",labels.addFriend);
  setText("#publicProfileNote",labels.noNote);
@@ -1013,6 +1017,7 @@ friendRefreshButton?.addEventListener("click",async()=>{friendRefreshButton.clas
 addFriendButton?.addEventListener("click",()=>{const relation=friends.find(item=>item.user_id===selectedProfileId);if(relation?.status==="accepted")unfriend();else addFriend();});
 saveProfileButton.addEventListener("click",saveProfile);
 joinRoomButton.addEventListener("click",joinRoom);
+firstLanguageSelect?.addEventListener("change",()=>applyLanguage(firstLanguageSelect.value));
 usernameInput.addEventListener("input",()=>scheduleUsernameCheck(false));
 firstUsernameInput.addEventListener("input",()=>scheduleUsernameCheck(true));
 firstUsernameInput.addEventListener("keydown",event=>{if(event.key==="Enter")joinRoom()});
