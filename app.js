@@ -1102,7 +1102,7 @@ async function loadGroups(){
   const result=await request("/api/groups?user_id="+encodeURIComponent(userId));
   groups=result.groups||[];
   ownedGroup=groups.find(item=>item.owner_id===userId&&!item.deleted_at)||null;
-  groupCreationUsed=groups.some(item=>item.owner_id===userId);
+  groupCreationUsed=Boolean(ownedGroup);
   if(activeGroupId&&!groups.some(item=>item.id===activeGroupId&&!item.deleted_at)){
    activeGroupId="";
    messages=publicMessages.slice();
