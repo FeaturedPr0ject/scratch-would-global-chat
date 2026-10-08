@@ -514,12 +514,12 @@ async function request(path,options={}){
  }else if(url.pathname==="/api/groups"&&method==="POST"){
   const name=String(body.name||"").trim().replace(/\s+/g," ").slice(0,48);
   if(name.length<2)throw new Error("Group name must be 2-48 characters.");
-  const result=await supabaseClient.from("groups").insert({owner_id:userId,name}).select("id,owner_id,name,created_at,deleted_at").single();
+  const result=await supabaseClient.from("groups").insert({owner_id:userId,name}).select("id,owner_id,name,avatar_url,created_at,deleted_at").single();
   data={ok:true,group:result.data};
   error=result.error;
  }else if(url.pathname==="/api/groups/update"&&method==="POST"){
   const groupId=String(body.group_id||"").trim();
-  const name=String(body.name||"").trim().replace(/\\s+/g," ").slice(0,48);
+  const name=String(body.name||"").trim().replace(/\s+/g," ").slice(0,48);
   const avatarUrl=String(body.avatar_url||"").trim();
   if(!groupId)throw new Error("Group ID is required");
   if(name.length<2||name.length>48)throw new Error("Group name must be 2-48 characters.");
