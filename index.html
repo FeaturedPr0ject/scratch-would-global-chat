@@ -54,8 +54,17 @@
 <button id="searchStickerTab" class="sticker-tab" type="button" role="tab">Search</button>
 </div>
 <div id="savedStickerPanel" class="sticker-panel">
-<div id="savedStickerGrid" class="sticker-grid"></div>
+<div class="sticker-section">
+<div class="sticker-section-title"><strong>Recent</strong></div>
+<div id="recentStickerFeature" class="recent-sticker-feature hidden"></div>
+<div id="recentStickerGrid" class="sticker-grid recent-sticker-grid"></div>
+<div id="recentStickerEmpty" class="sticker-empty">No recent stickers yet.</div>
+</div>
+<div class="sticker-section sticker-saved-section">
+<div class="sticker-section-title"><strong>Saved</strong><button id="clearSavedStickers" type="button">Unsave all</button></div>
+<div id="savedStickerGrid" class="sticker-grid saved-sticker-grid"></div>
 <div id="savedStickerEmpty" class="sticker-empty">No saved stickers yet.</div>
+</div>
 </div>
 <div id="searchStickerPanel" class="sticker-panel hidden">
 <div class="sticker-search-row">
