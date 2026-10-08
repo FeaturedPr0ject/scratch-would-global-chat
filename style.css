@@ -374,3 +374,29 @@ html,body{width:100%;max-width:100%;overflow-x:clip}
 
 @media(max-width:760px){.brand span{display:none}.topbar{padding-left:10px;padding-right:10px;padding-top:env(safe-area-inset-top);height:64px;min-height:64px}.chat-layout{min-height:calc(100dvh - 64px);height:calc(100dvh - 64px)}.chat-panel{min-height:calc(100dvh - 64px);height:calc(100dvh - 64px)}.sidebar{top:64px;bottom:env(safe-area-inset-bottom);width:min(310px,86vw)}.composer{padding-bottom:calc(8px + env(safe-area-inset-bottom))}.sticker-picker{bottom:calc(62px + env(safe-area-inset-bottom));max-height:calc(72dvh - env(safe-area-inset-bottom))}.public-profile-card{width:min(390px,calc(100vw - 24px));max-width:calc(100vw - 24px);padding:28px 22px}.modal{padding:12px;overflow:auto}}
 .sticker-result{min-width:0;overflow:hidden}.sticker-result .sticker-tile{display:block}@media(max-width:760px){.sticker-save{width:21px;height:21px;min-width:21px;min-height:21px;border-radius:7px}.sticker-save::before{font-size:13px}.sticker-tile{padding:3px}}
+
+.sticker-picker{width:min(440px,calc(100vw - 24px));}
+.sticker-search-row{position:relative;align-items:center;}
+.sticker-search-icon{position:absolute;left:11px;color:#777780;font-size:17px;line-height:1;pointer-events:none;z-index:1;}
+.sticker-search-row input{padding-left:31px;padding-right:38px;}
+.sticker-search-row button{position:absolute;right:4px;top:4px;width:30px;height:30px;padding:0;border-radius:8px;font-size:16px;display:grid;place-items:center;}
+.sticker-categories{display:flex;gap:5px;overflow-x:auto;overflow-y:hidden;padding:1px 1px 6px;scrollbar-width:none;}
+.sticker-categories::-webkit-scrollbar{display:none;}
+.sticker-category{height:25px;flex:0 0 auto;border:1px solid var(--line);border-radius:8px;background:#1a1a20;color:var(--muted);padding:0 9px;font-size:9px;font-weight:800;}
+.sticker-category.active{background:#29292f;color:var(--white);border-color:rgba(255,173,0,.45);}
+.sticker-search-status{height:16px;}
+@media(max-width:760px){
+.sticker-picker{left:8px;right:8px;width:auto;padding:9px;border-radius:18px;}
+.sticker-picker-head{padding:1px 2px 6px;}
+.sticker-picker-head strong{font-size:12px;}
+.sticker-picker-head button{width:26px;height:26px;border-radius:8px;font-size:17px;}
+.sticker-tabs{margin-bottom:6px;}
+.sticker-tab{height:25px;font-size:9px;}
+.sticker-search-row{height:36px;margin-bottom:5px;}
+.sticker-search-row input{height:36px;font-size:11px;border-radius:10px;}
+.sticker-search-row button{top:3px;right:3px;width:30px;height:30px;}
+.sticker-categories{gap:4px;padding-bottom:5px;}
+.sticker-category{height:23px;padding:0 8px;font-size:8px;border-radius:7px;}
+.sticker-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;height:calc(100% - 91px);}
+.sticker-tile{border-radius:9px;padding:3px;}
+}

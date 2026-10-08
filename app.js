@@ -598,7 +598,10 @@ function setStickerTab(tab){
  searchStickerTab?.classList.toggle("active",search);
  savedStickerPanel?.classList.toggle("hidden",search);
  searchStickerPanel?.classList.toggle("hidden",!search);
- if(search)stickerSearchInput?.focus();
+ if(search){
+  stickerSearchInput?.focus();
+  if(stickerSearchGrid&&!stickerSearchGrid.children.length)searchStickers("");
+ }
 }
 
 async function searchStickers(){

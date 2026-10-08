@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#ffad00">
 <title>SWGC Room Chats</title>
 <link rel="icon" type="image/png" href="./assests/logo.png">
-<link rel="stylesheet" href="style.css?v=20261008-mobile-v1">
+<link rel="stylesheet" href="style.css?v=20261008-sticker-v2">
 </head>
 <body>
 <div class="app-shell">
@@ -59,8 +59,16 @@
 </div>
 <div id="searchStickerPanel" class="sticker-panel hidden">
 <div class="sticker-search-row">
+<span class="sticker-search-icon">⌕</span>
 <input id="stickerSearchInput" type="search" maxlength="80" placeholder="Search stickers" autocomplete="off">
-<button id="stickerSearchButton" type="button">Search</button>
+<button id="stickerSearchButton" type="button" aria-label="Search stickers">⌕</button>
+</div>
+<div id="stickerCategories" class="sticker-categories" aria-label="Sticker categories">
+<button class="sticker-category active" type="button" data-sticker-query="">Recommended</button>
+<button class="sticker-category" type="button" data-sticker-query="reaction sticker">Reactions</button>
+<button class="sticker-category" type="button" data-sticker-query="cute sticker">Cute</button>
+<button class="sticker-category" type="button" data-sticker-query="meme sticker">Meme</button>
+<button class="sticker-category" type="button" data-sticker-query="animal sticker">Animals</button>
 </div>
 <div id="stickerSearchStatus" class="sticker-search-status"></div>
 <div id="stickerSearchGrid" class="sticker-grid"></div>
