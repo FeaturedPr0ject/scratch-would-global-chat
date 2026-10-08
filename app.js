@@ -1102,7 +1102,7 @@ async function uploadFile(file){
   throw fileRecord.error;
  }
  const publicUrl=supabaseClient.storage.from("chat-files").getPublicUrl(path).data.publicUrl;
- const inlineImage=/^image\\/(png|jpeg)$/i.test(file.type||"")||/\\.(png|jpe?g)$/i.test(file.name);
+ const inlineImage=/^image\/(png|jpeg)$/i.test(file.type||"")||/\.(png|jpe?g)$/i.test(file.name);
  const type=inlineImage?"image":"file";
  const endpoint=activeGroupId?"/api/group-messages":"/api/messages";
  const body={user_id:userId,group_id:activeGroupId||undefined,text:publicUrl,type,attachment_name:file.name,attachment_size:file.size,attachment_mime:file.type||"application/octet-stream"};
