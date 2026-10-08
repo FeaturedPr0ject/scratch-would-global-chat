@@ -814,8 +814,27 @@ html[data-color-mode="light"] .message-delete-button:hover{background:#fff0f0;bo
 .group-info{display:flex;flex-direction:column;min-width:0}
 .group-info strong{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .group-info small{font-size:9px;color:var(--muted);margin-top:2px}
-.group-delete-button{width:26px;height:26px;border:1px solid transparent;border-radius:8px;background:transparent;color:#777780;font-size:16px;display:grid;place-items:center;flex:none}
-.group-delete-button:hover{background:#2a2020;border-color:#6b3030;color:#ff8c8c}
+.group-settings-button{width:28px;height:28px;border:1px solid transparent;border-radius:8px;background:transparent;color:#777780;font-size:15px;display:grid;place-items:center;flex:none}
+.group-settings-button:hover{background:rgba(var(--accent-rgb),.08);border-color:rgba(var(--accent-rgb),.35);color:var(--orange2)}
+.group-icon-image{overflow:hidden}
+.group-icon-image img{width:100%;height:100%;object-fit:cover;border-radius:inherit}
+.group-settings-card{width:min(470px,calc(100vw - 28px));max-height:min(700px,calc(100dvh - 28px));overflow:auto}
+.group-settings-card h2{margin:0 0 6px}
+.group-settings-card>p{margin:0 0 18px;color:var(--muted);font-size:12px;line-height:1.5}
+.group-settings-avatar-wrap{display:flex;justify-content:center;margin:2px 0 18px}
+.group-settings-avatar{width:88px;height:88px;border:1px solid var(--line);border-radius:24px;background:#24242b;color:var(--orange2);display:grid;place-items:center;font-size:24px;font-weight:900;overflow:hidden;cursor:pointer}
+.group-settings-avatar:hover{border-color:rgba(var(--accent-rgb),.55);box-shadow:0 0 0 4px rgba(var(--accent-rgb),.08)}
+.group-settings-avatar img{width:100%;height:100%;object-fit:cover}
+.group-settings-card>label{display:block;font-size:11px;font-weight:800;margin-bottom:6px}
+#groupSettingsNameInput{width:100%;height:40px;border:1px solid var(--line);border-radius:10px;background:#18181d;color:var(--white);padding:0 12px;outline:none}
+#groupSettingsNameInput:focus{border-color:rgba(var(--accent-rgb),.55);box-shadow:0 0 0 3px rgba(var(--accent-rgb),.08)}
+.group-settings-actions{display:flex;justify-content:flex-end;margin-top:12px}
+.group-settings-actions .primary-button{min-width:120px}
+.group-danger-section{margin-top:22px;padding:14px;border:1px solid #5a292d;border-radius:12px;background:rgba(110,35,42,.12)}
+.group-danger-section strong{display:block;color:#ff8c8c;font-size:11px;margin-bottom:4px}
+.group-danger-section p{margin:0 0 10px;color:var(--muted);font-size:10px;line-height:1.45}
+.group-danger-button{width:100%;height:34px;border:1px solid #6b3030;border-radius:9px;background:#2a2020;color:#ff9a9a;font-size:10px;font-weight:900;cursor:pointer}
+.group-danger-button:hover{background:#382124;border-color:#8b3d43}
 .group-modal-card{width:min(470px,calc(100vw - 28px));max-height:min(700px,calc(100dvh - 28px));overflow:auto}
 .group-modal-card h2{margin:0 0 6px}
 .group-modal-card>p{margin:0 0 16px;color:var(--muted);font-size:12px;line-height:1.5}
