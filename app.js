@@ -365,6 +365,15 @@ function avatarMarkup(item,className="message-avatar"){
  return '<span class="'+className+'">'+escapeText(initials(item?.display_name||item?.username))+'</span>';
 }
 
+async function requestNotificationPermission(){
+ if(!("Notification" in window))return "unsupported";
+ if(Notification.permission!=="default")return Notification.permission;
+ try{
+  const permission=await Notification.requestPermission();
+  return permission;
+ }catch{return "denied";}
+}
+
 function setConnection(state){
  const online=state==="Connected";
  connectionDot.classList.toggle("online",online);
@@ -696,6 +705,7 @@ async function initializeSupabase(){
  await loadFriends();
  await loadGroups();
  setConnection("Connected");
+ setTimeout(()=>{requestNotificationPermission();},800);
 }
 
 function connectRealtime(){
