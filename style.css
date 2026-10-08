@@ -889,3 +889,15 @@ html[data-color-mode="light"] .message-delete-button:hover{background:#fff0f0;bo
  .sticker-button{appearance:none;-webkit-appearance:none;position:relative;display:grid!important;place-items:center!important;align-items:center!important;justify-content:center!important;width:48px;height:48px;padding:0!important;margin:0;line-height:0;font-family:Arial,sans-serif;-webkit-tap-highlight-color:transparent}
  .sticker-button svg{width:22px!important;height:22px!important;display:block!important;flex:none;transform:translateX(0)!important}
 }
+
+@media(max-width:760px){
+ .message-sticker{width:40px!important;max-width:40px!important;height:40px!important;max-height:40px!important}
+ .message-sticker img{width:40px!important;height:40px!important;max-width:40px!important;max-height:40px!important;object-fit:contain!important}
+ .sticker-picker-head button#stickerPickerClose{background:transparent!important;background-image:none!important;color:var(--white)!important}
+ .sticker-picker-head button#stickerPickerClose::first-letter{background:transparent}
+ .sticker-button{background:transparent!important;background-image:none!important}
+ .sticker-button svg{display:block!important}
+ .sticker-button::before,.sticker-button::after{display:none!important}
+ input,textarea,select{font-size:16px!important}
+ .sticker-search-row input{font-size:16px!important}
+}
