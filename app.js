@@ -649,34 +649,30 @@ function setStickerTab(tab){
  }
 }
 
-async function searchStickers(){
- const query=stickerSearchInput?.value.trim()||"";
+async function searchStickers(queryOverride=null){
+ const query=(queryOverride??stickerSearchInput?.value.trim()||"").trim();
  if(!stickerSearchStatus||!stickerSearchGrid)return;
- if(query.length<2){
+ if(query&&query.length<2){
   stickerSearchStatus.textContent="Enter at least 2 characters.";
   stickerSearchGrid.innerHTML="";
   return;
  }
- stickerSearchStatus.textContent="Searching...";
+ stickerSearchStatus.textContent="Searching Tenor...";
  stickerSearchGrid.innerHTML="";
  try{
-  const endpoint="https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrlimit=24&gsrsearch="+encodeURIComponent(query+" sticker")+"&prop=imageinfo&iiprop=url|mime&iiurlwidth=240&format=json&origin=*";
+  const endpoint="/api/tenor"+(query?"?q="+encodeURIComponent(query):"");
   const response=await fetch(endpoint);
-  if(!response.ok)throw new Error("Search failed");
   const data=await response.json();
-  const pages=Object.values(data.query?.pages||{}).filter(item=>item.imageinfo?.[0]?.thumburl||item.imageinfo?.[0]?.url);
-  if(!pages.length){
+  if(!response.ok)throw new Error(data.error||"Sticker search failed");
+  const stickers=Array.isArray(data.stickers)?data.stickers:[];
+  if(!stickers.length){
    stickerSearchStatus.textContent="No stickers found.";
    return;
   }
-  stickerSearchStatus.textContent=pages.length+" results";
-  stickerSearchGrid.innerHTML=pages.map(item=>{
-   const info=item.imageinfo?.[0]||{};
-   const url=info.thumburl||info.url;
-   return '<div class="sticker-result"><button class="sticker-tile" type="button" data-sticker-url="'+escapeText(url)+'"><img src="'+escapeText(url)+'" alt="Sticker" loading="lazy"></button><button class="sticker-save" type="button" data-save-sticker="'+escapeText(url)+'" aria-label="Save sticker" title="Save sticker"></button></div>';
-  }).join("");
+  stickerSearchStatus.textContent=stickers.length+" results";
+  stickerSearchGrid.innerHTML=stickers.map(url=>'<div class="sticker-result"><button class="sticker-tile" type="button" data-sticker-url="'+escapeText(url)+'"><img src="'+escapeText(url)+'" alt="Sticker" loading="lazy"></button><button class="sticker-save" type="button" data-save-sticker="'+escapeText(url)+'" aria-label="Save sticker" title="Save sticker"></button></div>').join("");
  }catch{
-  stickerSearchStatus.textContent="Could not search stickers.";
+  stickerSearchStatus.textContent="Could not load Tenor stickers.";
  }
 }
 
