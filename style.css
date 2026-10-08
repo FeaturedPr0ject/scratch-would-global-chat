@@ -276,6 +276,7 @@ button{cursor:pointer}
 .top-search-status{position:absolute;left:4px;top:42px;font-size:9px;color:var(--muted);z-index:12}
 .top-search-result{position:absolute;left:0;right:0;top:44px;z-index:11;box-shadow:0 18px 45px rgba(0,0,0,.45)}
 .scroll-to-bottom{position:absolute;right:28px;bottom:112px;width:42px;height:42px;border:1px solid rgba(var(--accent-rgb),.35);border-radius:50%;background:#17171c;color:var(--orange2);font-size:22px;font-weight:900;display:grid;place-items:center;z-index:8;box-shadow:0 12px 28px rgba(0,0,0,.4)}
+.scroll-to-bottom svg{width:19px;height:19px;display:block;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
 .scroll-to-bottom:hover{background:#222229;border-color:rgba(var(--accent-rgb),.65);transform:translateY(-2px)}
 .scroll-to-bottom.hidden{display:none}
 .mobile-menu-backdrop{display:none}
@@ -382,8 +383,8 @@ html,body{width:100%;max-width:100%;overflow-x:clip}
 .profile-summary .owner-badge{height:13px;padding:0 4px;font-size:6px;letter-spacing:.45px;line-height:1;margin-top:2px;align-self:flex-start}
 .friend-info .owner-badge{height:11px;padding:0 3px;font-size:5px;letter-spacing:.35px;margin-left:3px}
 .friend-search-result .owner-badge{height:12px;padding:0 4px;font-size:6px;letter-spacing:.4px;margin-left:3px}
-.friend-view-button{height:28px;min-width:52px;border:1px solid rgba(var(--accent-rgb),.42);border-radius:9px;background:#ffad00;color:#171009;font-size:11px;font-weight:800;padding:0 11px;cursor:pointer;transition:transform .12s ease,background .15s ease,border-color .15s ease}
-.friend-view-button:hover{background:#ffc247;border-color:#ffc247}
+.friend-view-button{height:28px;min-width:52px;border:1px solid rgba(var(--accent-rgb),.42);border-radius:9px;background:var(--orange);color:#171009;font-size:11px;font-weight:800;padding:0 11px;cursor:pointer;transition:transform .12s ease,background .15s ease,border-color .15s ease}
+.friend-view-button:hover{background:var(--orange2);border-color:var(--orange2)}
 .friend-view-button:active{transform:scale(.96)}
 .friend-search-result{align-items:center;gap:9px}
 .friend-search-result>span:nth-child(2){gap:2px}
