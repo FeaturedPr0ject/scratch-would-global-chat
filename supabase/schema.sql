@@ -466,8 +466,7 @@ begin
   delete from public.group_messages where group_id=group_id_value;
   delete from public.group_members where group_id=group_id_value;
 
-  update public.groups
-  set deleted_at=now()
+  delete from public.groups
   where id=group_id_value
     and owner_id=(select auth.uid())
     and deleted_at is null
