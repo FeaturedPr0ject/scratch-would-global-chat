@@ -674,6 +674,7 @@ async function initializeSupabase(){
  renderMessages();
  connectRealtime();
  await loadFriends();
+ await loadGroups();
  setConnection("Connected");
 }
 
