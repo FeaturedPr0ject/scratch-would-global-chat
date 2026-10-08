@@ -576,7 +576,7 @@ async function request(path,options={}){
   const attachmentSize=Number(body.attachment_size||0);
   const attachmentMime=String(body.attachment_mime||"").trim().slice(0,255);
   if((type==="image"||type==="file")&&(attachmentSize<=0||attachmentSize>2097152))throw new Error("Attachment size is invalid");
-  const result=await supabaseClient.from("group_messages").insert({group_id:groupId,user_id:profile.id,user_number:profile.user_number,username:profile.username,display_name:profile.display_name,avatar_url:profile.avatar_url,text:messageText,type,attachment_name:type==="text"||type==="sticker"?null:attachmentName||"Attachment",attachment_size:type==="text"||type==="sticker"?null:attachmentSize,attachment_mime:type==="text"||type==="sticker"?null:attachmentMime}).select("id,group_id,user_id,user_number,username,display_name,avatar_url,text,type,created_at").single();
+  const result=await supabaseClient.from("group_messages").insert({group_id:groupId,user_id:profile.id,user_number:profile.user_number,username:profile.username,display_name:profile.display_name,avatar_url:profile.avatar_url,text:messageText,type,attachment_name:type==="text"||type==="sticker"?null:attachmentName||"Attachment",attachment_size:type==="text"||type==="sticker"?null:attachmentSize,attachment_mime:type==="text"||type==="sticker"?null:attachmentMime}).select("id,group_id,user_id,user_number,username,display_name,avatar_url,text,type,attachment_name,attachment_size,attachment_mime,created_at").single();
   data={ok:true,message:result.data};
   error=result.error;
  }else if(url.pathname==="/api/group-messages"&&method==="DELETE"){
@@ -657,7 +657,7 @@ async function request(path,options={}){
   error=null;
  }else if(url.pathname==="/api/messages"&&method==="POST"){
   const messageText=String(body.text||"").trim().slice(0,500);
-  const type=body.type==="sticker"?"sticker":"text";
+  const type=["sticker","image","file"].includes(body.type)?body.type:"text";
   if(!messageText)throw new Error("Message cannot be empty");
   if(!profile)throw new Error("Profile not found");
   const attachmentName=String(body.attachment_name||"").trim().slice(0,255);
@@ -675,7 +675,7 @@ async function request(path,options={}){
    attachment_size:type==="text"||type==="sticker"?null:attachmentSize,
    attachment_mime:type==="text"||type==="sticker"?null:attachmentMime,
    type
-  }).select("id,user_id,user_number,username,display_name,avatar_url,text,type,created_at").single();
+  }).select("id,user_id,user_number,username,display_name,avatar_url,text,type,attachment_name,attachment_size,attachment_mime,created_at").single();
   data={ok:true,message:result.data};
   error=result.error;
  }else{
