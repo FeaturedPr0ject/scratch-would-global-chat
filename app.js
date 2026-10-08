@@ -339,7 +339,7 @@ function setConnection(state){
  const online=state==="Connected";
  connectionDot.classList.toggle("online",online);
  connectionDot.classList.toggle("offline",!online);
- connectionText.textContent=state;
+ connectionText.textContent=currentLanguage==="vi"?({Connected:"Đã kết nối",Connecting:"Đang kết nối",Offline:"Ngoại tuyến"}[state]||state):state;
 }
 
 function setProfileAvatar(element,data,sizeClass=""){
