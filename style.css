@@ -840,3 +840,6 @@ html[data-color-mode="light"] .message-delete-button:hover{background:#fff0f0;bo
  .group-card{padding:9px;border-radius:13px}
  .group-modal-card{width:calc(100vw - 20px);max-height:calc(var(--visual-vh,100dvh) - 20px)}
 }
+
+.server-room-button{width:100%;text-align:left;color:var(--white);cursor:pointer;font:inherit}
+.server-room-button:hover{border-color:rgba(var(--accent-rgb),.45);background:rgba(var(--accent-rgb),.05)}
