@@ -75,6 +75,7 @@ const groupFriendList=document.querySelector("#groupFriendList");
 const groupModalMessage=document.querySelector("#groupModalMessage");
 const createGroupButton=document.querySelector("#createGroupButton");
 const groupCreateSubmit=document.querySelector("#groupCreateSubmit");
+const publicRoomButton=document.querySelector("#publicRoomButton");
 const mobileMenuButton=document.querySelector("#mobileMenuButton");
 const mobileMenuBackdrop=document.querySelector("#mobileMenuBackdrop");
 const mobileSidebar=document.querySelector(".sidebar");
