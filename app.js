@@ -96,6 +96,17 @@ let avatarCropStartOffsetX=0;
 let avatarCropStartOffsetY=0;
 let usernameTimer=null;
 let savingProfile=false;
+function syncVisualViewport(){
+ const viewport=window.visualViewport;
+ const height=viewport?.height||window.innerHeight;
+ document.documentElement.style.setProperty("--visual-vh",height+"px");
+}
+
+syncVisualViewport();
+window.visualViewport?.addEventListener("resize",syncVisualViewport);
+window.visualViewport?.addEventListener("scroll",syncVisualViewport);
+window.addEventListener("orientationchange",()=>setTimeout(syncVisualViewport,80));
+
 function applyTheme(themeName,save=true){
  const preset=THEME_PRESETS[themeName]||THEME_PRESETS.orange;
  document.documentElement.style.setProperty("--orange",preset[0]);

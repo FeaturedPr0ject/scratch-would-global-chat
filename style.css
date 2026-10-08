@@ -78,7 +78,7 @@ button{cursor:pointer}
 .send-button,.primary-button{border:0;background:var(--orange);color:#171009;font-weight:900;border-radius:12px;padding:12px 18px;min-height:46px}
 .send-button:hover,.primary-button:hover{background:var(--orange2)}
 .composer-foot{display:flex;justify-content:space-between;color:#676770;font-size:10px;padding:7px 3px 0}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.76);backdrop-filter:blur(10px);display:grid;place-items:center;padding:20px;z-index:50}
+.modal{position:fixed;inset:0;width:100%;height:100%;height:100dvh;min-height:100%;box-sizing:border-box;background:rgba(0,0,0,.76);backdrop-filter:blur(10px);display:grid;place-items:center;padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));overflow:auto;overscroll-behavior:contain;z-index:50}
 .modal.hidden{display:none}
 .modal-card{width:min(400px,100%);background:#111116;border:1px solid var(--line);border-radius:22px;padding:26px;box-shadow:0 24px 80px rgba(0,0,0,.55);text-align:center}
 .modal-logo{width:150px;height:76px;margin:0 auto 4px}
@@ -278,7 +278,7 @@ button{cursor:pointer}
 .composer-foot{font-size:9px;padding-top:5px}
 .modal{padding:12px}
 .modal-card{padding:22px 18px;border-radius:20px}
-.profile-modal-card{max-height:calc(100vh - 24px);overflow:auto}
+.profile-modal-card{width:min(500px,100%);max-height:calc(var(--visual-vh,100vh) - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));min-height:0;overflow:auto;overscroll-behavior:contain}
 .friends-card{flex:none}
 .friend-list{max-height:230px}
 }
@@ -399,7 +399,7 @@ html,body{width:100%;max-width:100%;overflow-x:clip}
 .message-sticker img{max-height:180px}
 }
 
-@media(max-width:760px){.brand span{display:none}.topbar{padding-left:10px;padding-right:10px;padding-top:env(safe-area-inset-top);height:64px;min-height:64px}.chat-layout{min-height:calc(100dvh - 64px);height:calc(100dvh - 64px)}.chat-panel{min-height:calc(100dvh - 64px);height:calc(100dvh - 64px)}.sidebar{top:64px;bottom:env(safe-area-inset-bottom);width:min(310px,86vw)}.composer{padding-bottom:calc(8px + env(safe-area-inset-bottom))}.sticker-picker{bottom:calc(62px + env(safe-area-inset-bottom));max-height:calc(72dvh - env(safe-area-inset-bottom))}.public-profile-card{width:min(390px,calc(100vw - 24px));max-width:calc(100vw - 24px);padding:28px 22px}.modal{padding:12px;overflow:auto}}
+@media(max-width:760px){.brand span{display:none}.topbar{padding-left:10px;padding-right:10px;padding-top:env(safe-area-inset-top);height:64px;min-height:64px}.chat-layout{min-height:calc(100dvh - 64px);height:calc(100dvh - 64px)}.chat-panel{min-height:calc(100dvh - 64px);height:calc(100dvh - 64px)}.sidebar{top:64px;bottom:env(safe-area-inset-bottom);width:min(310px,86vw)}.composer{padding-bottom:calc(8px + env(safe-area-inset-bottom))}.sticker-picker{bottom:calc(62px + env(safe-area-inset-bottom));max-height:calc(72dvh - env(safe-area-inset-bottom))}.public-profile-card{width:min(390px,calc(100vw - 24px));max-width:calc(100vw - 24px);max-height:calc(var(--visual-vh,100vh) - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));padding:28px 22px;overflow:auto}.modal{padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));overflow:auto;align-items:center}}
 .sticker-result{min-width:0;overflow:hidden}.sticker-result .sticker-tile{display:block}@media(max-width:760px){.sticker-save{width:21px;height:21px;min-width:21px;min-height:21px;border-radius:7px}.sticker-save::before{font-size:13px}.sticker-tile{padding:3px}}
 
 .sticker-picker{width:min(440px,calc(100vw - 24px));}
