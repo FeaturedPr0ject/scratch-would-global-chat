@@ -37,6 +37,10 @@ const savedStickerPanel=document.querySelector("#savedStickerPanel");
 const searchStickerPanel=document.querySelector("#searchStickerPanel");
 const savedStickerGrid=document.querySelector("#savedStickerGrid");
 const savedStickerEmpty=document.querySelector("#savedStickerEmpty");
+const recentStickerFeature=document.querySelector("#recentStickerFeature");
+const recentStickerGrid=document.querySelector("#recentStickerGrid");
+const recentStickerEmpty=document.querySelector("#recentStickerEmpty");
+const clearSavedStickersButton=document.querySelector("#clearSavedStickers");
 const stickerSearchInput=document.querySelector("#stickerSearchInput");
 const stickerSearchButton=document.querySelector("#stickerSearchButton");
 const stickerSearchStatus=document.querySelector("#stickerSearchStatus");
@@ -83,7 +87,14 @@ const profileDirectory=new Map();
 let messages=[];
 let socket=null;
 const SAVED_STICKERS_STORAGE="swgc-room-chats-saved-stickers";
+const RECENT_STICKERS_STORAGE="swgc-room-chats-recent-stickers";
 let savedStickers=[];
+let recentStickers=[];
+let stickerSearchPos="";
+let stickerSearchLoading=false;
+let stickerSearchHasMore=true;
+let stickerSearchQuery="";
+let stickerSearchRequest=0;
 let avatarFile=null;
 let avatarCropImage=null;
 let avatarCropObjectUrl="";
@@ -622,15 +633,52 @@ function loadSavedStickers(){
   const data=JSON.parse(localStorage.getItem(SAVED_STICKERS_STORAGE)||"[]");
   savedStickers=Array.isArray(data)?data.filter(item=>typeof item==="string"&&safeUrl(item)):[]; 
  }catch{savedStickers=[];}
+ try{
+  const data=JSON.parse(localStorage.getItem(RECENT_STICKERS_STORAGE)||"[]");
+  recentStickers=Array.isArray(data)?data.filter(item=>typeof item==="string"&&safeUrl(item)):[]; 
+ }catch{recentStickers=[];}
  renderSavedStickers();
+ renderRecentStickers();
 }
 
 function saveSticker(url){
  const safe=safeUrl(url);
  if(!safe)return;
- savedStickers=[safe,...savedStickers.filter(item=>item!==safe)].slice(0,60);
+ savedStickers=[safe,...savedStickers.filter(item=>item!==safe)];
  localStorage.setItem(SAVED_STICKERS_STORAGE,JSON.stringify(savedStickers));
  renderSavedStickers();
+}
+
+function unsaveSticker(url){
+ const safe=safeUrl(url);
+ if(!safe)return;
+ savedStickers=savedStickers.filter(item=>item!==safe);
+ localStorage.setItem(SAVED_STICKERS_STORAGE,JSON.stringify(savedStickers));
+ renderSavedStickers();
+}
+
+function clearSavedStickers(){
+ savedStickers=[];
+ localStorage.setItem(SAVED_STICKERS_STORAGE,JSON.stringify(savedStickers));
+ renderSavedStickers();
+}
+
+function addRecentSticker(url){
+ const safe=safeUrl(url);
+ if(!safe)return;
+ recentStickers=[safe,...recentStickers.filter(item=>item!==safe)];
+ localStorage.setItem(RECENT_STICKERS_STORAGE,JSON.stringify(recentStickers));
+ renderRecentStickers();
+}
+
+function renderRecentStickers(){
+ if(!recentStickerFeature||!recentStickerGrid||!recentStickerEmpty)return;
+ const latest=recentStickers[0]||"";
+ recentStickerFeature.classList.toggle("hidden",!latest);
+ recentStickerFeature.innerHTML=latest?'<button class="sticker-tile" type="button" data-sticker-url="'+escapeText(latest)+'"><img src="'+escapeText(latest)+'" alt="Recent sticker" loading="lazy"></button>':"";
+ const rest=recentStickers.slice(1);
+ recentStickerGrid.innerHTML=rest.map(url=>'<button class="sticker-tile" type="button" data-sticker-url="'+escapeText(url)+'"><img src="'+escapeText(url)+'" alt="Recent sticker" loading="lazy"></button>').join("");
+ recentStickerEmpty.classList.toggle("hidden",recentStickers.length>0);
 }
 
 function renderSavedStickers(){
@@ -651,21 +699,32 @@ function setStickerTab(tab){
  }
 }
 
-async function searchStickers(queryOverride=null){
+async function searchStickers(queryOverride=null,append=false){
  const query=(queryOverride??(stickerSearchInput?.value.trim()||"")).trim();
  if(!stickerSearchStatus||!stickerSearchGrid)return;
  if(query&&query.length<2){
   stickerSearchStatus.textContent="Enter at least 2 characters.";
   stickerSearchGrid.innerHTML="";
+  stickerSearchPos="";
+  stickerSearchHasMore=false;
   return;
  }
+ if(stickerSearchLoading)return;
+ if(append&&!stickerSearchHasMore)return;
+ if(!append){
+  stickerSearchRequest+=1;
+  stickerSearchPos="";
+  stickerSearchHasMore=true;
+  stickerSearchQuery=query;
+  stickerSearchGrid.innerHTML="";
+ }
+ const requestId=stickerSearchRequest;
  if(!klipyApiKey){
   stickerSearchStatus.textContent="KLIPY is not configured.";
-  stickerSearchGrid.innerHTML="";
   return;
  }
- stickerSearchStatus.textContent="Searching KLIPY...";
- stickerSearchGrid.innerHTML="";
+ stickerSearchLoading=true;
+ stickerSearchStatus.textContent=append?"Loading more KLIPY stickers...":"Searching KLIPY...";
  try{
   const endpoint=query?"https://api.klipy.com/v2/search":"https://api.klipy.com/v2/featured";
   const params=new URLSearchParams({
@@ -675,29 +734,38 @@ async function searchStickers(queryOverride=null){
    locale:"vi_VN",
    contentfilter:"medium",
    media_filter:"tinywebp_transparent,nanowebp_transparent,webp_transparent,tinygif_transparent,nanogif_transparent,gif_transparent",
-   limit:"24"
+   limit:"50"
   });
   if(query)params.set("q",query);
+  if(stickerSearchPos)params.set("pos",stickerSearchPos);
   const response=await fetch(endpoint+"?"+params.toString());
   const data=await response.json();
+  if(requestId!==stickerSearchRequest)return;
   if(!response.ok)throw new Error(data.error||"Sticker search failed");
   const stickers=(Array.isArray(data.results)?data.results:[]).map(item=>{
-   const media=item?.media_formats||{};
-   const keys=["tinywebp_transparent","nanowebp_transparent","webp_transparent","tinygif_transparent","nanogif_transparent","gif_transparent"];
+   const media=item?.media_formats||item?.media||{};
+   const keys=["tinywebp_transparent","nanowebp_transparent","webp_transparent","tinygif_transparent","nanogif_transparent","gif_transparent","tinywebp","nanowebp","webp","tinygif","nanogif","gif"];
    for(const key of keys){
     const url=media[key]?.url;
     if(url)return url;
    }
    return "";
   }).filter(Boolean);
-  if(!stickers.length){
-   stickerSearchStatus.textContent="No stickers found.";
-   return;
+  if(!append)stickerSearchGrid.innerHTML="";
+  if(stickers.length){
+   stickerSearchGrid.insertAdjacentHTML("beforeend",stickers.map(url=>{
+    const saved=savedStickers.includes(url)?" saved":"";
+    return '<div class="sticker-result"><button class="sticker-tile" type="button" data-sticker-url="'+escapeText(url)+'"><img src="'+escapeText(url)+'" alt="Sticker" loading="lazy"></button><button class="sticker-save'+saved+'" type="button" data-save-sticker="'+escapeText(url)+'" aria-label="'+(saved?"Unsave sticker":"Save sticker")+'" title="'+(saved?"Unsave sticker":"Save sticker")+'"></button></div>';
+   }).join(""));
   }
-  stickerSearchStatus.textContent=stickers.length+" results";
-  stickerSearchGrid.innerHTML=stickers.map(url=>'<div class="sticker-result"><button class="sticker-tile" type="button" data-sticker-url="'+escapeText(url)+'"><img src="'+escapeText(url)+'" alt="Sticker" loading="lazy"></button><button class="sticker-save" type="button" data-save-sticker="'+escapeText(url)+'" aria-label="Save sticker" title="Save sticker"></button></div>').join("");
+  stickerSearchPos=String(data.next||"");
+  stickerSearchHasMore=Boolean(stickerSearchPos);
+  if(!stickers.length&&!append)stickerSearchStatus.textContent="No stickers found.";
+  else stickerSearchStatus.textContent=stickerSearchHasMore?stickerSearchGrid.children.length+" results · scroll for more":stickerSearchGrid.children.length+" results";
  }catch{
-  stickerSearchStatus.textContent="Could not load KLIPY stickers.";
+  if(requestId===stickerSearchRequest)stickerSearchStatus.textContent="Could not load KLIPY stickers.";
+ }finally{
+  if(requestId===stickerSearchRequest)stickerSearchLoading=false;
  }
 }
 
@@ -710,7 +778,7 @@ function openStickerPicker(){
 async function sendSticker(url){
  const safe=safeUrl(url);
  if(!safe||!profile||!userId)return;
- saveSticker(safe);
+ addRecentSticker(safe);
  await sendMessage("sticker",safe);
 }
 
@@ -818,9 +886,17 @@ stickerButton?.addEventListener("click",event=>{event.stopPropagation();openStic
 stickerPickerClose?.addEventListener("click",()=>stickerPicker?.classList.add("hidden"));
 savedStickerTab?.addEventListener("click",()=>setStickerTab("saved"));
 searchStickerTab?.addEventListener("click",()=>setStickerTab("search"));
-stickerSearchButton?.addEventListener("click",searchStickers);
+stickerSearchButton?.addEventListener("click",()=>searchStickers());
 stickerSearchInput?.addEventListener("keydown",event=>{if(event.key==="Enter")searchStickers()});
 savedStickerGrid?.addEventListener("click",event=>{
+ const button=event.target.closest("[data-sticker-url]");
+ if(button)sendSticker(button.dataset.stickerUrl);
+});
+recentStickerFeature?.addEventListener("click",event=>{
+ const button=event.target.closest("[data-sticker-url]");
+ if(button)sendSticker(button.dataset.stickerUrl);
+});
+recentStickerGrid?.addEventListener("click",event=>{
  const button=event.target.closest("[data-sticker-url]");
  if(button)sendSticker(button.dataset.stickerUrl);
 });
@@ -828,13 +904,32 @@ stickerSearchGrid?.addEventListener("click",event=>{
  const save=event.target.closest("[data-save-sticker]");
  const send=event.target.closest("[data-sticker-url]");
  if(save){
-  saveSticker(save.dataset.saveSticker);
-  save.classList.add("saved");
-  save.textContent="Saved";
+  const url=save.dataset.saveSticker;
+  if(savedStickers.includes(url)){
+   unsaveSticker(url);
+   save.classList.remove("saved");
+   save.setAttribute("aria-label","Save sticker");
+   save.setAttribute("title","Save sticker");
+  }else{
+   saveSticker(url);
+   save.classList.add("saved");
+   save.setAttribute("aria-label","Unsave sticker");
+   save.setAttribute("title","Unsave sticker");
+  }
   return;
  }
  if(send)sendSticker(send.dataset.stickerUrl);
 });
+clearSavedStickersButton?.addEventListener("click",clearSavedStickers);
+stickerSearchGrid?.addEventListener("scroll",event=>{
+ const el=event.currentTarget;
+ if(el.scrollTop+el.clientHeight>=el.scrollHeight-120)searchStickers(null,true);
+});
+document.querySelectorAll("[data-sticker-query]").forEach(button=>button.addEventListener("click",()=>{
+ document.querySelectorAll("[data-sticker-query]").forEach(item=>item.classList.toggle("active",item===button));
+ if(stickerSearchInput)stickerSearchInput.value=button.dataset.stickerQuery||"";
+ searchStickers(button.dataset.stickerQuery||"");
+}));
 document.addEventListener("click",event=>{if(!event.target.closest(".sticker-picker")&&!event.target.closest("#stickerButton"))stickerPicker?.classList.add("hidden")});
 loadSavedStickers();
 loadTheme();
