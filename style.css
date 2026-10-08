@@ -903,10 +903,3 @@ html[data-color-mode="light"] .message-delete-button:hover{background:#fff0f0;bo
  .sticker-search-row input{font-size:16px!important}
 }
 
-@media(max-width:760px){
- .message-sticker{width:120px!important;max-width:120px!important;height:120px!important;max-height:120px!important}
- .message-sticker img{width:120px!important;height:120px!important;max-width:120px!important;max-height:120px!important;object-fit:contain!important;border-radius:8px}
-}
-
-.message-sticker{width:72px!important;max-width:72px!important;height:72px!important;max-height:72px!important}
-.message-sticker img{width:72px!important;height:72px!important;max-width:72px!important;max-height:72px!important;object-fit:contain!important;border-radius:7px}
