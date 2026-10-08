@@ -16,7 +16,6 @@ const charCount=document.querySelector("#charCount");
 const nameModal=document.querySelector("#nameModal");
 const firstUsernameInput=document.querySelector("#firstUsernameInput");
 const firstDisplayNameInput=document.querySelector("#firstDisplayNameInput");
-const firstLanguageSelect=document.querySelector("#firstLanguageSelect");
 const firstUsernameCheck=document.querySelector("#firstUsernameCheck");
 const joinRoomButton=document.querySelector("#joinRoomButton");
 const openProfileButton=document.querySelector("#openProfile");
@@ -257,11 +256,8 @@ function applyLanguage(language,save=true){
  setText("#avatarCropCancel",labels.cancel);
  setText("#nameModal h2",labels.chooseUsername);
  setText("#nameModal p",labels.uniqueHint);
- setText('label[for="firstLanguageSelect"]',labels.language);
- setAria("#firstLanguageSelect",labels.language);
  setPlaceholder("#firstUsernameInput",labels.uniqueUsername);
  setPlaceholder("#firstDisplayNameInput",labels.displayName+" (optional)");
- if(firstLanguageSelect)firstLanguageSelect.value=value;
  setText("#joinRoomButton",labels.joinRoom);
  setText("#addFriendButton",labels.addFriend);
  setText("#publicProfileNote",labels.noNote);
@@ -271,6 +267,12 @@ function applyLanguage(language,save=true){
 }
 function loadLanguage(){
  applyLanguage(localStorage.getItem(LANGUAGE_STORAGE)||"en",false);
+}
+
+function changeLanguage(language){
+ const value=language==="vi"?"vi":"en";
+ localStorage.setItem(LANGUAGE_STORAGE,value);
+ window.location.reload();
 }
 
 function setSettingsCategory(category){
@@ -829,7 +831,7 @@ function renderRecentStickers(){
 
 function renderSavedStickers(){
  if(!savedStickerGrid||!savedStickerEmpty)return;
- savedStickerGrid.innerHTML=savedStickers.map(url=>'<button class="sticker-tile" type="button" data-sticker-url="'+escapeText(url)+'"><img src="'+escapeText(url)+'" alt="Saved sticker" loading="lazy"></button>').join("");
+ savedStickerGrid.innerHTML=savedStickers.map(url=>'<div class="sticker-result saved-sticker-result"><button class="sticker-tile" type="button" data-sticker-url="'+escapeText(url)+'"><img src="'+escapeText(url)+'" alt="Saved sticker" loading="lazy"></button><button class="sticker-save saved" type="button" data-unsave-sticker="'+escapeText(url)+'" aria-label="Unsave sticker" title="Unsave sticker"></button></div>').join("");
  savedStickerEmpty.classList.toggle("hidden",savedStickers.length>0);
 }
 
@@ -1007,7 +1009,7 @@ profileSectionButtons.forEach(button=>button.addEventListener("click",()=>setPro
 settingsCategoryButtons.forEach(button=>button.addEventListener("click",()=>setSettingsCategory(button.dataset.settingsCategory||"color")));
 themeOptions.forEach(button=>button.addEventListener("click",()=>applyTheme(button.dataset.theme||"orange")));
 themeModeOptions.forEach(button=>button.addEventListener("click",()=>applyColorMode(button.dataset.themeMode||"dark")));
-languageSelect?.addEventListener("change",()=>applyLanguage(languageSelect.value));
+languageSelect?.addEventListener("change",()=>changeLanguage(languageSelect.value));
 
 openProfileButton.addEventListener("click",()=>{setMobileMenu(false);openMyProfile();});
 closeProfileButton.addEventListener("click",closeProfileModal);
@@ -1017,7 +1019,6 @@ friendRefreshButton?.addEventListener("click",async()=>{friendRefreshButton.clas
 addFriendButton?.addEventListener("click",()=>{const relation=friends.find(item=>item.user_id===selectedProfileId);if(relation?.status==="accepted")unfriend();else addFriend();});
 saveProfileButton.addEventListener("click",saveProfile);
 joinRoomButton.addEventListener("click",joinRoom);
-firstLanguageSelect?.addEventListener("change",()=>applyLanguage(firstLanguageSelect.value));
 usernameInput.addEventListener("input",()=>scheduleUsernameCheck(false));
 firstUsernameInput.addEventListener("input",()=>scheduleUsernameCheck(true));
 firstUsernameInput.addEventListener("keydown",event=>{if(event.key==="Enter")joinRoom()});
@@ -1040,6 +1041,11 @@ searchStickerTab?.addEventListener("click",()=>setStickerTab("search"));
 stickerSearchButton?.addEventListener("click",()=>searchStickers());
 stickerSearchInput?.addEventListener("keydown",event=>{if(event.key==="Enter")searchStickers()});
 savedStickerGrid?.addEventListener("click",event=>{
+ const unsave=event.target.closest("[data-unsave-sticker]");
+ if(unsave){
+  unsaveSticker(unsave.dataset.unsaveSticker);
+  return;
+ }
  const button=event.target.closest("[data-sticker-url]");
  if(button)sendSticker(button.dataset.stickerUrl);
 });
