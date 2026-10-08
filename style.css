@@ -498,3 +498,9 @@ html,body{width:100%;max-width:100%;overflow-x:clip}
  .sticker-save{width:18px;height:18px;min-width:18px;min-height:18px}
  .sticker-save::before{font-size:12px}
 }
+
+#recentStickerFeature .sticker-tile{width:82px!important;height:82px!important;aspect-ratio:1!important;padding:3px}
+#recentStickerFeature{display:grid;place-items:center}
+@media(max-width:760px){
+ #recentStickerFeature .sticker-tile{width:68px!important;height:68px!important}
+}
