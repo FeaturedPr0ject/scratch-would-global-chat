@@ -1259,6 +1259,7 @@ openProfileButton.addEventListener("click",()=>{setMobileMenu(false);openMyProfi
 closeProfileButton.addEventListener("click",closeProfileModal);
 closeGroupModalButton?.addEventListener("click",closeGroupModal);
 groupCreateSubmit?.addEventListener("click",createGroup);
+publicRoomButton?.addEventListener("click",()=>{openPublicRoom();setMobileMenu(false);});
 groupModal?.addEventListener("click",event=>{if(event.target===groupModal)closeGroupModal();});
 avatarCropModal?.addEventListener("click",event=>{if(event.target===avatarCropModal)closeAvatarCrop()});
 closeUserProfileButton.addEventListener("click",()=>userProfileModal.classList.add("hidden"));
