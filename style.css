@@ -786,3 +786,9 @@ html[data-color-mode="light"] .mobile-menu-backdrop{background:rgba(0,0,0,.35)}
   font-size:8px;
  }
 }
+
+.topbar .logo-main.logo-image{width:72px;height:44px}
+.top-search-wrap{width:min(420px,44vw)}
+.top-search-input{height:44px;font-size:12px;padding-left:14px;padding-right:48px}
+.top-search-button{right:5px;width:34px;height:34px;border-radius:10px;font-size:13px}
+@media(max-width:760px){.topbar .logo-main.logo-image{width:54px;height:34px}.top-search-wrap{width:min(48vw,270px)}.top-search-input{height:38px;font-size:11px;padding-left:12px;padding-right:43px}.top-search-button{right:4px;width:30px;height:30px;border-radius:9px;font-size:12px}}
