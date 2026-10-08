@@ -670,7 +670,8 @@ async function initializeSupabase(){
  renderProfile();
  if(!profile)openFirstProfile();
  const history=await request("/api/messages?limit=100");
- messages=history.messages||[];
+ publicMessages=history.messages||[];
+ messages=publicMessages.slice();
  renderMessages();
  connectRealtime();
  await loadFriends();
