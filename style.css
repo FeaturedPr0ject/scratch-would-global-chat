@@ -152,7 +152,7 @@ button{cursor:pointer}
 .modal-close{position:absolute;right:14px;top:12px;width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:#1b1b20;color:var(--white);font-size:20px;line-height:1}
 .profile-modal-card,.public-profile-card{position:relative}
 .profile-modal-card{width:min(500px,100%);text-align:left}
-.profile-modal-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#0c0c10;border:1px solid var(--line);border-radius:13px;padding:4px;margin:0 0 16px}
+.profile-modal-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:calc(100% - 48px);margin:0 48px 16px 0;background:#0c0c10;border:1px solid var(--line);border-radius:13px;padding:4px}
 .profile-modal-tab{height:38px;border:0;border-radius:9px;background:transparent;color:var(--muted);font-size:12px;font-weight:900}
 .profile-modal-tab:hover{color:var(--white)}
 .profile-modal-tab.active{background:var(--orange);color:#171009;box-shadow:0 3px 12px rgba(var(--accent-rgb),.18)}
@@ -170,7 +170,7 @@ button{cursor:pointer}
 @media(max-width:760px){
  .theme-options{grid-template-columns:repeat(3,minmax(0,1fr))}
  .profile-modal-card{width:min(430px,100%)}
- .profile-modal-tabs{margin-bottom:12px}
+ .profile-modal-tabs{width:calc(100% - 42px);margin:0 42px 12px 0}
 }
 .profile-modal-card{width:min(500px,100%);text-align:left}
 .profile-avatar-editor{display:grid;place-items:center;margin-bottom:18px}

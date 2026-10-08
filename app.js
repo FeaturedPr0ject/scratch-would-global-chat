@@ -389,7 +389,7 @@ async function request(path,options={}){
  }
 
  if(error){
-  const message=error.code==="23505"?"Name already exists. Choose another.":error.message||"Database request failed";
+  const message=error.code==="23505"?(url.pathname==="/api/profiles"?"Name already exists. Choose another.":url.pathname==="/api/friends/request"?"Friend request already exists.":"Database conflict. Please try again."):error.message||"Database request failed";
   throw new Error(message);
  }
  return data;
@@ -817,7 +817,6 @@ window.addEventListener("resize",()=>{
  }
 });
 friendSearchInput?.addEventListener("keydown",event=>{if(event.key==="Enter")searchFriend()});
-addFriendButton?.addEventListener("click",addFriend);
 friendSearchResult?.addEventListener("click",event=>{const button=event.target.closest("[data-search-id]");if(button)openPublicProfile(button.dataset.searchId)});
 friendList?.addEventListener("click",async event=>{
  const button=event.target.closest("[data-friend-id]");
