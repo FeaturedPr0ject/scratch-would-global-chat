@@ -126,7 +126,8 @@ async function createAccountSession(userId,seed){
 async function handleOwnerLogin(response,body){
  if(!OWNER_LOGIN_CODE||!SUPABASE_SERVICE_ROLE_KEY)throw Object.assign(new Error("Owner Login is not configured on Render."),{status:503});
  const submitted=String(body.code||"");
- const forwarded=String(request.headers["x-forwarded-for"]||"").split(",")[0].trim();
+ const forwardedValues=String(request.headers["x-forwarded-for"]||"").split(",").map(value=>value.trim()).filter(Boolean);
+ const forwarded=forwardedValues.length?forwardedValues[forwardedValues.length-1]:"";
  const clientKey=forwarded||request.socket.remoteAddress||"unknown";
  const attempt=ownerLoginAttempts.get(clientKey)||{count:0,until:0};
  if(attempt.until>Date.now())throw Object.assign(new Error("Too many Owner Login attempts. Try again later."),{status:429});
@@ -150,7 +151,8 @@ async function handleAccountRecovery(request,response,body,mode){
  if(mode==="create"){
   const identity=await getIdentity(request);
   const user=identity.user;
-  if(!user.is_anonymous)throw Object.assign(new Error("Recovery codes can only be created for anonymous SWGC accounts. This account already has a sign-in method."),{status:409});
+  const managedEmail="swgc-"+user.id+"@accounts.swgc.invalid";
+  if(!user.is_anonymous&&user.email!==managedEmail)throw Object.assign(new Error("This account already uses an external sign-in method and cannot be converted by recovery codes."),{status:409});
   const secret=crypto.randomBytes(24).toString("base64url");
   const code="SWGC1."+user.id+"."+secret;
   const hash=crypto.createHash("sha256").update(secret).digest("hex");
