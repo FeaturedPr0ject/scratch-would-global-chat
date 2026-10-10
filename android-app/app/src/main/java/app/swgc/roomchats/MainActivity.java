@@ -5,6 +5,8 @@ import android.app.DownloadManager;
 import android.app.Dialog;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.telephony.TelephonyManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -41,7 +43,8 @@ public class MainActivity extends Activity {
     private static final int FILE_CHOOSER_REQUEST = 401;
     private static final String HOME_URL = "https://scratch-would-global-chat.vercel.app/";
     private static final String CURRENT_VERSION = BuildConfig.VERSION_NAME;
-    private static final String RELEASES_API = "https://api.github.com/repos/FeaturedPr0ject/scratch-would-global-chat/releases?per_page=10";
+    private static final int CURRENT_VERSION_CODE = BuildConfig.VERSION_CODE;
+    private static final String UPDATE_MANIFEST_URL = "https://raw.githubusercontent.com/FeaturedPr0ject/scratch-would-global-chat/main/android-updates/manifest.json";
     private WebView webView;
     private ValueCallback<Uri[]> fileChooserCallback;
     private volatile boolean trustedWebViewOrigin;
@@ -167,6 +170,20 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
+        public boolean isPhone() {
+            if (!isTrustedWebViewOrigin()) return false;
+            boolean telephony = getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY);
+            try {
+                TelephonyManager manager = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
+                telephony = telephony || (manager != null && manager.getPhoneType() != TelephonyManager.PHONE_TYPE_NONE);
+            } catch (Exception ignored) {}
+            int widthDp = getResources().getConfiguration().screenWidthDp;
+            int smallestWidthDp = getResources().getConfiguration().smallestScreenWidthDp;
+            boolean compactScreen = smallestWidthDp > 0 ? smallestWidthDp < 600 : widthDp < 600;
+            return telephony || compactScreen;
+        }
+
+        @JavascriptInterface
         public void checkForUpdates() {
             if (isTrustedWebViewOrigin()) runOnUiThread(() -> MainActivity.this.checkForUpdates());
         }
@@ -266,53 +283,55 @@ public class MainActivity extends Activity {
         new Thread(() -> {
             HttpURLConnection connection = null;
             try {
-                connection = (HttpURLConnection) new URL(RELEASES_API).openConnection();
-                connection.setConnectTimeout(8000);
-                connection.setReadTimeout(8000);
-                connection.setRequestProperty("Accept", "application/vnd.github+json");
-                if (connection.getResponseCode() != 200) throw new Exception("No release");
+                connection = (HttpURLConnection) new URL(UPDATE_MANIFEST_URL).openConnection();
+                connection.setConnectTimeout(10000);
+                connection.setReadTimeout(10000);
+                connection.setRequestProperty("Cache-Control", "no-cache");
+                connection.setRequestProperty("Accept", "application/json");
+                if (connection.getResponseCode() != 200) throw new Exception("Update manifest unavailable");
                 java.io.InputStream input = connection.getInputStream();
                 java.io.ByteArrayOutputStream output = new java.io.ByteArrayOutputStream();
                 byte[] buffer = new byte[4096];
                 int count;
                 while ((count = input.read(buffer)) != -1) output.write(buffer, 0, count);
                 input.close();
-                JSONArray releases = new JSONArray(output.toString("UTF-8"));
-                String tag = "";
-                String apkUrl = null;
-                for (int releaseIndex = 0; releaseIndex < releases.length(); releaseIndex++) {
-                    JSONObject release = releases.optJSONObject(releaseIndex);
-                    if (release == null) continue;
-                    JSONArray assets = release.optJSONArray("assets");
-                    if (assets == null) continue;
-                    for (int assetIndex = 0; assetIndex < assets.length(); assetIndex++) {
-                        JSONObject asset = assets.optJSONObject(assetIndex);
-                        if (asset == null) continue;
-                        String candidateUrl = asset.optString("browser_download_url", "");
-                        if (asset.optString("name", "").toLowerCase().endsWith(".apk") && candidateUrl.startsWith("https://")) {
-                            tag = release.optString("tag_name", "").replaceFirst("^[vV]", "");
-                            apkUrl = candidateUrl;
-                            break;
-                        }
-                    }
-                    if (apkUrl != null) break;
-                }
-                String finalApkUrl = apkUrl;
+
+                JSONObject manifest = new JSONObject(output.toString("UTF-8"));
+                String latestVersion = manifest.optString("version", "").replaceFirst("^[vV]", "").trim();
+                int latestVersionCode = manifest.optInt("version_code", 0);
+                String apkUrl = manifest.optString("apk_url", "").trim();
+                Uri downloadUri = Uri.parse(apkUrl);
+                boolean trustedApkUrl = "https".equalsIgnoreCase(downloadUri.getScheme())
+                    && "github.com".equalsIgnoreCase(downloadUri.getHost())
+                    && downloadUri.getPath() != null
+                    && downloadUri.getPath().contains("/releases/download/");
+                if (latestVersion.isEmpty() || latestVersionCode <= 0) throw new Exception("Invalid update manifest");
+
+                final String finalVersion = latestVersion;
+                final String finalApkUrl = trustedApkUrl ? apkUrl : "";
+                boolean updateAvailable = latestVersionCode > CURRENT_VERSION_CODE;
                 new Handler(Looper.getMainLooper()).post(() -> {
-                    if (tag.isEmpty() || tag.equals(CURRENT_VERSION)) {
-                        showModernDialog("You are up to date", "Installed version: " + CURRENT_VERSION + "\nNo newer release was found.", "Done", null, null, null);
+                    if (!updateAvailable) {
+                        showModernDialog("You are up to date",
+                            "Installed version: " + CURRENT_VERSION + " (" + CURRENT_VERSION_CODE + ")\nLatest version: " + finalVersion + " (" + latestVersionCode + ")",
+                            "Done", null, null, null);
                     } else {
-                        String message = "New version: " + tag + "\nInstalled version: " + CURRENT_VERSION;
-                        if (finalApkUrl != null && finalApkUrl.startsWith("https://")) {
+                        String message = "New version: " + finalVersion + " (" + latestVersionCode + ")\nInstalled version: " + CURRENT_VERSION + " (" + CURRENT_VERSION_CODE + ")";
+                        if (!finalApkUrl.isEmpty()) {
                             showModernDialog("Update available", message, "Download APK", () -> downloadUpdate(finalApkUrl), "Later", null);
                         } else {
-                            showModernDialog("Update available", message, "View releases", () -> startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/FeaturedPr0ject/scratch-would-global-chat/releases"))), "Later", null);
+                            showModernDialog("Update available", message, "View updates", () -> startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/FeaturedPr0ject/scratch-would-global-chat/tree/main/android-updates"))), "Later", null);
                         }
                     }
                 });
             } catch (Exception exception) {
-                new Handler(Looper.getMainLooper()).post(() -> showModernDialog("Could not check updates", "No GitHub release was found, or the network request failed. Check your connection and try again.", "Got it", null, null, null));
-            } finally { if (connection != null) connection.disconnect(); }
+                new Handler(Looper.getMainLooper()).post(() -> showModernDialog(
+                    "Could not check updates",
+                    "The Android update manifest is unavailable or invalid. Check your connection and try again.",
+                    "Got it", null, null, null));
+            } finally {
+                if (connection != null) connection.disconnect();
+            }
         }).start();
     }
 
