@@ -1,3 +1,4 @@
+const SERVER_API_BASE="https://swgc-chat-server.onrender.com";
 const form=document.querySelector("#troubleshootForm");
 const reasonInput=document.querySelector("#reasonInput");
 const otherReasonWrap=document.querySelector("#otherReasonWrap");
@@ -51,7 +52,7 @@ form.addEventListener("submit",async event=>{
  submitButton.disabled=true;
  submitButton.textContent="Sending...";
  try{
-  const response=await fetch("/api/troubleshoot",{
+  const response=await fetch(SERVER_API_BASE+"/api/troubleshoot",{
    method:"POST",
    headers:{"Content-Type":"application/json"},
    body:JSON.stringify(request)
