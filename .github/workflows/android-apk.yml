@@ -78,7 +78,11 @@ jobs:
           VERSION_NAME: ${{ steps.version.outputs.version_name }}
           VERSION_CODE: ${{ github.run_number }}
         run: |
-          jq -n --arg version "$VERSION_NAME" --arg code "$VERSION_CODE" --arg apk "https://github.com/FeaturedPr0ject/scratch-would-global-chat/releases/download/$VERSION_NAME/app-debug.apk" '{version:$version,version_code:($code|tonumber),apk_url:$apk,channel:"stable",updated_at:(now|todate)}' > update-manifest/android-updates/manifest.json
+          CHANNEL="preview"
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            CHANNEL="stable"
+          fi
+          jq -n --arg version "$VERSION_NAME" --arg code "$VERSION_CODE" --arg apk "https://github.com/FeaturedPr0ject/scratch-would-global-chat/releases/download/$VERSION_NAME/app-debug.apk" --arg channel "$CHANNEL" '{version:$version,version_code:($code|tonumber),apk_url:$apk,channel:$channel,updated_at:(now|todate)}' > update-manifest/android-updates/manifest.json
           git -C update-manifest config user.name "github-actions[bot]"
           git -C update-manifest config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git -C update-manifest add android-updates/manifest.json
