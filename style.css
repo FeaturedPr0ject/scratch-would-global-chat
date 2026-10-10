@@ -1616,3 +1616,21 @@ html[data-color-mode="light"] .settings-section{background:linear-gradient(145de
 .account-recovery-tools{display:grid;gap:8px;margin-top:18px;padding:14px;border:1px solid var(--border-color,rgba(255,255,255,.12));border-radius:14px}
 .account-recovery-tools p{margin:0;opacity:.75;font-size:13px;line-height:1.5}
 .account-recovery-tools .profile-message{overflow-wrap:anywhere}
+
+
+.danger-zone-head strong{color:#ff858d}
+.danger-recovery-tools{border-color:rgba(255,83,95,.32);background:rgba(120,28,38,.1)}
+.danger-recovery-tools>strong{font-size:13px;color:#ff858d}
+.danger-recovery-tools>p{line-height:1.55}
+.danger-recovery-tools .secondary-button{min-height:42px}
+.danger-owner-login{display:grid;gap:7px;margin-top:8px;padding-top:14px;border-top:1px solid rgba(255,83,95,.2)}
+.danger-owner-login>strong{font-size:12px}
+.danger-owner-login>p{margin:0;opacity:.75;font-size:12px;line-height:1.5}
+.android-version-label{margin:4px 0 14px;padding:13px 14px;border:1px solid var(--line);border-radius:13px;background:rgba(var(--accent-rgb),.07);font-size:13px;font-weight:800}
+.android-app-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.android-app-actions .secondary-button{min-height:42px}
+html[data-color-mode="light"] .danger-recovery-tools{background:#fff5f5;border-color:#efc5c8}
+html[data-color-mode="light"] .danger-owner-login{border-color:#f0d4d5}
+@media(max-width:420px){
+ .android-app-actions{grid-template-columns:minmax(0,1fr)}
+}
