@@ -1257,3 +1257,38 @@ html[data-color-mode="light"] #firstUsernameInput:focus,html[data-color-mode="li
 @media(prefers-reduced-motion:reduce){
  .startup-logo{animation:none!important}
 }
+
+#fileButton.file-button{
+ display:grid!important;
+ visibility:visible!important;
+ opacity:1!important;
+ place-items:center!important;
+ position:relative!important;
+ width:46px!important;
+ height:46px!important;
+ min-width:46px!important;
+ min-height:46px!important;
+ padding:0!important;
+ border:1px solid var(--line)!important;
+ border-radius:13px!important;
+ background:#18181d!important;
+ color:var(--white)!important;
+ flex:0 0 46px!important;
+ overflow:visible!important;
+}
+#fileButton.file-button svg{
+ display:block!important;
+ visibility:visible!important;
+ opacity:1!important;
+ width:21px!important;
+ height:21px!important;
+ fill:none!important;
+ stroke:currentColor!important;
+ stroke-width:1.8!important;
+ stroke-linecap:round!important;
+ stroke-linejoin:round!important;
+}
+@media(max-width:760px){
+ #fileButton.file-button{width:38px!important;height:40px!important;min-width:38px!important;min-height:40px!important;flex:0 0 38px!important;border-radius:11px!important}
+ #fileButton.file-button svg{width:20px!important;height:20px!important}
+}
