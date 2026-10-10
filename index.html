@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" href="./assests/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="style.css?v=20261010-owner-recovery-v2">
+<link rel="stylesheet" href="style.css?v=20261010-danger-android-updates-v1">
 <script>
 (function(){
 try{
@@ -176,6 +176,8 @@ if(meta)meta.setAttribute("content",theme[0]);
 <button class="settings-category active" type="button" data-settings-category="color">Color Style</button>
 <button class="settings-category" type="button" data-settings-category="theme">Theme</button>
 <button class="settings-category" type="button" data-settings-category="language">Language</button>
+<button class="settings-category" type="button" data-settings-category="danger">Danger Zone</button>
+<button class="settings-category hidden" type="button" data-settings-category="app">Android App</button>
 </nav>
 <div class="settings-content">
 <section class="settings-panel" data-settings-panel="color">
@@ -205,7 +207,35 @@ if(meta)meta.setAttribute("content",theme[0]);
 </div>
 </div>
 </section>
-<div class="account-recovery-tools"><strong>Account Recovery</strong><button id="ownerLoginSettingsButton" class="secondary-button" type="button">Owner Login</button><p>Generate a recovery code to move this account between your browser and the Android app.</p><button id="createRecoveryCodeButton" class="secondary-button" type="button">Create Recovery Code</button><div id="recoveryCodeStatus" class="profile-message"></div></div>
+<section class="settings-panel hidden" data-settings-panel="danger">
+<div class="settings-section">
+<div class="settings-section-head danger-zone-head">
+<strong>Danger Zone</strong>
+<span>Account recovery credentials are sensitive. Keep them private.</span>
+</div>
+<div class="account-recovery-tools danger-recovery-tools">
+<strong>Recovery Key</strong>
+<p id="recoveryKeyWarning">Never share your recovery key with anyone. Anyone who has this key may be able to access your account. Store it somewhere private and safe.</p>
+<button id="createRecoveryCodeButton" class="secondary-button" type="button">Generate Recovery Key</button>
+<div id="recoveryCodeStatus" class="profile-message" aria-live="polite"></div>
+<div class="danger-owner-login"><strong>Owner access</strong><p>Use the private Owner code configured by the server administrator.</p><button id="ownerLoginSettingsButton" class="secondary-button" type="button">Owner Login</button></div>
+</div>
+</div>
+</section>
+<section class="settings-panel hidden" data-settings-panel="app">
+<div class="settings-section">
+<div class="settings-section-head android-app-head">
+<strong>Android App</strong>
+<span>Check for a newer APK or reload the app.</span>
+</div>
+<div id="androidVersionLabel" class="android-version-label">Detecting installed version…</div>
+<div class="android-app-actions">
+<button id="androidCheckUpdatesButton" class="secondary-button" type="button">Check for Updates</button>
+<button id="androidReloadButton" class="secondary-button" type="button">Reload App</button>
+</div>
+<div id="androidUpdateStatus" class="profile-message" aria-live="polite"></div>
+</div>
+</section>
 <section class="settings-panel hidden" data-settings-panel="language">
 <div class="settings-section">
 <div class="settings-section-head">
@@ -258,6 +288,6 @@ if(meta)meta.setAttribute("content",theme[0]);
 <div class="auth-extra-actions"><button id="ownerLoginButton" class="secondary-button" type="button">Owner Login</button><button id="restoreAccountButton" class="secondary-button" type="button">Restore Account</button></div>
 </div>
 </div>
-<script type="module" src="app.js?v=20261010-owner-recovery-v2"></script>
+<script type="module" src="app.js?v=20261010-danger-android-updates-v1"></script>
 </body>
 </html>
