@@ -186,6 +186,7 @@ const signOutButton=document.querySelector("#signOutButton");
 const deleteAccountButton=document.querySelector("#deleteAccountButton");
 const languageSelect=document.querySelector("#languageSelect");
 const restoreAccountButton=document.querySelector("#restoreAccountButton");
+const ownerKeysButton=document.querySelector("#ownerKeysButton");
 const openEmailRecoveryButton=document.querySelector("#openEmailRecoveryButton");
 const emailRecoveryModal=document.querySelector("#emailRecoveryModal");
 const closeEmailRecoveryModalButton=document.querySelector("#closeEmailRecoveryModal");
@@ -344,6 +345,7 @@ function applyLanguage(language,save=true){
  setText(".delete-account-row strong",value==="vi"?"Xóa tài khoản":"Delete Account");
  setText("#deleteAccountButton",value==="vi"?"Xóa tài khoản":"Delete Account");
  setText("#restoreAccountButton",value==="vi"?"Dùng khóa khôi phục":"Use Recovery Key");
+  setText("#ownerKeysButton","Owner Keys");
  setText("#openEmailRecoveryButton",value==="vi"?"Khôi phục bằng email":"Recover with Email");
  setText("#emailRecoveryModal h2",value==="vi"?"Khôi phục bằng email":"Recover with Email");
  setText("#sendEmailRecoveryCodeButton",value==="vi"?"Gửi mã khôi phục":"Send Recovery Code");
@@ -646,6 +648,20 @@ async function establishAccountSession(endpoint,body){
  const result=await supabaseClient.auth.setSession({access_token:data.session.access_token,refresh_token:data.session.refresh_token});
  if(result.error)throw result.error;
  window.location.reload();
+}
+
+async function ownerKeysLogin(){
+ const promptText=currentLanguage==="vi"?"Nhập Owner Key đã được cấu hình riêng trên máy chủ.":"Enter the Owner Key configured on the server.";
+ const code=window.prompt(promptText);
+ if(code===null)return;
+ if(!code.trim())return window.alert(currentLanguage==="vi"?"Bạn cần nhập Owner Key.":"Owner Key is required.");
+ if(ownerKeysButton)ownerKeysButton.disabled=true;
+ try{
+  await establishAccountSession("/api/auth/owner-login",{code:code.trim()});
+ }catch(error){
+  window.alert(error instanceof Error?error.message:(currentLanguage==="vi"?"Đăng nhập Owner thất bại.":"Owner sign-in failed."));
+  if(ownerKeysButton)ownerKeysButton.disabled=false;
+ }
 }
 
 async function restoreAccount(){
@@ -1790,6 +1806,7 @@ setupAndroidSettings();
 androidCheckUpdatesButton?.addEventListener("click",checkAndroidUpdates);
 androidReloadButton?.addEventListener("click",reloadAndroidApp);
 restoreAccountButton?.addEventListener("click",restoreAccount);
+ownerKeysButton?.addEventListener("click",ownerKeysLogin);
 createRecoveryCodeButton?.addEventListener("click",createRecoveryCode);
 sendRecoveryEmailCodeButton?.addEventListener("click",sendRecoveryEmailCode);
 verifyRecoveryEmailButton?.addEventListener("click",verifyRecoveryEmail);
