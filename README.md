@@ -18,11 +18,11 @@ This branch separates server-side API code from the frontend on `main`.
 - `OWNER_LOGIN_CODE` (a long, unique secret configured privately on Render; never expose it in frontend code)
 - `KLIPY_API_KEY`
 - `SUPPORT_EMAIL`
-- `RESEND_API_KEY`
-- `RESEND_FROM`
+- `MAILTRAP_API_KEY` (server-only Mailtrap Email Sending API token)
+- `MAILTRAP_FROM` (sender on a verified Mailtrap domain, e.g. `SWGC <noreply@yourdomain.com>`)
 - `FRONTEND_ORIGINS`: comma-separated allowed frontend origins. Leave empty to allow any origin, or set it to the production frontend origin(s).
 
-Never put Supabase secret/service-role keys or Resend API keys in frontend code. The server uses each signed-in user's access token for database operations so Supabase Row Level Security remains active.
+Never put Supabase secret/service-role keys or Mailtrap API keys in frontend code. The server uses each signed-in user's access token for database operations so Supabase Row Level Security remains active.
 
 ## Routes
 
@@ -45,3 +45,10 @@ The previous JSON-file WebSocket server remains under `server/` as legacy code a
 ## Owner Login and account recovery
 
 Set `OWNER_LOGIN_CODE` and `SUPABASE_SERVICE_ROLE_KEY` in the Render service environment. The Owner profile with username `01` must already exist. Redeploy after setting the variables. The service-role key must never be added to frontend files or sent in chat. Recovery codes are generated from the signed-in anonymous account and should be saved privately; generating a new code replaces the previous one. These endpoints require the Supabase service-role key because the app currently uses anonymous Auth accounts.
+
+
+## Mailtrap email delivery
+
+Email recovery verification codes and troubleshooting reports use the Mailtrap transactional endpoint at `https://send.api.mailtrap.io/api/send`. Configure `MAILTRAP_API_KEY` and `MAILTRAP_FROM` in Render Environment. `MAILTRAP_FROM` may be an email address or a sender in the form `SWGC <noreply@yourdomain.com>`.
+
+Mailtrap requires a sending domain that you own to be added and verified before live messages can be delivered. Since the sending domain is not yet verified, the code integration is ready but live OTP delivery will remain unavailable until domain verification and Mailtrap compliance checks are complete. Do not use Email Sandbox for live account recovery; sandbox messages do not reach users' real inboxes.
