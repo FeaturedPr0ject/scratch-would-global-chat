@@ -1023,7 +1023,7 @@ html[data-color-mode="light"] .message-time{
 .startup-overlay.is-hidden{opacity:0;visibility:hidden;pointer-events:none}
 .startup-content{width:min(360px,100%);display:flex;flex-direction:column;align-items:center;text-align:center;animation:startup-enter .45s ease both}
 .startup-logo-wrap{width:92px;height:92px;display:grid;place-items:center;border:1px solid rgba(255,173,0,.2);border-radius:28px;background:linear-gradient(145deg,rgba(255,173,0,.14),rgba(255,173,0,.035));box-shadow:0 0 55px rgba(255,173,0,.08);margin-bottom:23px}
-.startup-logo{width:68px;height:54px;object-fit:contain;filter:drop-shadow(0 5px 16px rgba(255,173,0,.22))}
+.startup-logo{width:68px;height:54px;object-fit:contain;filter:drop-shadow(0 5px 16px rgba(255,173,0,.22));animation:startup-logo-bounce 1s ease-in-out infinite;transform-origin:center bottom}
 .startup-title{font-size:clamp(22px,5vw,28px);font-weight:900;letter-spacing:-.8px}
 .startup-subtitle{margin-top:8px;color:#9696a3;font-size:13px;line-height:1.5}
 .startup-loader{height:24px;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:29px}
@@ -1031,6 +1031,7 @@ html[data-color-mode="light"] .message-time{
 .startup-loader span:nth-child(2){animation-delay:.14s}
 .startup-loader span:nth-child(3){animation-delay:.28s}
 .startup-status{margin-top:7px;color:#777783;font-size:11px;letter-spacing:.2px}
+@keyframes startup-logo-bounce{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-9px) scale(1.025)}}
 @keyframes startup-bounce{0%,60%,100%{transform:translateY(0);opacity:.45}30%{transform:translateY(-7px);opacity:1}}
 @keyframes startup-enter{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
-@media(prefers-reduced-motion:reduce){.startup-content,.startup-loader span{animation:none}.startup-overlay{transition:none}}
+@media(prefers-reduced-motion:reduce){.startup-content,.startup-logo,.startup-loader span{animation:none}.startup-overlay{transition:none}}
