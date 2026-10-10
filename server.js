@@ -308,4 +308,10 @@ const server=http.createServer(async(request,response)=>{
  }
 });
 
-server.listen(PORT,"0.0.0.0",()=>process.stdout.write("SWGC API listening on "+PORT+"\n"));
+server.listen(PORT,"0.0.0.0",()=>{
+ process.stdout.write("SWGC API listening on "+PORT+"\n");
+ initializeCache().catch(error=>{
+  cacheReady=false;
+  process.stderr.write("Cache folder initialization failed: "+error.message+"\n");
+ });
+});
