@@ -41,7 +41,9 @@ import java.net.URL;
 
 public class MainActivity extends Activity {
     private static final int FILE_CHOOSER_REQUEST = 401;
-    private static final String HOME_URL = "https://scratch-would-global-chat.vercel.app/";
+    private static final String HOME_URL = "https://featuredpr0ject.github.io/scratch-would-global-chat/";
+    private static final String PAGES_HOST = "featuredpr0ject.github.io";
+    private static final String PAGES_PATH = "/scratch-would-global-chat/";
     private static final String CURRENT_VERSION = BuildConfig.VERSION_NAME;
     private static final int CURRENT_VERSION_CODE = BuildConfig.VERSION_CODE;
     private static final String UPDATE_MANIFEST_URL = "https://raw.githubusercontent.com/FeaturedPr0ject/scratch-would-global-chat/main/android-updates/manifest.json";
@@ -84,8 +86,10 @@ public class MainActivity extends Activity {
             @Override
             public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
                 Uri pageUri = Uri.parse(url);
+                String pagePath = pageUri.getPath() == null ? "/" : pageUri.getPath();
                 trustedWebViewOrigin = "https".equalsIgnoreCase(pageUri.getScheme()) &&
-                    "scratch-would-global-chat.vercel.app".equalsIgnoreCase(pageUri.getHost());
+                    PAGES_HOST.equalsIgnoreCase(pageUri.getHost()) &&
+                    pagePath.startsWith(PAGES_PATH);
                 super.onPageStarted(view, url, favicon);
             }
 
@@ -94,8 +98,9 @@ public class MainActivity extends Activity {
                 Uri uri = request.getUrl();
                 String scheme = uri.getScheme() == null ? "" : uri.getScheme();
                 String host = uri.getHost() == null ? "" : uri.getHost();
+                String path = uri.getPath() == null ? "/" : uri.getPath();
                 if ("https".equalsIgnoreCase(scheme) &&
-                    (host.equals("scratch-would-global-chat.vercel.app") || host.endsWith(".vercel.app"))) {
+                    PAGES_HOST.equalsIgnoreCase(host) && path.startsWith(PAGES_PATH)) {
                     return false;
                 }
                 if ("https".equalsIgnoreCase(scheme) || "mailto".equalsIgnoreCase(scheme)) {
