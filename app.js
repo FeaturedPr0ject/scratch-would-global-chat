@@ -177,24 +177,11 @@ const androidReloadButton=document.querySelector("#androidReloadButton");
 const androidUpdateStatus=document.querySelector("#androidUpdateStatus");
 const createRecoveryCodeButton=document.querySelector("#createRecoveryCodeButton");
 const recoveryCodeStatus=document.querySelector("#recoveryCodeStatus");
-const recoveryEmailInput=document.querySelector("#recoveryEmailInput");
-const recoveryEmailCodeInput=document.querySelector("#recoveryEmailCodeInput");
-const sendRecoveryEmailCodeButton=document.querySelector("#sendRecoveryEmailCodeButton");
-const verifyRecoveryEmailButton=document.querySelector("#verifyRecoveryEmailButton");
-const recoveryEmailStatus=document.querySelector("#recoveryEmailStatus");
 const signOutButton=document.querySelector("#signOutButton");
 const deleteAccountButton=document.querySelector("#deleteAccountButton");
 const languageSelect=document.querySelector("#languageSelect");
 const restoreAccountButton=document.querySelector("#restoreAccountButton");
 const ownerKeysButton=document.querySelector("#ownerKeysButton");
-const openEmailRecoveryButton=document.querySelector("#openEmailRecoveryButton");
-const emailRecoveryModal=document.querySelector("#emailRecoveryModal");
-const closeEmailRecoveryModalButton=document.querySelector("#closeEmailRecoveryModal");
-const emailRecoveryAddress=document.querySelector("#emailRecoveryAddress");
-const emailRecoveryCode=document.querySelector("#emailRecoveryCode");
-const sendEmailRecoveryCodeButton=document.querySelector("#sendEmailRecoveryCodeButton");
-const verifyEmailRecoveryCodeButton=document.querySelector("#verifyEmailRecoveryCodeButton");
-const emailRecoveryStatus=document.querySelector("#emailRecoveryStatus");
 let friends=[];
 let selectedProfileId="";
 let groups=[];
@@ -336,20 +323,12 @@ function applyLanguage(language,save=true){
  setText(".recovery-panel-head span",value==="vi"?"Quản lý khóa khôi phục để lấy lại tài khoản khi mất quyền truy cập.":"Manage your recovery key in case you lose access to your account.");
  setText("#recoveryKeyWarning",value==="vi"?"Không chia sẻ khóa này. Khóa hết hạn sau 1 giờ, chỉ dùng một lần và có thể khôi phục tài khoản.":"Never share this key. It expires after 1 hour, works once, and can restore access to your account.");
  setText("#createRecoveryCodeButton",value==="vi"?"Tạo khóa khôi phục":"Generate Recovery Key");
- setText(".recovery-email-tools>strong",value==="vi"?"Khôi phục bằng email":"Email Recovery");
- setText(".recovery-email-tools>p",value==="vi"?"Xác minh email để nhận mã đăng nhập một lần nếu bạn mất quyền truy cập. Mã hết hạn sau 10 phút.":"Verify an email address so you can receive a one-time sign-in code if you lose access. Codes expire in 10 minutes.");
- setText("#sendRecoveryEmailCodeButton",value==="vi"?"Gửi mã xác minh":"Send Verification Code");
- setText("#verifyRecoveryEmailButton",value==="vi"?"Xác minh và lưu email":"Verify and Save Email");
  setText(".account-action-row strong",value==="vi"?"Đăng xuất":"Sign Out");
  setText("#signOutButton",value==="vi"?"Đăng xuất":"Sign Out");
  setText(".delete-account-row strong",value==="vi"?"Xóa tài khoản":"Delete Account");
  setText("#deleteAccountButton",value==="vi"?"Xóa tài khoản":"Delete Account");
  setText("#restoreAccountButton",value==="vi"?"Dùng khóa khôi phục":"Use Recovery Key");
   setText("#ownerKeysButton","Owner Keys");
- setText("#openEmailRecoveryButton",value==="vi"?"Khôi phục bằng email":"Recover with Email");
- setText("#emailRecoveryModal h2",value==="vi"?"Khôi phục bằng email":"Recover with Email");
- setText("#sendEmailRecoveryCodeButton",value==="vi"?"Gửi mã khôi phục":"Send Recovery Code");
- setText("#verifyEmailRecoveryCodeButton",value==="vi"?"Xác minh và khôi phục tài khoản":"Verify and Restore Account");
  setText("#androidCheckUpdatesButton",value==="vi"?"Kiểm tra bản cập nhật":"Check for Updates");
  setText("#androidReloadButton",value==="vi"?"Tải lại ứng dụng":"Reload App");
  setText('[data-settings-panel="color"] .settings-section-head strong',labels.colorTitle);
@@ -696,74 +675,11 @@ async function createRecoveryCode(){
  }
 }
 
-async function loadRecoveryEmailStatus(){
- if(!recoveryEmailStatus)return;
- try{
-  const result=await request("/api/auth/recovery-email/status");
-  if(recoveryEmailInput)recoveryEmailInput.value=result.email||"";
-  recoveryEmailStatus.textContent=result.verified
-   ?(currentLanguage==="vi"?"Email khôi phục đã xác minh: ":"Verified recovery email: ")+result.email
-   :(currentLanguage==="vi"?"Chưa thiết lập email khôi phục.":"No recovery email is configured.");
- }catch(error){recoveryEmailStatus.textContent=error instanceof Error?error.message:"Could not load recovery email status.";}
-}
 
-async function sendRecoveryEmailCode(){
- if(!recoveryEmailInput||!sendRecoveryEmailCodeButton||!recoveryEmailStatus)return;
- const email=recoveryEmailInput.value.trim();
- if(!email){recoveryEmailStatus.textContent=currentLanguage==="vi"?"Nhập email khôi phục trước.":"Enter a recovery email first.";return;}
- sendRecoveryEmailCodeButton.disabled=true;
- recoveryEmailStatus.textContent=currentLanguage==="vi"?"Đang gửi mã xác minh…":"Sending verification code…";
- try{
-  const result=await request("/api/auth/recovery-email/start",{method:"POST",body:JSON.stringify({email})});
-  recoveryEmailStatus.textContent=result.message||(currentLanguage==="vi"?"Đã gửi mã. Kiểm tra hộp thư và thư rác.":"Verification code sent. Check your inbox and spam folder.");
- }catch(error){recoveryEmailStatus.textContent=error instanceof Error?error.message:"Could not send verification code.";}
- finally{sendRecoveryEmailCodeButton.disabled=false;}
-}
 
-async function verifyRecoveryEmail(){
- if(!recoveryEmailInput||!recoveryEmailCodeInput||!verifyRecoveryEmailButton||!recoveryEmailStatus)return;
- const email=recoveryEmailInput.value.trim(),code=recoveryEmailCodeInput.value.trim();
- if(!email||!code){recoveryEmailStatus.textContent=currentLanguage==="vi"?"Nhập email và mã xác minh.":"Enter the email and verification code.";return;}
- verifyRecoveryEmailButton.disabled=true;
- try{
-  const result=await request("/api/auth/recovery-email/verify",{method:"POST",body:JSON.stringify({email,code})});
-  recoveryEmailStatus.textContent=(currentLanguage==="vi"?"Đã xác minh email khôi phục: ":"Verified recovery email: ")+(result.email||email);
-  recoveryEmailCodeInput.value="";
- }catch(error){recoveryEmailStatus.textContent=error instanceof Error?error.message:"Could not verify recovery email.";}
- finally{verifyRecoveryEmailButton.disabled=false;}
-}
 
-function openEmailRecovery(){
- if(emailRecoveryStatus)emailRecoveryStatus.textContent="";
- emailRecoveryModal?.classList.remove("hidden");
- nameModal?.classList.add("hidden");
-}
-function closeEmailRecovery(){
- emailRecoveryModal?.classList.add("hidden");
- if(!profile)nameModal?.classList.remove("hidden");
-}
 
-async function sendEmailRecoveryCode(){
- if(!emailRecoveryAddress||!sendEmailRecoveryCodeButton||!emailRecoveryStatus)return;
- const email=emailRecoveryAddress.value.trim();
- if(!email){emailRecoveryStatus.textContent=currentLanguage==="vi"?"Nhập email khôi phục.":"Enter your recovery email.";return;}
- sendEmailRecoveryCodeButton.disabled=true;
- emailRecoveryStatus.textContent=currentLanguage==="vi"?"Đang yêu cầu mã khôi phục…":"Requesting recovery code…";
- try{
-  const result=await request("/api/auth/recover-email/start",{method:"POST",body:JSON.stringify({email})});
-  emailRecoveryStatus.textContent=result.message||(currentLanguage==="vi"?"Nếu email được liên kết với tài khoản SWGC, mã đã được gửi.":"If the email is linked to a SWGC account, a recovery code has been sent.");
- }catch(error){emailRecoveryStatus.textContent=error instanceof Error?error.message:"Could not request recovery code.";}
- finally{sendEmailRecoveryCodeButton.disabled=false;}
-}
 
-async function verifyEmailRecoveryCode(){
- if(!emailRecoveryAddress||!emailRecoveryCode||!verifyEmailRecoveryCodeButton||!emailRecoveryStatus)return;
- const email=emailRecoveryAddress.value.trim(),code=emailRecoveryCode.value.trim();
- if(!email||!code){emailRecoveryStatus.textContent=currentLanguage==="vi"?"Nhập email và mã xác minh.":"Enter the email and verification code.";return;}
- verifyEmailRecoveryCodeButton.disabled=true;
- try{await establishAccountSession("/api/auth/recover-email/verify",{email,code});}
- catch(error){emailRecoveryStatus.textContent=error instanceof Error?error.message:"Account recovery failed.";verifyEmailRecoveryCodeButton.disabled=false;}
-}
 
 async function signOutAccount(){
  if(!supabaseClient)return;
@@ -1785,7 +1701,6 @@ async function start(){
  setConnection("Connecting");
  try{
   await initializeSupabase();
-  await loadRecoveryEmailStatus().catch(()=>{});
  }catch(error){
   console.error(error);
   setConnection(error instanceof Error?error.message:"Database offline");
@@ -1808,12 +1723,6 @@ androidReloadButton?.addEventListener("click",reloadAndroidApp);
 restoreAccountButton?.addEventListener("click",restoreAccount);
 ownerKeysButton?.addEventListener("click",ownerKeysLogin);
 createRecoveryCodeButton?.addEventListener("click",createRecoveryCode);
-sendRecoveryEmailCodeButton?.addEventListener("click",sendRecoveryEmailCode);
-verifyRecoveryEmailButton?.addEventListener("click",verifyRecoveryEmail);
 signOutButton?.addEventListener("click",signOutAccount);
 deleteAccountButton?.addEventListener("click",deleteCurrentAccount);
-openEmailRecoveryButton?.addEventListener("click",openEmailRecovery);
-closeEmailRecoveryModalButton?.addEventListener("click",closeEmailRecovery);
-sendEmailRecoveryCodeButton?.addEventListener("click",sendEmailRecoveryCode);
-verifyEmailRecoveryCodeButton?.addEventListener("click",verifyEmailRecoveryCode);
 start();
