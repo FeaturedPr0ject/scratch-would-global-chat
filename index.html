@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" href="./assests/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="style.css?v=20261010-owner-keys-compact-ui-v4">
+<link rel="stylesheet" href="style.css?v=20261010-recovery-category-v5">
 <script>
 (function(){
 try{
@@ -222,14 +222,6 @@ if(meta)meta.setAttribute("content",theme[0]);
 <div id="recoveryCodeStatus" class="profile-message" aria-live="polite"></div>
 <div class="recovery-limit-note">You can generate up to 3 keys per hour. Wait 60 seconds between requests.</div>
 </div>
-</div>
-</section>
-<section class="settings-panel hidden" data-settings-panel="danger">
-<div class="settings-section">
-<div class="settings-section-head danger-zone-head">
-<strong>Danger Zone</strong>
-<span>Set a verified recovery email, sign out, or permanently delete this account.</span>
-</div>
 <div class="account-recovery-tools recovery-email-tools">
 <strong>Email Recovery</strong>
 <p>Verify an email address so you can receive a one-time sign-in code if you lose access. Codes expire in 10 minutes.</p>
@@ -240,6 +232,14 @@ if(meta)meta.setAttribute("content",theme[0]);
 <input id="recoveryEmailCodeInput" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="6-digit code">
 <button id="verifyRecoveryEmailButton" class="secondary-button" type="button">Verify and Save Email</button>
 <div id="recoveryEmailStatus" class="profile-message" aria-live="polite">No recovery email loaded yet.</div>
+</div>
+</div>
+</section>
+<section class="settings-panel hidden" data-settings-panel="danger">
+<div class="settings-section">
+<div class="settings-section-head danger-zone-head">
+<strong>Danger Zone</strong>
+<span>Sign out of this device or permanently delete this account.</span>
 </div>
 <div class="account-danger-actions">
 <div class="account-action-row">
@@ -334,6 +334,6 @@ if(meta)meta.setAttribute("content",theme[0]);
 <div id="emailRecoveryStatus" class="profile-message" aria-live="polite"></div>
 </div>
 </div>
-<script type="module" src="app.js?v=20261010-owner-keys-compact-ui-v4"></script>
+<script type="module" src="app.js?v=20261010-recovery-category-v5"></script>
 </body>
 </html>
