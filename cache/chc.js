@@ -10,7 +10,7 @@ const KDF_ID=0;
 const HEADER_SIZE=4+1+1+4+12;
 const TAG_SIZE=16;
 const MAX_CACHE_BYTES=25*1024*1024;
-const TYPES=new Set(["profilesdata","messages","configserver"]);
+const TYPES=new Set(["profilesdata","messages","configserver","attachments","stickers"]);
 
 function getKey(){
  const value=process.env.CHC_CACHE_KEY||"";
@@ -137,4 +137,4 @@ export const CHC_OPERATIONS=Object.freeze([
  {name:"getCHCStats(type,name)",description:"Return existence, file size, and last-modified time."}
 ]);
 
-export const CHC_CACHE_TYPES=Object.freeze(["profilesdata","messages","configserver"]);
+export const CHC_CACHE_TYPES=Object.freeze(["profilesdata","messages","configserver","attachments","stickers"]);
