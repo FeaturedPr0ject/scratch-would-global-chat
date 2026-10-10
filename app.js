@@ -171,6 +171,10 @@ const settingsCategoryButtons=document.querySelectorAll("[data-settings-category
 const settingsPanels=document.querySelectorAll("[data-settings-panel]");
 const themeModeOptions=document.querySelectorAll("[data-theme-mode]");
 const languageSelect=document.querySelector("#languageSelect");
+const ownerLoginButton=document.querySelector("#ownerLoginButton");
+const restoreAccountButton=document.querySelector("#restoreAccountButton");
+const createRecoveryCodeButton=document.querySelector("#createRecoveryCodeButton");
+const recoveryCodeStatus=document.querySelector("#recoveryCodeStatus");
 let friends=[];
 let selectedProfileId="";
 let groups=[];
@@ -586,6 +590,57 @@ async function request(path,options={}){
  const data=await response.json().catch(()=>({}));
  if(!response.ok||data.ok===false)throw new Error(data.error||"Server request failed.");
  return data;
+}
+
+async function establishAccountSession(endpoint,body){
+ const response=await fetch(SERVER_API_BASE+endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body),cache:"no-store"});
+ const data=await response.json().catch(()=>({}));
+ if(!response.ok||!data.ok||!data.session)throw new Error(data.error||"Sign-in failed.");
+ if(!supabaseClient)throw new Error("Supabase is still starting. Please try again.");
+ const result=await supabaseClient.auth.setSession({access_token:data.session.access_token,refresh_token:data.session.refresh_token});
+ if(result.error)throw result.error;
+ window.location.reload();
+}
+
+async function ownerLogin(){
+ const code=window.prompt("Enter the Owner code configured in Render.");
+ if(code===null)return;
+ if(!code.trim())return window.alert("Owner code is required.");
+ if(ownerLoginButton)ownerLoginButton.disabled=true;
+ try{
+  await establishAccountSession("/api/auth/owner-login",{code:code.trim()});
+ }catch(error){
+  window.alert(error instanceof Error?error.message:"Owner Login failed.");
+  if(ownerLoginButton)ownerLoginButton.disabled=false;
+ }
+}
+
+async function restoreAccount(){
+ const code=window.prompt("Enter your SWGC recovery code.");
+ if(code===null)return;
+ if(!code.trim())return window.alert("Recovery code is required.");
+ if(restoreAccountButton)restoreAccountButton.disabled=true;
+ try{
+  await establishAccountSession("/api/auth/recover",{code:code.trim()});
+ }catch(error){
+  window.alert(error instanceof Error?error.message:"Account recovery failed.");
+  if(restoreAccountButton)restoreAccountButton.disabled=false;
+ }
+}
+
+async function createRecoveryCode(){
+ if(!createRecoveryCodeButton||!recoveryCodeStatus)return;
+ createRecoveryCodeButton.disabled=true;
+ recoveryCodeStatus.textContent="Creating recovery code...";
+ try{
+  const result=await request("/api/auth/recovery-code",{method:"POST",body:JSON.stringify({})});
+  recoveryCodeStatus.textContent="Save this code somewhere safe. It is required to restore this same account on another device: "+result.code;
+  if(navigator.clipboard?.writeText){
+   try{await navigator.clipboard.writeText(result.code);recoveryCodeStatus.textContent+=" (Copied to clipboard)";}catch{}
+  }
+ }catch(error){
+  recoveryCodeStatus.textContent=error instanceof Error?error.message:"Could not create recovery code.";
+ }finally{createRecoveryCodeButton.disabled=false;}
 }
 
 async function initializeSupabase(){
@@ -1570,4 +1625,7 @@ async function start(){
  }
 }
 updateTabNotifications();
+ownerLoginButton?.addEventListener("click",ownerLogin);
+restoreAccountButton?.addEventListener("click",restoreAccount);
+createRecoveryCodeButton?.addEventListener("click",createRecoveryCode);
 start();
