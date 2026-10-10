@@ -2,12 +2,15 @@ import http from "node:http";
 import {createClient} from "@supabase/supabase-js";
 import {promises as fs} from "node:fs";
 import path from "node:path";
+import crypto from "node:crypto";
 import {writeCHC,readCHC,hasCHC,deleteCHC,CHC_CACHE_TYPES} from "./cache/chc.js";
 
 const PORT=Number(process.env.PORT||3000);
 const FRONTEND_ORIGINS=(process.env.FRONTEND_ORIGINS||"").split(",").map(value=>value.trim()).filter(Boolean);
 const SUPABASE_URL=process.env.SUPABASE_URL||"";
 const SUPABASE_PUBLISHABLE_KEY=process.env.SUPABASE_PUBLISHABLE_KEY||"";
+const SUPABASE_SERVICE_ROLE_KEY=process.env.SUPABASE_SERVICE_ROLE_KEY||"";
+const OWNER_LOGIN_CODE=process.env.OWNER_LOGIN_CODE||"";
 const CACHE_ROOT=path.resolve(process.env.CHC_CACHE_DIR||path.join(process.cwd(),"cache"));
 let cacheReady=false;
 let cacheError="Cache initialization has not run.";
@@ -83,6 +86,83 @@ function createUserClient(token){
   auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false},
   global:{headers:{Authorization:"Bearer "+token}}
  });
+}
+
+function createAdminClient(){
+ if(!SUPABASE_URL||!SUPABASE_SERVICE_ROLE_KEY)throw Object.assign(new Error("Account recovery is not configured on the server."),{status:503});
+ return createClient(SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+}
+
+function safeEqual(left,right){
+ const a=Buffer.from(String(left||""));
+ const b=Buffer.from(String(right||""));
+ return a.length===b.length&&crypto.timingSafeEqual(a,b);
+}
+
+function accountPassword(seed,userId){
+ return crypto.createHmac("sha256",seed).update("swgc-account-session:"+userId).digest("base64url")+"!Aa7";
+}
+
+function accountEmail(user){
+ return user.email||("swgc-"+user.id+"@accounts.swgc.invalid");
+}
+
+async function createAccountSession(userId,seed){
+ const admin=createAdminClient();
+ const found=await admin.auth.admin.getUserById(userId);
+ if(found.error||!found.data.user)throw Object.assign(new Error("Account not found."),{status:404});
+ const user=found.data.user;
+ const email=accountEmail(user);
+ const password=accountPassword(seed,userId);
+ const update=await admin.auth.admin.updateUserById(userId,{email,password,email_confirm:true});
+ if(update.error)throw Object.assign(new Error("Could not prepare account sign-in."),{status:500});
+ const publicClient=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+ const signedIn=await publicClient.auth.signInWithPassword({email,password});
+ if(signedIn.error||!signedIn.data.session)throw Object.assign(new Error("Could not create a Supabase session."),{status:500});
+ return signedIn.data.session;
+}
+
+async function handleOwnerLogin(response,body){
+ if(!OWNER_LOGIN_CODE||!SUPABASE_SERVICE_ROLE_KEY)throw Object.assign(new Error("Owner Login is not configured on Render."),{status:503});
+ const submitted=String(body.code||"");
+ if(!safeEqual(submitted,OWNER_LOGIN_CODE))throw Object.assign(new Error("Invalid Owner code."),{status:401});
+ const admin=createAdminClient();
+ const result=await admin.from("profiles").select("id,username,username_key").eq("username_key","01").maybeSingle();
+ if(result.error)throw Object.assign(new Error("Could not locate the Owner profile."),{status:500});
+ if(!result.data||String(result.data.username||"").toLowerCase()!=="01")throw Object.assign(new Error("The Owner profile username 01 has not been created yet."),{status:404});
+ const session=await createAccountSession(result.data.id,"owner:"+OWNER_LOGIN_CODE);
+ send(response,200,{ok:true,session,username:"01"});
+}
+
+async function handleAccountRecovery(request,response,body,mode){
+ const admin=createAdminClient();
+ if(mode==="create"){
+  const identity=await getIdentity(request);
+  const user=identity.user;
+  if(!user.is_anonymous)throw Object.assign(new Error("Recovery codes can only be created for anonymous SWGC accounts. This account already has a sign-in method."),{status:409});
+  const secret=crypto.randomBytes(24).toString("base64url");
+  const code="SWGC1."+user.id+"."+secret;
+  const hash=crypto.createHash("sha256").update(secret).digest("hex");
+  const current=await admin.auth.admin.getUserById(user.id);
+  if(current.error||!current.data.user)throw Object.assign(new Error("Could not prepare account recovery."),{status:500});
+  const metadata={...(current.data.user.app_metadata||{}),swgc_recovery_hash:hash};
+  const updated=await admin.auth.admin.updateUserById(user.id,{app_metadata:metadata});
+  if(updated.error)throw Object.assign(new Error("Could not save the recovery code."),{status:500});
+  send(response,200,{ok:true,code});
+  return;
+ }
+ const code=String(body.code||"").trim();
+ const match=code.match(/^SWGC1\.([0-9a-f-]{36})\.([A-Za-z0-9_-]{30,50})$/i);
+ if(!match)throw Object.assign(new Error("Invalid recovery code."),{status:400});
+ const userId=match[1];
+ const secret=match[2];
+ const found=await admin.auth.admin.getUserById(userId);
+ if(found.error||!found.data.user)throw Object.assign(new Error("Account not found."),{status:404});
+ const stored=String(found.data.user.app_metadata?.swgc_recovery_hash||"");
+ const hash=crypto.createHash("sha256").update(secret).digest("hex");
+ if(!safeEqual(stored,hash))throw Object.assign(new Error("Recovery code is invalid or has been replaced."),{status:401});
+ const session=await createAccountSession(userId,"recovery:"+secret);
+ send(response,200,{ok:true,session});
 }
 
 async function getIdentity(request){
@@ -373,6 +453,18 @@ const server=http.createServer(async(request,response)=>{
  try{
   if(method==="GET"&&(url.pathname==="/"||url.pathname==="/health")){
    send(response,200,{ok:true,service:"SWGC API",supabaseConfigured:Boolean(SUPABASE_URL&&SUPABASE_PUBLISHABLE_KEY),cache:{ready:cacheReady,format:"CHC2",types:CHC_CACHE_TYPES,keyConfigured:Boolean(process.env.CHC_CACHE_KEY),error:cacheError||null}});
+   return;
+  }
+  if(method==="POST"&&url.pathname==="/api/auth/owner-login"){
+   await handleOwnerLogin(response,await readBody(request));
+   return;
+  }
+  if(method==="POST"&&url.pathname==="/api/auth/recover"){
+   await handleAccountRecovery(request,response,await readBody(request),"recover");
+   return;
+  }
+  if(method==="POST"&&url.pathname==="/api/auth/recovery-code"){
+   await handleAccountRecovery(request,response,await readBody(request),"create");
    return;
   }
   if(method==="GET"&&url.pathname==="/api/config"){
