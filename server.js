@@ -1,10 +1,33 @@
 import http from "node:http";
 import {createClient} from "@supabase/supabase-js";
+import {promises as fs} from "node:fs";
+import path from "node:path";
+import {writeCHC,readCHC,hasCHC,CHC_CACHE_TYPES} from "./cache/chc.js";
 
 const PORT=Number(process.env.PORT||3000);
 const FRONTEND_ORIGINS=(process.env.FRONTEND_ORIGINS||"").split(",").map(value=>value.trim()).filter(Boolean);
 const SUPABASE_URL=process.env.SUPABASE_URL||"";
 const SUPABASE_PUBLISHABLE_KEY=process.env.SUPABASE_PUBLISHABLE_KEY||"";
+const CACHE_ROOT=path.resolve(process.env.CHC_CACHE_DIR||path.join(process.cwd(),"cache"));
+let cacheReady=false;
+
+async function initializeCache(){
+ for(const type of CHC_CACHE_TYPES)await fs.mkdir(path.join(CACHE_ROOT,type),{recursive:true});
+ cacheReady=true;
+ if(process.env.CHC_CACHE_KEY){
+  try{
+   const exists=await hasCHC("configserver","config");
+   if(!exists)await writeCHC("configserver","config",{format:"CHC2",version:1,cacheEnabled:true,createdAt:new Date().toISOString()});
+   await readCHC("configserver","config");
+   process.stdout.write("CHC cache initialized and encrypted.\\n");
+  }catch(error){
+   cacheReady=false;
+   process.stderr.write("CHC cache initialization failed: "+error.message+"\\n");
+  }
+ }else{
+  process.stderr.write("CHC_CACHE_KEY is missing; cache folders created, encrypted cache writes are disabled.\\n");
+ }
+}
 
 function send(response,status,payload){
  response.writeHead(status,{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store"});
@@ -262,7 +285,7 @@ const server=http.createServer(async(request,response)=>{
  const method=request.method||"GET";
  try{
   if(method==="GET"&&(url.pathname==="/"||url.pathname==="/health")){
-   send(response,200,{ok:true,service:"SWGC API",supabaseConfigured:Boolean(SUPABASE_URL&&SUPABASE_PUBLISHABLE_KEY)});
+   send(response,200,{ok:true,service:"SWGC API",supabaseConfigured:Boolean(SUPABASE_URL&&SUPABASE_PUBLISHABLE_KEY),cache:{ready:cacheReady,format:"CHC2",types:CHC_CACHE_TYPES}});
    return;
   }
   if(method==="GET"&&url.pathname==="/api/config"){
