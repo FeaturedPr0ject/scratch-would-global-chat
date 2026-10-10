@@ -10,6 +10,8 @@ const FRONTEND_ORIGINS=(process.env.FRONTEND_ORIGINS||"").split(",").map(value=>
 const SUPABASE_URL=process.env.SUPABASE_URL||"";
 const SUPABASE_PUBLISHABLE_KEY=process.env.SUPABASE_PUBLISHABLE_KEY||"";
 const SUPABASE_SERVICE_ROLE_KEY=process.env.SUPABASE_SERVICE_ROLE_KEY||"";
+const OWNER_LOGIN_CODE=process.env.OWNER_LOGIN_CODE||"";
+const ownerLoginAttempts=new Map();
 const emailRecoverySendAttempts=new Map();
 const emailRecoveryVerifyAttempts=new Map();
 const CACHE_ROOT=path.resolve(process.env.CHC_CACHE_DIR||path.join(process.cwd(),"cache"));
@@ -121,6 +123,22 @@ async function createAccountSession(userId,seed){
  const signedIn=await publicClient.auth.signInWithPassword({email,password});
  if(signedIn.error||!signedIn.data.session)throw Object.assign(new Error("Could not create a Supabase session."),{status:500});
  return signedIn.data.session;
+}
+
+async function handleOwnerLogin(request,response,body){
+ if(!OWNER_LOGIN_CODE||!SUPABASE_SERVICE_ROLE_KEY)throw Object.assign(new Error("Owner Keys are not configured on the server."),{status:503});
+ const submitted=String(body.code||"").trim();
+ if(!submitted)throw Object.assign(new Error("Enter the Owner Key."),{status:400});
+ const clientKey=requesterAddress(request);
+ enforceRateLimit(ownerLoginAttempts,clientKey,5,15*60*1000);
+ if(!safeEqual(submitted,OWNER_LOGIN_CODE))throw Object.assign(new Error("Invalid Owner Key."),{status:401});
+ ownerLoginAttempts.delete(clientKey);
+ const admin=createAdminClient();
+ const result=await admin.from("profiles").select("id,username,username_key").eq("username_key","01").maybeSingle();
+ if(result.error)throw Object.assign(new Error("Could not locate the Owner profile."),{status:500});
+ if(!result.data||String(result.data.username||"").toLowerCase()!=="01")throw Object.assign(new Error("The Owner profile username 01 has not been created yet."),{status:404});
+ const session=await createAccountSession(result.data.id,"owner:"+OWNER_LOGIN_CODE);
+ send(response,200,{ok:true,session,username:"01"});
 }
 
 function requesterAddress(request){
@@ -585,7 +603,11 @@ const server=http.createServer(async(request,response)=>{
    send(response,200,{ok:true,service:"SWGC API",supabaseConfigured:Boolean(SUPABASE_URL&&SUPABASE_PUBLISHABLE_KEY),cache:{ready:cacheReady,format:"CHC2",types:CHC_CACHE_TYPES,keyConfigured:Boolean(process.env.CHC_CACHE_KEY),error:cacheError||null}});
    return;
   }
-  if(method==="POST"&&url.pathname==="/api/auth/recover"){
+  if(method==="POST"&&url.pathname==="/api/auth/owner-login"){
+    await handleOwnerLogin(request,response,await readBody(request));
+    return;
+   }
+   if(method==="POST"&&url.pathname==="/api/auth/recover"){
    await handleAccountRecovery(request,response,await readBody(request),"recover");
    return;
   }
