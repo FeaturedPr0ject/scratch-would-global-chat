@@ -606,6 +606,7 @@ function connectRealtime(){
   .on("postgres_changes",{event:"INSERT",schema:"public",table:"messages"},payload=>{
    const message=payload.new;
    if(message&&!publicMessages.some(item=>item.id===message.id)){
+    countUnreadTabMessage(message);
     publicMessages.push(message);
     publicMessages=publicMessages.slice(-100);
     if(!activeGroupId){messages=publicMessages.slice();renderMessages();}
@@ -621,6 +622,7 @@ function connectRealtime(){
   .on("postgres_changes",{event:"INSERT",schema:"public",table:"group_messages"},payload=>{
    const message=payload.new;
    if(message&&message.group_id===activeGroupId&&!groupMessages.some(item=>item.id===message.id)){
+    countUnreadTabMessage(message);
     groupMessages.push(message);
     groupMessages=groupMessages.slice(-100);
     messages=groupMessages.slice();
