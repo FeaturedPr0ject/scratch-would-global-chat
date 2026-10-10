@@ -1315,3 +1315,48 @@ html[data-color-mode="light"] #firstUsernameInput:focus,html[data-color-mode="li
 @media(prefers-reduced-motion:reduce){
  .startup-logo{animation:startup-logo-full-spin 8s linear infinite!important}
 }
+
+html[data-color-mode="light"] .startup-overlay{
+ background:rgba(243,244,247,.97)!important;
+ color:#17171c!important;
+}
+html[data-color-mode="light"] .startup-overlay.is-hidden{
+ background:transparent!important;
+}
+html[data-color-mode="light"] .startup-subtitle{color:#686975!important}
+html[data-color-mode="light"] .startup-status{color:#737480!important}
+html[data-color-mode="light"] .startup-overlay::before{
+ background:radial-gradient(ellipse at 50% 42%,rgba(var(--accent-rgb),.12),transparent 48%)!important;
+}
+html[data-color-mode="light"] .topbar,
+html[data-color-mode="light"] .chat-layout,
+html[data-color-mode="light"] .chat-panel,
+html[data-color-mode="light"] .sidebar,
+html[data-color-mode="light"] .messages,
+html[data-color-mode="light"] .composer,
+html[data-color-mode="light"] .chat-head{
+ background:#fff!important;
+ color:#17171c!important;
+ border-color:#dedee5!important;
+}
+html[data-color-mode="light"] .message,
+html[data-color-mode="light"] .message-content,
+html[data-color-mode="light"] .message-body,
+html[data-color-mode="light"] .message-sticker{
+ background:transparent!important;
+ color:#17171c!important;
+}
+html[data-color-mode="light"] .message:hover,
+html[data-color-mode="light"] .message:focus-within{
+ background:#f2f2f5!important;
+}
+html[data-color-mode="light"] .composer-row,
+html[data-color-mode="light"] .composer-foot{color:#6f7079!important}
+html[data-color-mode="light"] .message-file,
+html[data-color-mode="light"] .file-attachment,
+html[data-color-mode="light"] .attachment-card{
+ background:#f8f8fa!important;
+ color:#17171c!important;
+ border-color:#dedee5!important;
+}
+html[data-color-mode="light"] .scroll-to-bottom{background:#fff;color:#17171c;border-color:#dedee5}
