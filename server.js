@@ -183,12 +183,26 @@ async function findUserByRecoveryEmail(admin,email){
  }
  return null;
 }
-function requireResendConfiguration(){
- const missing=[];if(!process.env.RESEND_API_KEY)missing.push("RESEND_API_KEY");if(!process.env.RESEND_FROM)missing.push("RESEND_FROM");
- if(missing.length)throw Object.assign(new Error("Email recovery is not configured. Missing Render environment setting: "+missing.join(", ")),{status:503});
+function requireMailtrapConfiguration(){
+ const missing=[];if(!process.env.MAILTRAP_API_KEY)missing.push("MAILTRAP_API_KEY");if(!process.env.MAILTRAP_FROM)missing.push("MAILTRAP_FROM");
+ if(missing.length)throw Object.assign(new Error("Email sending is not configured. Missing Render environment setting: "+missing.join(", ")),{status:503});
+}
+function parseMailtrapSender(value){
+ const input=String(value||"").trim(),match=input.match(/^(.*?)\\s*<([^<>]+)>$/);
+ if(match)return {name:match[1].trim()||"SWGC Room Chats",email:match[2].trim()};
+ return {name:"SWGC Room Chats",email:input};
+}
+async function sendTransactionalEmail({to,subject,text,html}){
+ requireMailtrapConfiguration();
+ const payload={from:parseMailtrapSender(process.env.MAILTRAP_FROM),to:[{email:to}],subject,text};
+ if(html)payload.html=html;
+ const upstream=await fetch("https://send.api.mailtrap.io/api/send",{method:"POST",headers:{"Api-Token":process.env.MAILTRAP_API_KEY,"Content-Type":"application/json"},body:JSON.stringify(payload)});
+ const result=await upstream.json().catch(()=>({}));
+ if(!upstream.ok)throw Object.assign(new Error(typeof result.message==="string"?result.message:typeof result.errors?.[0]==="string"?result.errors[0]:"Mailtrap could not send the email. Check the sending domain and API token."),{status:502});
+ return result;
 }
 async function sendRecoveryVerification(admin,user,email,purpose,request){
- requireResendConfiguration();
+ requireMailtrapConfiguration();
  enforceRateLimit(emailRecoverySendAttempts,requesterAddress(request)+":"+purpose+":"+email,5,60*60*1000,60*1000);
  requireManagedAccount(user);
  const fresh=await admin.auth.admin.getUserById(user.id);
@@ -206,9 +220,7 @@ async function sendRecoveryVerification(admin,user,email,purpose,request){
  }
  metadata[sentField]=Date.now();await updateUserMetadata(admin,current,metadata);
  const textBody=["Your SWGC Room Chats verification code is: "+code,"","This code expires in 10 minutes and can only be used once.","If you did not request this code, you can ignore this email."].join("\n");
- const upstream=await fetch("https://api.resend.com/emails",{method:"POST",headers:{"Authorization":"Bearer "+process.env.RESEND_API_KEY,"Content-Type":"application/json"},body:JSON.stringify({from:process.env.RESEND_FROM,to:[email],subject:purpose==="setup"?"Verify your SWGC recovery email":"Your SWGC account recovery code",text:textBody})});
- const result=await upstream.json().catch(()=>({}));
- if(!upstream.ok)throw Object.assign(new Error(typeof result.message==="string"?result.message:"The email provider could not send the verification code."),{status:502});
+ await sendTransactionalEmail({to:email,subject:purpose==="setup"?"Verify your SWGC recovery email":"Your SWGC account recovery code",text:textBody});
  return {expiresAt};
 }
 async function handleAccountRecovery(request,response,body,mode){
@@ -578,12 +590,12 @@ async function handleStickers(response,url){
 
 async function handleTroubleshoot(request,response){
  const supportEmail=process.env.SUPPORT_EMAIL||"";
- const apiKey=process.env.RESEND_API_KEY||"";
- const fromEmail=process.env.RESEND_FROM||"";
+ const apiKey=process.env.MAILTRAP_API_KEY||"";
+ const fromEmail=process.env.MAILTRAP_FROM||"";
  const missing=[];
  if(!supportEmail)missing.push("SUPPORT_EMAIL");
- if(!apiKey)missing.push("RESEND_API_KEY");
- if(!fromEmail)missing.push("RESEND_FROM");
+ if(!apiKey)missing.push("MAILTRAP_API_KEY");
+ if(!fromEmail)missing.push("MAILTRAP_FROM");
  if(missing.length)throw Object.assign(new Error("Missing server configuration: "+missing.join(", ")),{status:500});
  const body=await readBody(request);
  const reason=String(body.reason||"").trim();
@@ -594,9 +606,7 @@ async function handleTroubleshoot(request,response){
  if(reason.length>200||otherReason.length>1000||details.length>5000)throw Object.assign(new Error("Request is too large."),{status:413});
  const data={reason,otherReason,details,page:String(body.page||"").slice(0,2000),language:String(body.language||"").slice(0,100),createdAt:String(body.createdAt||new Date().toISOString()).slice(0,100)};
  const textBody=["A new SWGC Room Chats troubleshooting request was submitted.","","Reason: "+data.reason,data.otherReason?"Other reason: "+data.otherReason:"","","Details:",data.details,"","Page: "+data.page,"Language: "+data.language,"Created: "+data.createdAt].filter(Boolean).join("\n");
- const upstream=await fetch("https://api.resend.com/emails",{method:"POST",headers:{"Authorization":"Bearer "+apiKey,"Content-Type":"application/json"},body:JSON.stringify({from:fromEmail,to:[supportEmail],subject:"[SWGC Troubleshoot] "+reason,text:textBody})});
- const result=await upstream.json().catch(()=>({}));
- if(!upstream.ok)throw Object.assign(new Error(typeof result.message==="string"?result.message:"Email provider rejected the request."),{status:502});
+ await sendTransactionalEmail({to:supportEmail,subject:"[SWGC Troubleshoot] "+reason,text:textBody});
  send(response,200,{ok:true});
 }
 
