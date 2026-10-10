@@ -99,10 +99,18 @@ async function updateDataCache(url,method,userId,data){
  try{
   if(url.pathname==="/api/profiles"&&method==="POST"&&data.profile){
    await writeCHC("profilesdata",userId,data.profile);
+   try{
+    const cached=await readCHC("profilesdata","all_profiles");
+    const profiles=Array.isArray(cached?.profiles)?cached.profiles:[];
+    const index=profiles.findIndex(item=>item.id===userId);
+    if(index>=0)profiles[index]={...profiles[index],...data.profile};
+    else profiles.push(data.profile);
+    await writeCHC("profilesdata","all_profiles",{profiles,expiresAt:Date.now()+30000});
+   }catch{}
    return;
   }
   if(url.pathname==="/api/profiles"&&method==="GET"&&Array.isArray(data.profiles)){
-   await writeCHC("profilesdata","all_profiles",data.profiles);
+   await writeCHC("profilesdata","all_profiles",{profiles:data.profiles,expiresAt:Date.now()+30000});
    return;
   }
   if(url.pathname==="/api/group-messages"&&method==="GET"){
@@ -151,8 +159,19 @@ async function handleDatabase(response,url,method,body,identity){
  let error=null;
 
  if(url.pathname==="/api/profiles"&&method==="GET"){
-  const result=await client.from("profiles").select("id,user_number,username,display_name,note,avatar_url,created_at,updated_at").order("created_at",{ascending:true});
-  data={ok:true,profiles:result.data||[]};error=result.error;
+  let cachedProfiles=null;
+  if(process.env.CHC_CACHE_KEY&&cacheReady){
+   try{
+    const cached=await readCHC("profilesdata","all_profiles");
+    if(cached&&Array.isArray(cached.profiles)&&Number(cached.expiresAt)>Date.now())cachedProfiles=cached.profiles;
+   }catch{}
+  }
+  if(cachedProfiles){
+   data={ok:true,profiles:cachedProfiles};
+  }else{
+   const result=await client.from("profiles").select("id,user_number,username,display_name,note,avatar_url,created_at,updated_at").order("created_at",{ascending:true});
+   data={ok:true,profiles:result.data||[]};error=result.error;
+  }
  }else if(url.pathname==="/api/username"&&method==="GET"){
   const username=url.searchParams.get("username")?.trim()||"";
   const result=await client.from("profiles").select("id,user_number").eq("username_key",username.toLowerCase()).maybeSingle();
