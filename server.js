@@ -11,6 +11,7 @@ const SUPABASE_URL=process.env.SUPABASE_URL||"";
 const SUPABASE_PUBLISHABLE_KEY=process.env.SUPABASE_PUBLISHABLE_KEY||"";
 const SUPABASE_SERVICE_ROLE_KEY=process.env.SUPABASE_SERVICE_ROLE_KEY||"";
 const OWNER_LOGIN_CODE=process.env.OWNER_LOGIN_CODE||"";
+const ownerLoginAttempts=new Map();
 const CACHE_ROOT=path.resolve(process.env.CHC_CACHE_DIR||path.join(process.cwd(),"cache"));
 let cacheReady=false;
 let cacheError="Cache initialization has not run.";
@@ -125,7 +126,17 @@ async function createAccountSession(userId,seed){
 async function handleOwnerLogin(response,body){
  if(!OWNER_LOGIN_CODE||!SUPABASE_SERVICE_ROLE_KEY)throw Object.assign(new Error("Owner Login is not configured on Render."),{status:503});
  const submitted=String(body.code||"");
- if(!safeEqual(submitted,OWNER_LOGIN_CODE))throw Object.assign(new Error("Invalid Owner code."),{status:401});
+ const forwarded=String(request.headers["x-forwarded-for"]||"").split(",")[0].trim();
+ const clientKey=forwarded||request.socket.remoteAddress||"unknown";
+ const attempt=ownerLoginAttempts.get(clientKey)||{count:0,until:0};
+ if(attempt.until>Date.now())throw Object.assign(new Error("Too many Owner Login attempts. Try again later."),{status:429});
+ if(!safeEqual(submitted,OWNER_LOGIN_CODE)){
+  attempt.count+=1;
+  if(attempt.count>=5){attempt.count=0;attempt.until=Date.now()+15*60*1000;}
+  ownerLoginAttempts.set(clientKey,attempt);
+  throw Object.assign(new Error("Invalid Owner code."),{status:401});
+ }
+ ownerLoginAttempts.delete(clientKey);
  const admin=createAdminClient();
  const result=await admin.from("profiles").select("id,username,username_key").eq("username_key","01").maybeSingle();
  if(result.error)throw Object.assign(new Error("Could not locate the Owner profile."),{status:500});
