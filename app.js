@@ -2,6 +2,56 @@ import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2
 
 const SERVER_API_BASE="https://swgc-chat-server.onrender.com";
 const CONFIG_ENDPOINT=SERVER_API_BASE+"/api/config";
+
+const BASE_DOCUMENT_TITLE="SWGC Room Chats";
+let unreadTabMessages=0;
+let faviconSource=null;
+function updateTabNotifications(){
+ document.title=unreadTabMessages>0?"("+unreadTabMessages+") "+BASE_DOCUMENT_TITLE:BASE_DOCUMENT_TITLE;
+ const favicon=document.querySelector('link[rel="icon"]');
+ if(!favicon)return;
+ if(!faviconSource){
+  faviconSource=new Image();
+  faviconSource.onload=drawTabFavicon;
+  faviconSource.src="./assests/logo.png";
+ }else if(faviconSource.complete&&faviconSource.naturalWidth)drawTabFavicon();
+}
+function drawTabFavicon(){
+ const favicon=document.querySelector('link[rel="icon"]');
+ if(!favicon||!faviconSource?.naturalWidth)return;
+ const canvas=document.createElement("canvas");
+ canvas.width=64;
+ canvas.height=64;
+ const context=canvas.getContext("2d");
+ context.drawImage(faviconSource,0,0,64,64);
+ if(unreadTabMessages>0){
+  context.beginPath();
+  context.arc(48,16,15,0,Math.PI*2);
+  context.fillStyle="#ff4757";
+  context.fill();
+  context.lineWidth=3;
+  context.strokeStyle="#0b0b0f";
+  context.stroke();
+  context.fillStyle="#ffffff";
+  context.font="bold 19px Arial";
+  context.textAlign="center";
+  context.textBaseline="middle";
+  context.fillText(unreadTabMessages>99?"99+":String(unreadTabMessages),48,16);
+ }
+ favicon.href=canvas.toDataURL("image/png");
+}
+function countUnreadTabMessage(message){
+ if(!message||message.user_id===userId||!document.hidden)return;
+ unreadTabMessages=Math.min(999,unreadTabMessages+1);
+ updateTabNotifications();
+}
+document.addEventListener("visibilitychange",()=>{
+ if(!document.hidden){
+  unreadTabMessages=0;
+  updateTabNotifications();
+ }
+});
+
 const STORAGE_NAME="swgc-room-chats-name";
 const STORAGE_PROFILE="swgc-room-chats-profile";
 const THEME_STORAGE="swgc-room-chats-theme";
@@ -1444,4 +1494,5 @@ async function start(){
   }
  }
 }
+updateTabNotifications();
 start();
