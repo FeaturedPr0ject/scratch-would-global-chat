@@ -1437,3 +1437,14 @@ html:not([data-color-mode="light"]) #fileButton.file-button{background:#18181d!i
 .file-size-warning #fileSizeWarningText{flex:1;min-width:0;overflow-wrap:anywhere}
 .file-size-warning button{flex:none;width:30px;height:30px;border:0;border-radius:8px;background:rgba(255,255,255,.09);color:inherit;font-size:22px;cursor:pointer}
 html[data-color-mode="light"] .file-size-warning{background:#fff8e8;color:#704b00;border-color:#e6a23c}
+
+
+.message-attachment-image-wrap{position:relative;display:inline-block;max-width:min(420px,78vw);margin-top:3px;line-height:0;vertical-align:top}
+.message-attachment-image{display:block;width:auto;max-width:100%;max-height:320px;border-radius:11px;object-fit:contain}
+.attachment-download-button{position:absolute;top:7px;right:7px;z-index:2;display:grid;place-items:center;width:30px;height:30px;padding:0;border:1px solid rgba(255,255,255,.28);border-radius:9px;background:rgba(15,15,20,.82);color:#fff;cursor:pointer;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);opacity:.92;transition:background .15s,transform .15s}
+.attachment-download-button:hover{background:var(--accent);transform:translateY(-1px)}
+.attachment-download-button svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.message-file-wrap{position:relative;display:inline-flex;align-items:flex-start;max-width:min(350px,78vw);margin-top:3px}
+.message-file-wrap .message-file{margin-top:0;padding-right:47px;max-width:100%}
+.message-file-wrap>.attachment-download-button{top:8px;right:8px;width:28px;height:28px}
+@media(max-width:600px){.message-attachment-image-wrap{max-width:78vw}.message-attachment-image{max-height:240px}.attachment-download-button{width:28px;height:28px;top:6px;right:6px}}
