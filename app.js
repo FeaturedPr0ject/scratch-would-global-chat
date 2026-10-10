@@ -8,6 +8,7 @@ const THEME_STORAGE="swgc-room-chats-theme";
 const COLOR_MODE_STORAGE="swgc-room-chats-color-mode";
 const LANGUAGE_STORAGE="swgc-room-chats-language";
 const THEME_PRESETS={orange:["#ffad00","#ffbf2f","255,173,0"],blue:["#4f8cff","#74a6ff","79,140,255"],purple:["#a970ff","#c293ff","169,112,255"],green:["#38d39f","#63e6b8","56,211,159"],red:["#ff5f6d","#ff7b86","255,95,109"]};
+const startupOverlay=document.querySelector("#startupOverlay");
 const messagesEl=document.querySelector("#messages");
 const input=document.querySelector("#messageInput");
 const sendButton=document.querySelector("#sendButton");
@@ -1435,6 +1436,12 @@ async function start(){
   if(profile)renderProfile();else openFirstProfile();
   messages=[];
   renderMessages();
+ }finally{
+  if(startupOverlay){
+   await new Promise(resolve=>setTimeout(resolve,500));
+   startupOverlay.classList.add("is-hidden");
+   setTimeout(()=>startupOverlay.remove(),400);
+  }
  }
 }
 start();
