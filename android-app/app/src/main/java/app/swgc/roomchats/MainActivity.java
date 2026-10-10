@@ -41,7 +41,7 @@ public class MainActivity extends Activity {
     private static final int FILE_CHOOSER_REQUEST = 401;
     private static final String HOME_URL = "https://scratch-would-global-chat.vercel.app/";
     private static final String CURRENT_VERSION = BuildConfig.VERSION_NAME;
-    private static final String RELEASES_API = "https://api.github.com/repos/FeaturedPr0ject/scratch-would-global-chat/releases/latest";
+    private static final String RELEASES_API = "https://api.github.com/repos/FeaturedPr0ject/scratch-would-global-chat/releases?per_page=10";
     private WebView webView;
     private ValueCallback<Uri[]> fileChooserCallback;
     private volatile boolean trustedWebViewOrigin;
@@ -277,13 +277,25 @@ public class MainActivity extends Activity {
                 int count;
                 while ((count = input.read(buffer)) != -1) output.write(buffer, 0, count);
                 input.close();
-                JSONObject release = new JSONObject(output.toString("UTF-8"));
-                String tag = release.optString("tag_name", "").replaceFirst("^[vV]", "");
-                JSONArray assets = release.optJSONArray("assets");
+                JSONArray releases = new JSONArray(output.toString("UTF-8"));
+                String tag = "";
                 String apkUrl = null;
-                if (assets != null) for (int i = 0; i < assets.length(); i++) {
-                    JSONObject asset = assets.getJSONObject(i);
-                    if (asset.optString("name", "").toLowerCase().endsWith(".apk")) { apkUrl = asset.optString("browser_download_url", null); break; }
+                for (int releaseIndex = 0; releaseIndex < releases.length(); releaseIndex++) {
+                    JSONObject release = releases.optJSONObject(releaseIndex);
+                    if (release == null) continue;
+                    JSONArray assets = release.optJSONArray("assets");
+                    if (assets == null) continue;
+                    for (int assetIndex = 0; assetIndex < assets.length(); assetIndex++) {
+                        JSONObject asset = assets.optJSONObject(assetIndex);
+                        if (asset == null) continue;
+                        String candidateUrl = asset.optString("browser_download_url", "");
+                        if (asset.optString("name", "").toLowerCase().endsWith(".apk") && candidateUrl.startsWith("https://")) {
+                            tag = release.optString("tag_name", "").replaceFirst("^[vV]", "");
+                            apkUrl = candidateUrl;
+                            break;
+                        }
+                    }
+                    if (apkUrl != null) break;
                 }
                 String finalApkUrl = apkUrl;
                 new Handler(Looper.getMainLooper()).post(() -> {
