@@ -32,7 +32,7 @@ import java.net.URL;
 public class MainActivity extends Activity {
     private static final int FILE_CHOOSER_REQUEST = 401;
     private static final String HOME_URL = "https://scratch-would-global-chat.vercel.app/";
-    private static final String CURRENT_VERSION = "1.0.0";
+    private static final String CURRENT_VERSION = BuildConfig.VERSION_NAME;
     private static final String RELEASES_API = "https://api.github.com/repos/FeaturedPr0ject/scratch-would-global-chat/releases/latest";
     private WebView webView;
     private ValueCallback<Uri[]> fileChooserCallback;
