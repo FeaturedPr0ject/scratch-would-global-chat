@@ -10,8 +10,8 @@ const FRONTEND_ORIGINS=(process.env.FRONTEND_ORIGINS||"").split(",").map(value=>
 const SUPABASE_URL=process.env.SUPABASE_URL||"";
 const SUPABASE_PUBLISHABLE_KEY=process.env.SUPABASE_PUBLISHABLE_KEY||"";
 const SUPABASE_SERVICE_ROLE_KEY=process.env.SUPABASE_SERVICE_ROLE_KEY||"";
-const OWNER_LOGIN_CODE=process.env.OWNER_LOGIN_CODE||"";
-const ownerLoginAttempts=new Map();
+const emailRecoverySendAttempts=new Map();
+const emailRecoveryVerifyAttempts=new Map();
 const CACHE_ROOT=path.resolve(process.env.CHC_CACHE_DIR||path.join(process.cwd(),"cache"));
 let cacheReady=false;
 let cacheError="Cache initialization has not run.";
@@ -123,59 +123,176 @@ async function createAccountSession(userId,seed){
  return signedIn.data.session;
 }
 
-async function handleOwnerLogin(request,response,body){
- if(!OWNER_LOGIN_CODE||!SUPABASE_SERVICE_ROLE_KEY)throw Object.assign(new Error("Owner Login is not configured on Render."),{status:503});
- const submitted=String(body.code||"");
- const forwardedValues=String(request.headers["x-forwarded-for"]||"").split(",").map(value=>value.trim()).filter(Boolean);
- const forwarded=forwardedValues.length?forwardedValues[forwardedValues.length-1]:"";
- const clientKey=forwarded||request.socket.remoteAddress||"unknown";
- const attempt=ownerLoginAttempts.get(clientKey)||{count:0,until:0};
- if(attempt.until>Date.now())throw Object.assign(new Error("Too many Owner Login attempts. Try again later."),{status:429});
- if(!safeEqual(submitted,OWNER_LOGIN_CODE)){
-  attempt.count+=1;
-  if(attempt.count>=5){attempt.count=0;attempt.until=Date.now()+15*60*1000;}
-  ownerLoginAttempts.set(clientKey,attempt);
-  throw Object.assign(new Error("Invalid Owner code."),{status:401});
- }
- ownerLoginAttempts.delete(clientKey);
- const admin=createAdminClient();
- const result=await admin.from("profiles").select("id,username,username_key").eq("username_key","01").maybeSingle();
- if(result.error)throw Object.assign(new Error("Could not locate the Owner profile."),{status:500});
- if(!result.data||String(result.data.username||"").toLowerCase()!=="01")throw Object.assign(new Error("The Owner profile username 01 has not been created yet."),{status:404});
- const session=await createAccountSession(result.data.id,"owner:"+OWNER_LOGIN_CODE);
- send(response,200,{ok:true,session,username:"01"});
+function requesterAddress(request){
+ const values=String(request.headers["x-forwarded-for"]||"").split(",").map(value=>value.trim()).filter(Boolean);
+ return values[0]||request.socket.remoteAddress||"unknown";
 }
-
+function enforceRateLimit(map,key,limit,windowMs,cooldownMs=0){
+ const now=Date.now();let item=map.get(key)||{count:0,windowStart:now,lastAt:0,blockedUntil:0};
+ if(item.blockedUntil>now)throw Object.assign(new Error("Too many attempts. Please try again later."),{status:429});
+ if(now-item.windowStart>=windowMs)item={count:0,windowStart:now,lastAt:0,blockedUntil:0};
+ if(cooldownMs>0&&now-item.lastAt<cooldownMs)throw Object.assign(new Error("Please wait before trying again."),{status:429});
+ item.count++;item.lastAt=now;
+ if(item.count>limit){item.blockedUntil=now+windowMs;map.set(key,item);throw Object.assign(new Error("Too many attempts. Please try again later."),{status:429});}
+ map.set(key,item);
+}
+function normalizeEmail(value){
+ const email=String(value||"").trim().toLowerCase();
+ if(email.length>254||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw Object.assign(new Error("Enter a valid email address."),{status:400});
+ return email;
+}
+function isManagedAccount(user){return Boolean(user&&(user.is_anonymous||user.email==="swgc-"+user.id+"@accounts.swgc.invalid"));}
+function requireManagedAccount(user){if(!isManagedAccount(user))throw Object.assign(new Error("This account uses an external sign-in method. Manage recovery through that sign-in provider."),{status:409});}
+async function updateUserMetadata(admin,user,metadata){
+ const result=await admin.auth.admin.updateUserById(user.id,{app_metadata:metadata});
+ if(result.error)throw Object.assign(new Error("Could not save account recovery settings."),{status:500});
+ return result.data.user;
+}
+async function findUserByRecoveryEmail(admin,email){
+ for(let page=1;page<=20;page++){
+  const result=await admin.auth.admin.listUsers({page,perPage:1000});
+  if(result.error)throw Object.assign(new Error("Could not look up recovery email."),{status:500});
+  const users=result.data?.users||[];
+  const match=users.find(item=>String(item.app_metadata?.swgc_recovery_email||"").trim().toLowerCase()===email);
+  if(match)return match;if(users.length<1000)break;
+ }
+ return null;
+}
+function requireResendConfiguration(){
+ const missing=[];if(!process.env.RESEND_API_KEY)missing.push("RESEND_API_KEY");if(!process.env.RESEND_FROM)missing.push("RESEND_FROM");
+ if(missing.length)throw Object.assign(new Error("Email recovery is not configured. Missing Render environment setting: "+missing.join(", ")),{status:503});
+}
+async function sendRecoveryVerification(admin,user,email,purpose,request){
+ requireResendConfiguration();
+ enforceRateLimit(emailRecoverySendAttempts,requesterAddress(request)+":"+purpose+":"+email,5,60*60*1000,60*1000);
+ requireManagedAccount(user);
+ const fresh=await admin.auth.admin.getUserById(user.id);
+ if(fresh.error||!fresh.data.user)throw Object.assign(new Error("Account not found."),{status:404});
+ const current=fresh.data.user,metadata={...(current.app_metadata||{})};
+ const sentField=purpose==="setup"?"swgc_email_setup_sent_at":"swgc_email_login_sent_at";
+ const lastSent=Number(metadata[sentField]||0);
+ if(lastSent&&Date.now()-lastSent<60000)throw Object.assign(new Error("Wait 60 seconds before requesting another email code."),{status:429});
+ const code=String(crypto.randomInt(100000,1000000)),expiresAt=Date.now()+10*60*1000;
+ const hash=crypto.createHash("sha256").update(user.id+":"+purpose+":"+email+":"+code).digest("hex");
+ if(purpose==="setup"){
+  metadata.swgc_pending_recovery_email=email;metadata.swgc_pending_email_code_hash=hash;metadata.swgc_pending_email_code_expires_at=expiresAt;metadata.swgc_pending_email_code_attempts=0;
+ }else{
+  metadata.swgc_email_login_code_hash=hash;metadata.swgc_email_login_code_expires_at=expiresAt;metadata.swgc_email_login_code_attempts=0;
+ }
+ metadata[sentField]=Date.now();await updateUserMetadata(admin,current,metadata);
+ const textBody=["Your SWGC Room Chats verification code is: "+code,"","This code expires in 10 minutes and can only be used once.","If you did not request this code, you can ignore this email."].join("\n");
+ const upstream=await fetch("https://api.resend.com/emails",{method:"POST",headers:{"Authorization":"Bearer "+process.env.RESEND_API_KEY,"Content-Type":"application/json"},body:JSON.stringify({from:process.env.RESEND_FROM,to:[email],subject:purpose==="setup"?"Verify your SWGC recovery email":"Your SWGC account recovery code",text:textBody})});
+ const result=await upstream.json().catch(()=>({}));
+ if(!upstream.ok)throw Object.assign(new Error(typeof result.message==="string"?result.message:"The email provider could not send the verification code."),{status:502});
+ return {expiresAt};
+}
 async function handleAccountRecovery(request,response,body,mode){
  const admin=createAdminClient();
  if(mode==="create"){
-  const identity=await getIdentity(request);
-  const user=identity.user;
-  const managedEmail="swgc-"+user.id+"@accounts.swgc.invalid";
-  if(!user.is_anonymous&&user.email!==managedEmail)throw Object.assign(new Error("This account already uses an external sign-in method and cannot be converted by recovery codes."),{status:409});
-  const secret=crypto.randomBytes(24).toString("base64url");
-  const code="SWGC1."+user.id+"."+secret;
-  const hash=crypto.createHash("sha256").update(secret).digest("hex");
-  const current=await admin.auth.admin.getUserById(user.id);
-  if(current.error||!current.data.user)throw Object.assign(new Error("Could not prepare account recovery."),{status:500});
-  const metadata={...(current.data.user.app_metadata||{}),swgc_recovery_hash:hash};
-  const updated=await admin.auth.admin.updateUserById(user.id,{app_metadata:metadata});
-  if(updated.error)throw Object.assign(new Error("Could not save the recovery code."),{status:500});
-  send(response,200,{ok:true,code});
-  return;
+  const identity=await getIdentity(request);requireManagedAccount(identity.user);
+  const found=await admin.auth.admin.getUserById(identity.user.id);
+  if(found.error||!found.data.user)throw Object.assign(new Error("Account not found."),{status:404});
+  const user=found.data.user,now=Date.now(),metadata={...(user.app_metadata||{})};
+  const last=Number(metadata.swgc_recovery_last_generated_at||0);
+  const recent=Array.isArray(metadata.swgc_recovery_generation_times)?metadata.swgc_recovery_generation_times.filter(value=>Number(value)>now-3600000):[];
+  if(last&&now-last<60000)throw Object.assign(new Error("Wait 60 seconds before generating another recovery key."),{status:429});
+  if(recent.length>=3)throw Object.assign(new Error("Recovery key limit reached. You can generate up to 3 keys per hour."),{status:429});
+  const secret=crypto.randomBytes(24).toString("base64url"),code="SWGC1."+user.id+"."+secret;
+  metadata.swgc_recovery_hash=crypto.createHash("sha256").update(secret).digest("hex");
+  metadata.swgc_recovery_expires_at=now+3600000;metadata.swgc_recovery_last_generated_at=now;
+  metadata.swgc_recovery_generation_times=[...recent,now];delete metadata.swgc_recovery_used_at;
+  await updateUserMetadata(admin,user,metadata);send(response,200,{ok:true,code,expiresAt:metadata.swgc_recovery_expires_at});return;
  }
- const code=String(body.code||"").trim();
- const match=code.match(/^SWGC1\.([0-9a-f-]{36})\.([A-Za-z0-9_-]{30,50})$/i);
- if(!match)throw Object.assign(new Error("Invalid recovery code."),{status:400});
- const userId=match[1];
- const secret=match[2];
- const found=await admin.auth.admin.getUserById(userId);
+ const code=String(body.code||"").trim(),match=code.match(/^SWGC1\.([0-9a-f-]{36})\.([A-Za-z0-9_-]{30,50})$/i);
+ if(!match)throw Object.assign(new Error("Invalid recovery key."),{status:400});
+ const userId=match[1],secret=match[2],found=await admin.auth.admin.getUserById(userId);
  if(found.error||!found.data.user)throw Object.assign(new Error("Account not found."),{status:404});
- const stored=String(found.data.user.app_metadata?.swgc_recovery_hash||"");
- const hash=crypto.createHash("sha256").update(secret).digest("hex");
- if(!safeEqual(stored,hash))throw Object.assign(new Error("Recovery code is invalid or has been replaced."),{status:401});
- const session=await createAccountSession(userId,"recovery:"+secret);
- send(response,200,{ok:true,session});
+ const user=found.data.user,metadata={...(user.app_metadata||{})};
+ const stored=String(metadata.swgc_recovery_hash||""),expiresAt=Number(metadata.swgc_recovery_expires_at||0);
+ if(!expiresAt||expiresAt<=Date.now()){
+  delete metadata.swgc_recovery_hash;delete metadata.swgc_recovery_expires_at;await updateUserMetadata(admin,user,metadata);
+  throw Object.assign(new Error("Recovery key expired. Generate a new key while signed in."),{status:410});
+ }
+ if(!safeEqual(stored,crypto.createHash("sha256").update(secret).digest("hex")))throw Object.assign(new Error("Recovery key is invalid or has been replaced."),{status:401});
+ requireManagedAccount(user);delete metadata.swgc_recovery_hash;delete metadata.swgc_recovery_expires_at;metadata.swgc_recovery_used_at=Date.now();
+ await updateUserMetadata(admin,user,metadata);
+ const session=await createAccountSession(userId,"recovery:"+secret);send(response,200,{ok:true,session});
+}
+async function handleRecoveryEmailSettings(request,response,body,mode){
+ const identity=await getIdentity(request),admin=createAdminClient();
+ const found=await admin.auth.admin.getUserById(identity.user.id);
+ if(found.error||!found.data.user)throw Object.assign(new Error("Account not found."),{status:404});
+ const user=found.data.user;requireManagedAccount(user);
+ if(mode==="status"){send(response,200,{ok:true,email:String(user.app_metadata?.swgc_recovery_email||""),verified:Boolean(user.app_metadata?.swgc_recovery_email)});return;}
+ if(mode==="start"){
+  const email=normalizeEmail(body.email),existing=await findUserByRecoveryEmail(admin,email);
+  if(existing&&existing.id!==user.id)throw Object.assign(new Error("This email is already connected to another SWGC account."),{status:409});
+  await sendRecoveryVerification(admin,user,email,"setup",request);
+  send(response,200,{ok:true,message:"Verification code sent. Check your inbox and spam folder."});return;
+ }
+ const email=normalizeEmail(body.email),code=String(body.code||"").replace(/\s+/g,"");
+ const current=await admin.auth.admin.getUserById(user.id);
+ if(current.error||!current.data.user)throw Object.assign(new Error("Account not found."),{status:404});
+ const latest=current.data.user,metadata={...(latest.app_metadata||{})};
+ const pending=String(metadata.swgc_pending_recovery_email||"").toLowerCase(),expires=Number(metadata.swgc_pending_email_code_expires_at||0),expected=String(metadata.swgc_pending_email_code_hash||"");
+ if(!expected||expires<=Date.now()||email!==pending){
+  delete metadata.swgc_pending_recovery_email;delete metadata.swgc_pending_email_code_hash;delete metadata.swgc_pending_email_code_expires_at;
+  await updateUserMetadata(admin,latest,metadata);throw Object.assign(new Error("Verification code expired. Request a new code."),{status:410});
+ }
+ const attempts=Number(metadata.swgc_pending_email_code_attempts||0);
+ if(attempts>=5)throw Object.assign(new Error("Too many incorrect codes. Request a new code later."),{status:429});
+ const actual=crypto.createHash("sha256").update(user.id+":setup:"+email+":"+code).digest("hex");
+ if(!safeEqual(expected,actual)){
+  metadata.swgc_pending_email_code_attempts=attempts+1;
+  if(attempts+1>=5){delete metadata.swgc_pending_recovery_email;delete metadata.swgc_pending_email_code_hash;delete metadata.swgc_pending_email_code_expires_at;}
+  await updateUserMetadata(admin,latest,metadata);throw Object.assign(new Error("The verification code is incorrect."),{status:401});
+ }
+ metadata.swgc_recovery_email=email;delete metadata.swgc_pending_recovery_email;delete metadata.swgc_pending_email_code_hash;delete metadata.swgc_pending_email_code_expires_at;delete metadata.swgc_pending_email_code_attempts;
+ await updateUserMetadata(admin,latest,metadata);send(response,200,{ok:true,email});
+}
+async function handleEmailAccountRecovery(request,response,body,mode){
+ const admin=createAdminClient();requireResendConfiguration();const email=normalizeEmail(body.email);
+ if(mode==="start"){
+  enforceRateLimit(emailRecoverySendAttempts,requesterAddress(request)+":login:"+email,5,3600000,60000);
+  const user=await findUserByRecoveryEmail(admin,email);
+  if(user&&isManagedAccount(user)){
+   const last=Number(user.app_metadata?.swgc_email_login_sent_at||0);
+   if(!last||Date.now()-last>=60000)await sendRecoveryVerification(admin,user,email,"login",request);
+  }
+  send(response,200,{ok:true,message:"If this email is linked to a SWGC account, a recovery code has been sent."});return;
+ }
+ const code=String(body.code||"").replace(/\s+/g,""),user=await findUserByRecoveryEmail(admin,email);
+ if(!user||!isManagedAccount(user))throw Object.assign(new Error("Invalid or expired email recovery code."),{status:401});
+ enforceRateLimit(emailRecoveryVerifyAttempts,requesterAddress(request)+":verify:"+email,5,15*60*1000);
+ const latestResult=await admin.auth.admin.getUserById(user.id);
+ if(latestResult.error||!latestResult.data.user)throw Object.assign(new Error("Invalid or expired email recovery code."),{status:401});
+ const latest=latestResult.data.user,metadata={...(latest.app_metadata||{})};
+ const expected=String(metadata.swgc_email_login_code_hash||""),expires=Number(metadata.swgc_email_login_code_expires_at||0);
+ if(!expected||expires<=Date.now())throw Object.assign(new Error("Invalid or expired email recovery code."),{status:401});
+ const attempts=Number(metadata.swgc_email_login_code_attempts||0);
+ if(attempts>=5)throw Object.assign(new Error("Too many incorrect codes. Request a new code later."),{status:429});
+ const actual=crypto.createHash("sha256").update(user.id+":login:"+email+":"+code).digest("hex");
+ if(!safeEqual(expected,actual)){
+  metadata.swgc_email_login_code_attempts=attempts+1;
+  if(attempts+1>=5){delete metadata.swgc_email_login_code_hash;delete metadata.swgc_email_login_code_expires_at;delete metadata.swgc_email_login_code_attempts;}
+  await updateUserMetadata(admin,latest,metadata);throw Object.assign(new Error("Invalid or expired email recovery code."),{status:401});
+ }
+ delete metadata.swgc_email_login_code_hash;delete metadata.swgc_email_login_code_expires_at;delete metadata.swgc_email_login_code_attempts;
+ await updateUserMetadata(admin,latest,metadata);
+ const session=await createAccountSession(user.id,"email-recovery:"+code);send(response,200,{ok:true,session});
+}
+async function handleDeleteAccount(request,response){
+ const identity=await getIdentity(request),admin=createAdminClient(),userId=identity.user.id;
+ const removeRows=async(table,column)=>{const result=await admin.from(table).delete().eq(column,userId);if(result.error)throw Object.assign(new Error("Could not safely delete account data from "+table+"."),{status:500});};
+ await removeRows("chat_files","user_id");await removeRows("messages","user_id");await removeRows("group_messages","user_id");await removeRows("group_members","user_id");
+ await removeRows("groups","owner_id");await removeRows("friend_requests","requester_id");await removeRows("friend_requests","recipient_id");
+ await removeRows("friendships","user_a");await removeRows("friendships","user_b");await removeRows("username_history","profile_id");
+ const deleted=await admin.auth.admin.deleteUser(userId);
+ if(deleted.error)throw Object.assign(new Error("Could not delete this account. Please contact support."),{status:500});
+ if(process.env.CHC_CACHE_KEY){
+  try{await deleteCHC("profilesdata",userId);const cached=await readCHC("profilesdata","all_profiles");if(cached&&Array.isArray(cached.profiles)){cached.profiles=cached.profiles.filter(item=>item.id!==userId);await writeCHC("profilesdata","all_profiles",cached);}const messages=await readCHC("messages","public");if(Array.isArray(messages))await writeCHC("messages","public",messages.filter(item=>item.user_id!==userId));}catch{}
+ }
+ send(response,200,{ok:true});
 }
 
 async function getIdentity(request){
@@ -468,18 +585,32 @@ const server=http.createServer(async(request,response)=>{
    send(response,200,{ok:true,service:"SWGC API",supabaseConfigured:Boolean(SUPABASE_URL&&SUPABASE_PUBLISHABLE_KEY),cache:{ready:cacheReady,format:"CHC2",types:CHC_CACHE_TYPES,keyConfigured:Boolean(process.env.CHC_CACHE_KEY),error:cacheError||null}});
    return;
   }
-  if(method==="POST"&&url.pathname==="/api/auth/owner-login"){
-   await handleOwnerLogin(request,response,await readBody(request));
-   return;
-  }
   if(method==="POST"&&url.pathname==="/api/auth/recover"){
    await handleAccountRecovery(request,response,await readBody(request),"recover");
    return;
   }
   if(method==="POST"&&url.pathname==="/api/auth/recovery-code"){
-   await handleAccountRecovery(request,response,await readBody(request),"create");
-   return;
-  }
+    await handleAccountRecovery(request,response,await readBody(request),"create");
+    return;
+   }
+   if(method==="GET"&&url.pathname==="/api/auth/recovery-email/status"){
+    await handleRecoveryEmailSettings(request,response,{},"status");return;
+   }
+   if(method==="POST"&&url.pathname==="/api/auth/recovery-email/start"){
+    await handleRecoveryEmailSettings(request,response,await readBody(request),"start");return;
+   }
+   if(method==="POST"&&url.pathname==="/api/auth/recovery-email/verify"){
+    await handleRecoveryEmailSettings(request,response,await readBody(request),"verify");return;
+   }
+   if(method==="POST"&&url.pathname==="/api/auth/recover-email/start"){
+    await handleEmailAccountRecovery(request,response,await readBody(request),"start");return;
+   }
+   if(method==="POST"&&url.pathname==="/api/auth/recover-email/verify"){
+    await handleEmailAccountRecovery(request,response,await readBody(request),"verify");return;
+   }
+   if(method==="POST"&&url.pathname==="/api/auth/delete-account"){
+    await handleDeleteAccount(request,response);return;
+   }
   if(method==="GET"&&url.pathname==="/api/config"){
    if(!SUPABASE_URL||!SUPABASE_PUBLISHABLE_KEY)throw Object.assign(new Error("Supabase is not configured."),{status:503});
    send(response,200,{ok:true,supabaseUrl:SUPABASE_URL,supabasePublishableKey:SUPABASE_PUBLISHABLE_KEY});
