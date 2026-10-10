@@ -1423,3 +1423,10 @@ html[data-color-mode="light"] .message-file{
  border-color:#dedee5!important;
  color:#17171c!important;
 }
+
+.friend-refresh-button img{filter:brightness(0) invert(1)!important}
+#fileButton.file-button svg{stroke:#fff!important}
+html[data-color-mode="light"] .friend-refresh-button img{filter:brightness(0)!important}
+html[data-color-mode="light"] #fileButton.file-button svg{stroke:#202027!important}
+html[data-color-mode="light"] #fileButton.file-button{background:#f5f5f7!important;color:#202027!important}
+html:not([data-color-mode="light"]) #fileButton.file-button{background:#18181d!important;color:#fff!important}
