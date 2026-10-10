@@ -14,7 +14,9 @@ let cacheError="Cache initialization has not run.";
 
 async function initializeCache(){
  try{
+  await fs.mkdir(CACHE_ROOT,{recursive:true});
   for(const type of CHC_CACHE_TYPES)await fs.mkdir(path.join(CACHE_ROOT,type),{recursive:true});
+  process.stdout.write("CHC cache folders created: "+CHC_CACHE_TYPES.map(type=>path.join(CACHE_ROOT,type)).join(", ")+"\\n");
   if(!process.env.CHC_CACHE_KEY){
    cacheReady=false;
    cacheError="CHC_CACHE_KEY is missing.";
