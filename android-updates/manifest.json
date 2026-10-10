@@ -1,7 +1,7 @@
 {
-  "version": "1.0.0",
-  "version_code": 1,
-  "apk_url": "",
+  "version": "1.0.0-build.6",
+  "version_code": 6,
+  "apk_url": "https://github.com/FeaturedPr0ject/scratch-would-global-chat/releases/download/1.0.0-build.6/app-debug.apk",
   "channel": "stable",
-  "updated_at": null
+  "updated_at": "2026-10-10T10:33:14Z"
 }
