@@ -556,7 +556,7 @@ function renderMessages(forceScroll=false){
   const imageAttachment=Boolean(attachmentUrl&&/\.(png|jpe?g|webp|gif)(?:$|[?#])/i.test(rawAttachmentName));
   const downloadLabel=currentLanguage==="vi"?"Tải xuống":"Download";
   const downloadButton='<button class="attachment-download-button" type="button" data-download-url="'+escapeText(attachmentUrl)+'" data-download-name="'+attachmentName+'" aria-label="'+downloadLabel+'" title="'+downloadLabel+'"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m-4-4 4 4 4-4M5 16v4h14v-4"/></svg></button>';
-  const content=item.type==="sticker"&&stickerUrl?'<span class="message-sticker"><img src="'+escapeText(stickerUrl)+'" alt="Sticker" loading="lazy"></span>':item.type==="sticker"?'<span class="message-sticker">'+escapeText(item.text)+'</span>':imageAttachment?'<span class="message-attachment-image-wrap"><img class="message-attachment-image" src="'+escapeText(attachmentUrl)+'" alt="'+attachmentName+'" loading="lazy">'+downloadButton+'</span>':(item.type==="image"||item.type==="file")&&attachmentUrl?'<span class="message-file-wrap"><span class="message-file"><span class="message-file-icon">↗</span><span class="message-file-info"><strong>'+attachmentName+'</strong><small>'+escapeText(attachmentSizeText)+'</small></span></span>'+downloadButton+'</span>':'<span class="message-text">'+escapeText(item.text)+'</span>';
+  const content=item.type==="sticker"&&stickerUrl?'<span class="message-sticker"><img src="'+escapeText(stickerUrl)+'" alt="Sticker" loading="lazy" decoding="async"></span>':item.type==="sticker"?'<span class="message-sticker">'+escapeText(item.text)+'</span>':imageAttachment?'<span class="message-attachment-image-wrap"><img class="message-attachment-image" src="'+escapeText(attachmentUrl)+'" alt="'+attachmentName+'" loading="lazy" decoding="async">'+downloadButton+'</span>':(item.type==="image"||item.type==="file")&&attachmentUrl?'<span class="message-file-wrap"><span class="message-file"><span class="message-file-icon">↗</span><span class="message-file-info"><strong>'+attachmentName+'</strong><small>'+escapeText(attachmentSizeText)+'</small></span></span>'+downloadButton+'</span>':'<span class="message-text">'+escapeText(item.text)+'</span>';
   const canDelete=item.user_id===userId;
   const deleteLabel=currentLanguage==="vi"?"Xóa tin nhắn":"Delete message";
   const deleteMarkup=canDelete?'<button class="message-delete-button" type="button" data-message-id="'+escapeText(item.id)+'" aria-label="'+escapeText(deleteLabel)+'" title="'+escapeText(deleteLabel)+'">×</button>':"";
@@ -876,15 +876,15 @@ function renderRecentStickers(){
  if(!recentStickerFeature||!recentStickerGrid||!recentStickerEmpty)return;
  const latest=recentStickers[0]||"";
  recentStickerFeature.classList.toggle("hidden",!latest);
- recentStickerFeature.innerHTML=latest?'<button class="sticker-tile" type="button" data-sticker-url="'+escapeText(latest)+'"><img src="'+escapeText(latest)+'" alt="Recent sticker" loading="lazy"></button>':"";
+ recentStickerFeature.innerHTML=latest?'<button class="sticker-tile" type="button" data-sticker-url="'+escapeText(latest)+'"><img src="'+escapeText(latest)+'" alt="Recent sticker" loading="lazy" decoding="async"></button>':"";
  const rest=recentStickers.slice(1);
- recentStickerGrid.innerHTML=rest.map(url=>'<button class="sticker-tile" type="button" data-sticker-url="'+escapeText(url)+'"><img src="'+escapeText(url)+'" alt="Recent sticker" loading="lazy"></button>').join("");
+ recentStickerGrid.innerHTML=rest.map(url=>'<button class="sticker-tile" type="button" data-sticker-url="'+escapeText(url)+'"><img src="'+escapeText(url)+'" alt="Recent sticker" loading="lazy" decoding="async"></button>').join("");
  recentStickerEmpty.classList.toggle("hidden",recentStickers.length>0);
 }
 
 function renderSavedStickers(){
  if(!savedStickerGrid||!savedStickerEmpty)return;
- savedStickerGrid.innerHTML=savedStickers.map(url=>'<div class="sticker-result saved-sticker-result"><button class="sticker-tile" type="button" data-sticker-url="'+escapeText(url)+'"><img src="'+escapeText(url)+'" alt="Saved sticker" loading="lazy"></button><button class="sticker-save saved" type="button" data-unsave-sticker="'+escapeText(url)+'" aria-label="Unsave sticker" title="Unsave sticker"></button></div>').join("");
+ savedStickerGrid.innerHTML=savedStickers.map(url=>'<div class="sticker-result saved-sticker-result"><button class="sticker-tile" type="button" data-sticker-url="'+escapeText(url)+'"><img src="'+escapeText(url)+'" alt="Saved sticker" loading="lazy" decoding="async"></button><button class="sticker-save saved" type="button" data-unsave-sticker="'+escapeText(url)+'" aria-label="Unsave sticker" title="Unsave sticker"></button></div>').join("");
  savedStickerEmpty.classList.toggle("hidden",savedStickers.length>0);
 }
 
@@ -935,7 +935,7 @@ async function searchStickers(queryOverride=null,append=false){
   if(stickers.length){
    stickerSearchGrid.insertAdjacentHTML("beforeend",stickers.map(url=>{
     const saved=savedStickers.includes(url)?" saved":"";
-    return '<div class="sticker-result"><button class="sticker-tile" type="button" data-sticker-url="'+escapeText(url)+'"><img src="'+escapeText(url)+'" alt="Sticker" loading="lazy"></button><button class="sticker-save'+saved+'" type="button" data-save-sticker="'+escapeText(url)+'" aria-label="'+(saved?"Unsave sticker":"Save sticker")+'" title="'+(saved?"Unsave sticker":"Save sticker")+'"></button></div>';
+    return '<div class="sticker-result"><button class="sticker-tile" type="button" data-sticker-url="'+escapeText(url)+'"><img src="'+escapeText(url)+'" alt="Sticker" loading="lazy" decoding="async"></button><button class="sticker-save'+saved+'" type="button" data-save-sticker="'+escapeText(url)+'" aria-label="'+(saved?"Unsave sticker":"Save sticker")+'" title="'+(saved?"Unsave sticker":"Save sticker")+'"></button></div>';
    }).join(""));
   }
   stickerSearchPos=String(data.next||"");
