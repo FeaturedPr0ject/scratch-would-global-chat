@@ -222,17 +222,6 @@ if(meta)meta.setAttribute("content",theme[0]);
 <div id="recoveryCodeStatus" class="profile-message" aria-live="polite"></div>
 <div class="recovery-limit-note">You can generate up to 3 keys per hour. Wait 60 seconds between requests.</div>
 </div>
-<div class="account-recovery-tools recovery-email-tools">
-<strong>Email Recovery</strong>
-<p>Verify an email address so you can receive a one-time sign-in code if you lose access. Codes expire in 10 minutes.</p>
-<label for="recoveryEmailInput">Recovery email</label>
-<input id="recoveryEmailInput" type="email" maxlength="254" autocomplete="email" placeholder="you@example.com">
-<button id="sendRecoveryEmailCodeButton" class="secondary-button" type="button">Send Verification Code</button>
-<label for="recoveryEmailCodeInput">Verification code</label>
-<input id="recoveryEmailCodeInput" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="6-digit code">
-<button id="verifyRecoveryEmailButton" class="secondary-button" type="button">Verify and Save Email</button>
-<div id="recoveryEmailStatus" class="profile-message" aria-live="polite">No recovery email loaded yet.</div>
-</div>
 </div>
 </section>
 <section class="settings-panel hidden" data-settings-panel="danger">
@@ -316,22 +305,7 @@ if(meta)meta.setAttribute("content",theme[0]);
 <div id="firstUsernameCheck" class="field-status first-check"></div>
 <input id="firstDisplayNameInput" maxlength="32" autocomplete="name" placeholder="Display name (optional)">
 <button id="joinRoomButton" class="primary-button" type="button">Join Room</button>
-<div class="auth-extra-actions"><button id="restoreAccountButton" class="secondary-button" type="button">Use Recovery Key</button><button id="openEmailRecoveryButton" class="secondary-button" type="button">Recover with Email</button><button id="ownerKeysButton" class="secondary-button owner-keys-button" type="button">Owner Keys</button></div>
-</div>
-</div>
-<div id="emailRecoveryModal" class="modal hidden">
-<div class="modal-card email-recovery-modal-card">
-<button id="closeEmailRecoveryModal" class="modal-close" type="button" aria-label="Close email recovery">×</button>
-<div class="modal-logo"><img class="logo-image" src="./assests/logo.png" alt="SWGC"></div>
-<h2>Recover with Email</h2>
-<p>Enter your verified recovery email. We will send a one-time code that expires after 10 minutes.</p>
-<label for="emailRecoveryAddress">Recovery email</label>
-<input id="emailRecoveryAddress" type="email" maxlength="254" autocomplete="email" placeholder="you@example.com">
-<button id="sendEmailRecoveryCodeButton" class="secondary-button" type="button">Send Recovery Code</button>
-<label for="emailRecoveryCode">Verification code</label>
-<input id="emailRecoveryCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="6-digit code">
-<button id="verifyEmailRecoveryCodeButton" class="primary-button" type="button">Verify and Restore Account</button>
-<div id="emailRecoveryStatus" class="profile-message" aria-live="polite"></div>
+<div class="auth-extra-actions"><button id="restoreAccountButton" class="secondary-button" type="button">Use Recovery Key</button><button id="ownerKeysButton" class="secondary-button owner-keys-button" type="button">Owner Keys</button></div>
 </div>
 </div>
 <script type="module" src="app.js?v=20261010-recovery-category-v5"></script>
