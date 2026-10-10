@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" href="./assests/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="style.css?v=20261010-danger-android-updates-v1">
+<link rel="stylesheet" href="style.css?v=20261010-recovery-email-update-v2">
 <script>
 (function(){
 try{
@@ -176,6 +176,7 @@ if(meta)meta.setAttribute("content",theme[0]);
 <button class="settings-category active" type="button" data-settings-category="color">Color Style</button>
 <button class="settings-category" type="button" data-settings-category="theme">Theme</button>
 <button class="settings-category" type="button" data-settings-category="language">Language</button>
+<button class="settings-category" type="button" data-settings-category="recovery">Recovery</button>
 <button class="settings-category" type="button" data-settings-category="danger">Danger Zone</button>
 <button class="settings-category hidden" type="button" data-settings-category="app">Android App</button>
 </nav>
@@ -207,18 +208,48 @@ if(meta)meta.setAttribute("content",theme[0]);
 </div>
 </div>
 </section>
+<section class="settings-panel hidden" data-settings-panel="recovery">
+<div class="settings-section">
+<div class="settings-section-head recovery-panel-head">
+<strong>Recovery</strong>
+<span>Keep a backup method available so you can restore your SWGC account.</span>
+</div>
+<div class="account-recovery-tools recovery-key-tools">
+<div class="recovery-card-icon" aria-hidden="true">⌁</div>
+<strong>Recovery Key</strong>
+<p id="recoveryKeyWarning">Never share this key. It expires after 1 hour, works once, and can restore access to your account.</p>
+<button id="createRecoveryCodeButton" class="secondary-button" type="button">Generate Recovery Key</button>
+<div id="recoveryCodeStatus" class="profile-message" aria-live="polite"></div>
+<div class="recovery-limit-note">You can generate up to 3 keys per hour. Wait 60 seconds between requests.</div>
+</div>
+</div>
+</section>
 <section class="settings-panel hidden" data-settings-panel="danger">
 <div class="settings-section">
 <div class="settings-section-head danger-zone-head">
 <strong>Danger Zone</strong>
-<span>Account recovery credentials are sensitive. Keep them private.</span>
+<span>Set a verified recovery email, sign out, or permanently delete this account.</span>
 </div>
-<div class="account-recovery-tools danger-recovery-tools">
-<strong>Recovery Key</strong>
-<p id="recoveryKeyWarning">Never share your recovery key with anyone. Anyone who has this key may be able to access your account. Store it somewhere private and safe.</p>
-<button id="createRecoveryCodeButton" class="secondary-button" type="button">Generate Recovery Key</button>
-<div id="recoveryCodeStatus" class="profile-message" aria-live="polite"></div>
-<div class="danger-owner-login"><strong>Owner access</strong><p>Use the private Owner code configured by the server administrator.</p><button id="ownerLoginSettingsButton" class="secondary-button" type="button">Owner Login</button></div>
+<div class="account-recovery-tools recovery-email-tools">
+<strong>Email Recovery</strong>
+<p>Verify an email address so you can receive a one-time sign-in code if you lose access. Codes expire in 10 minutes.</p>
+<label for="recoveryEmailInput">Recovery email</label>
+<input id="recoveryEmailInput" type="email" maxlength="254" autocomplete="email" placeholder="you@example.com">
+<button id="sendRecoveryEmailCodeButton" class="secondary-button" type="button">Send Verification Code</button>
+<label for="recoveryEmailCodeInput">Verification code</label>
+<input id="recoveryEmailCodeInput" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="6-digit code">
+<button id="verifyRecoveryEmailButton" class="secondary-button" type="button">Verify and Save Email</button>
+<div id="recoveryEmailStatus" class="profile-message" aria-live="polite">No recovery email loaded yet.</div>
+</div>
+<div class="account-danger-actions">
+<div class="account-action-row">
+<div><strong>Sign Out</strong><p>Sign out on this device. You will need a recovery method to return to this account.</p></div>
+<button id="signOutButton" class="secondary-button" type="button">Sign Out</button>
+</div>
+<div class="account-action-row delete-account-row">
+<div><strong>Delete Account</strong><p>Permanently delete your profile, messages, groups, and account data. This cannot be undone.</p></div>
+<button id="deleteAccountButton" class="danger-account-button" type="button">Delete Account</button>
+</div>
 </div>
 </div>
 </section>
@@ -285,9 +316,24 @@ if(meta)meta.setAttribute("content",theme[0]);
 <div id="firstUsernameCheck" class="field-status first-check"></div>
 <input id="firstDisplayNameInput" maxlength="32" autocomplete="name" placeholder="Display name (optional)">
 <button id="joinRoomButton" class="primary-button" type="button">Join Room</button>
-<div class="auth-extra-actions"><button id="ownerLoginButton" class="secondary-button" type="button">Owner Login</button><button id="restoreAccountButton" class="secondary-button" type="button">Restore Account</button></div>
+<div class="auth-extra-actions"><button id="restoreAccountButton" class="secondary-button" type="button">Use Recovery Key</button><button id="openEmailRecoveryButton" class="secondary-button" type="button">Recover with Email</button></div>
 </div>
 </div>
-<script type="module" src="app.js?v=20261010-danger-android-updates-v1"></script>
+<div id="emailRecoveryModal" class="modal hidden">
+<div class="modal-card email-recovery-modal-card">
+<button id="closeEmailRecoveryModal" class="modal-close" type="button" aria-label="Close email recovery">×</button>
+<div class="modal-logo"><img class="logo-image" src="./assests/logo.png" alt="SWGC"></div>
+<h2>Recover with Email</h2>
+<p>Enter your verified recovery email. We will send a one-time code that expires after 10 minutes.</p>
+<label for="emailRecoveryAddress">Recovery email</label>
+<input id="emailRecoveryAddress" type="email" maxlength="254" autocomplete="email" placeholder="you@example.com">
+<button id="sendEmailRecoveryCodeButton" class="secondary-button" type="button">Send Recovery Code</button>
+<label for="emailRecoveryCode">Verification code</label>
+<input id="emailRecoveryCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="6-digit code">
+<button id="verifyEmailRecoveryCodeButton" class="primary-button" type="button">Verify and Restore Account</button>
+<div id="emailRecoveryStatus" class="profile-message" aria-live="polite"></div>
+</div>
+</div>
+<script type="module" src="app.js?v=20261010-recovery-email-update-v2"></script>
 </body>
 </html>
