@@ -177,10 +177,23 @@ const androidReloadButton=document.querySelector("#androidReloadButton");
 const androidUpdateStatus=document.querySelector("#androidUpdateStatus");
 const createRecoveryCodeButton=document.querySelector("#createRecoveryCodeButton");
 const recoveryCodeStatus=document.querySelector("#recoveryCodeStatus");
+const recoveryEmailInput=document.querySelector("#recoveryEmailInput");
+const recoveryEmailCodeInput=document.querySelector("#recoveryEmailCodeInput");
+const sendRecoveryEmailCodeButton=document.querySelector("#sendRecoveryEmailCodeButton");
+const verifyRecoveryEmailButton=document.querySelector("#verifyRecoveryEmailButton");
+const recoveryEmailStatus=document.querySelector("#recoveryEmailStatus");
+const signOutButton=document.querySelector("#signOutButton");
+const deleteAccountButton=document.querySelector("#deleteAccountButton");
 const languageSelect=document.querySelector("#languageSelect");
-const ownerLoginButton=document.querySelector("#ownerLoginButton");
-const ownerLoginSettingsButton=document.querySelector("#ownerLoginSettingsButton");
 const restoreAccountButton=document.querySelector("#restoreAccountButton");
+const openEmailRecoveryButton=document.querySelector("#openEmailRecoveryButton");
+const emailRecoveryModal=document.querySelector("#emailRecoveryModal");
+const closeEmailRecoveryModalButton=document.querySelector("#closeEmailRecoveryModal");
+const emailRecoveryAddress=document.querySelector("#emailRecoveryAddress");
+const emailRecoveryCode=document.querySelector("#emailRecoveryCode");
+const sendEmailRecoveryCodeButton=document.querySelector("#sendEmailRecoveryCodeButton");
+const verifyEmailRecoveryCodeButton=document.querySelector("#verifyEmailRecoveryCodeButton");
+const emailRecoveryStatus=document.querySelector("#emailRecoveryStatus");
 let friends=[];
 let selectedProfileId="";
 let groups=[];
@@ -264,7 +277,7 @@ function applyLanguage(language,save=true){
  document.documentElement.lang=value;
  if(languageSelect)languageSelect.value=value;
  const labels=value==="vi"?{
-  color:"Kiểu màu",theme:"Chủ đề",language:"Ngôn ngữ",danger:"Khu vực nguy hiểm",app:"Ứng dụng Android",
+  color:"Kiểu màu",theme:"Chủ đề",language:"Ngôn ngữ",recovery:"Khôi phục",danger:"Khu vực nguy hiểm",app:"Ứng dụng Android",
   colorTitle:"Kiểu màu",colorDescription:"Chọn màu nhấn chính cho SWGC Room Chats.",
   themeTitle:"Chủ đề",themeDescription:"Chọn chế độ Sáng hoặc Tối.",
   languageTitle:"Ngôn ngữ",languageDescription:"Chọn ngôn ngữ được sử dụng trong SWGC Room Chats.",
@@ -284,7 +297,7 @@ function applyLanguage(language,save=true){
   uniqueUsername:"Tên người dùng duy nhất",joinRoom:"Tham gia phòng",addFriend:"Thêm bạn",noNote:"Chưa có ghi chú hồ sơ.",
   profileTab:"Hồ sơ",settingsTab:"Cài đặt"
  }:{
-  color:"Color Style",theme:"Theme",language:"Language",danger:"Danger Zone",app:"Android App",
+  color:"Color Style",theme:"Theme",language:"Language",recovery:"Recovery",danger:"Danger Zone",app:"Android App",
   colorTitle:"Color Style",colorDescription:"Choose the main accent color for SWGC Room Chats.",
   themeTitle:"Theme",themeDescription:"Choose between Light and Dark mode.",
   languageTitle:"Language",languageDescription:"Choose the language used by SWGC Room Chats.",
@@ -310,6 +323,7 @@ function applyLanguage(language,save=true){
  setText('[data-settings-category="color"]',labels.color);
  setText('[data-settings-category="theme"]',labels.theme);
  setText('[data-settings-category="language"]',labels.language);
+ setText('[data-settings-category="recovery"]',labels.recovery);
  setText('[data-settings-category="danger"]',labels.danger);
  setText('[data-settings-category="app"]',labels.app);
  setText(".danger-zone-head strong",labels.danger);
@@ -317,10 +331,23 @@ function applyLanguage(language,save=true){
  setText(".android-app-head strong",labels.app);
  setText(".android-app-head span",value==="vi"?"Kiểm tra APK mới hoặc tải lại ứng dụng.":"Check for a newer APK or reload the app.");
  setText("#recoveryKeyWarning",value==="vi"?"Không bao giờ chia sẻ khóa khôi phục với bất kỳ ai. Người có khóa này có thể truy cập tài khoản của bạn. Hãy lưu ở nơi riêng tư và an toàn.":"Never share your recovery key with anyone. Anyone who has this key may be able to access your account. Store it somewhere private and safe.");
+ setText(".recovery-panel-head strong",labels.recovery);
+ setText(".recovery-panel-head span",value==="vi"?"Quản lý khóa khôi phục để lấy lại tài khoản khi mất quyền truy cập.":"Manage your recovery key in case you lose access to your account.");
+ setText("#recoveryKeyWarning",value==="vi"?"Không chia sẻ khóa này. Khóa hết hạn sau 1 giờ, chỉ dùng một lần và có thể khôi phục tài khoản.":"Never share this key. It expires after 1 hour, works once, and can restore access to your account.");
  setText("#createRecoveryCodeButton",value==="vi"?"Tạo khóa khôi phục":"Generate Recovery Key");
- setText("#ownerLoginSettingsButton",value==="vi"?"Đăng nhập Owner":"Owner Login");
- setText(".danger-owner-login>strong",value==="vi"?"Quyền truy cập Owner":"Owner access");
- setText(".danger-owner-login>p",value==="vi"?"Dùng mã Owner riêng được cấu hình trên máy chủ.":"Use the private Owner code configured by the server administrator.");
+ setText(".recovery-email-tools>strong",value==="vi"?"Khôi phục bằng email":"Email Recovery");
+ setText(".recovery-email-tools>p",value==="vi"?"Xác minh email để nhận mã đăng nhập một lần nếu bạn mất quyền truy cập. Mã hết hạn sau 10 phút.":"Verify an email address so you can receive a one-time sign-in code if you lose access. Codes expire in 10 minutes.");
+ setText("#sendRecoveryEmailCodeButton",value==="vi"?"Gửi mã xác minh":"Send Verification Code");
+ setText("#verifyRecoveryEmailButton",value==="vi"?"Xác minh và lưu email":"Verify and Save Email");
+ setText(".account-action-row strong",value==="vi"?"Đăng xuất":"Sign Out");
+ setText("#signOutButton",value==="vi"?"Đăng xuất":"Sign Out");
+ setText(".delete-account-row strong",value==="vi"?"Xóa tài khoản":"Delete Account");
+ setText("#deleteAccountButton",value==="vi"?"Xóa tài khoản":"Delete Account");
+ setText("#restoreAccountButton",value==="vi"?"Dùng khóa khôi phục":"Use Recovery Key");
+ setText("#openEmailRecoveryButton",value==="vi"?"Khôi phục bằng email":"Recover with Email");
+ setText("#emailRecoveryModal h2",value==="vi"?"Khôi phục bằng email":"Recover with Email");
+ setText("#sendEmailRecoveryCodeButton",value==="vi"?"Gửi mã khôi phục":"Send Recovery Code");
+ setText("#verifyEmailRecoveryCodeButton",value==="vi"?"Xác minh và khôi phục tài khoản":"Verify and Restore Account");
  setText("#androidCheckUpdatesButton",value==="vi"?"Kiểm tra bản cập nhật":"Check for Updates");
  setText("#androidReloadButton",value==="vi"?"Tải lại ứng dụng":"Reload App");
  setText('[data-settings-panel="color"] .settings-section-head strong',labels.colorTitle);
@@ -397,7 +424,7 @@ function changeLanguage(language){
 }
 
 function setSettingsCategory(category){
- const value=["color","theme","language","danger","app"].includes(category)?category:"color";
+ const value=["color","theme","language","recovery","danger","app"].includes(category)?category:"color";
  settingsCategoryButtons.forEach(button=>button.classList.toggle("active",button.dataset.settingsCategory===value));
  settingsPanels.forEach(panel=>panel.classList.toggle("hidden",panel.dataset.settingsPanel!==value));
 }
