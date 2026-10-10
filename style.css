@@ -1246,3 +1246,14 @@ html[data-color-mode="light"] #firstUsernameInput:focus,html[data-color-mode="li
 @media(max-width:760px){
  .sticker-button .sticker-button-logo{width:23px!important;height:23px!important}
 }
+
+.startup-logo{
+ animation:startup-logo-full-spin 8s linear infinite!important;
+}
+@keyframes startup-logo-full-spin{
+ from{transform:rotate(0turn)}
+ to{transform:rotate(1turn)}
+}
+@media(prefers-reduced-motion:reduce){
+ .startup-logo{animation:none!important}
+}
