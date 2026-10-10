@@ -2,7 +2,7 @@ import http from "node:http";
 import {createClient} from "@supabase/supabase-js";
 import {promises as fs} from "node:fs";
 import path from "node:path";
-import {writeCHC,readCHC,hasCHC,CHC_CACHE_TYPES} from "./cache/chc.js";
+import {writeCHC,readCHC,hasCHC,deleteCHC,CHC_CACHE_TYPES} from "./cache/chc.js";
 
 const PORT=Number(process.env.PORT||3000);
 const FRONTEND_ORIGINS=(process.env.FRONTEND_ORIGINS||"").split(",").map(value=>value.trim()).filter(Boolean);
@@ -10,6 +10,7 @@ const SUPABASE_URL=process.env.SUPABASE_URL||"";
 const SUPABASE_PUBLISHABLE_KEY=process.env.SUPABASE_PUBLISHABLE_KEY||"";
 const CACHE_ROOT=path.resolve(process.env.CHC_CACHE_DIR||path.join(process.cwd(),"cache"));
 let cacheReady=false;
+let cacheError="Cache initialization has not run.";
 
 async function initializeCache(){
  try{
@@ -303,7 +304,7 @@ const server=http.createServer(async(request,response)=>{
  const method=request.method||"GET";
  try{
   if(method==="GET"&&(url.pathname==="/"||url.pathname==="/health")){
-   send(response,200,{ok:true,service:"SWGC API",supabaseConfigured:Boolean(SUPABASE_URL&&SUPABASE_PUBLISHABLE_KEY),cache:{ready:cacheReady,format:"CHC2",types:CHC_CACHE_TYPES}});
+   send(response,200,{ok:true,service:"SWGC API",supabaseConfigured:Boolean(SUPABASE_URL&&SUPABASE_PUBLISHABLE_KEY),cache:{ready:cacheReady,format:"CHC2",types:CHC_CACHE_TYPES,keyConfigured:Boolean(process.env.CHC_CACHE_KEY),error:cacheError||null}});
    return;
   }
   if(method==="GET"&&url.pathname==="/api/config"){
