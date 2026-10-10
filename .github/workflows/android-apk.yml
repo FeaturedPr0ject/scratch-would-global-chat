@@ -32,7 +32,10 @@ jobs:
 
       - name: Build debug APK
         working-directory: android-app
-        run: gradle --no-daemon assembleDebug
+        run: |
+          VERSION_NAME="${GITHUB_REF_TYPE}"
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then VERSION_NAME="${GITHUB_REF_NAME}"; else VERSION_NAME="1.0.0-build.${GITHUB_RUN_NUMBER}"; fi
+          gradle --no-daemon assembleDebug -PappVersionCode="${GITHUB_RUN_NUMBER}" -PappVersionName="${VERSION_NAME}"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
