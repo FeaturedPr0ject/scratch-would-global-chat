@@ -648,19 +648,6 @@ async function establishAccountSession(endpoint,body){
  window.location.reload();
 }
 
-async function ownerLogin(){
- const code=window.prompt("Enter the Owner code configured in Render.");
- if(code===null)return;
- if(!code.trim())return window.alert("Owner code is required.");
- if(ownerLoginButton)ownerLoginButton.disabled=true;
- try{
-  await establishAccountSession("/api/auth/owner-login",{code:code.trim()});
- }catch(error){
-  window.alert(error instanceof Error?error.message:"Owner Login failed.");
-  if(ownerLoginButton)ownerLoginButton.disabled=false;
- }
-}
-
 async function restoreAccount(){
  const code=window.prompt("Enter your SWGC recovery code.");
  if(code===null)return;
@@ -674,25 +661,124 @@ async function restoreAccount(){
  }
 }
 
+let recoveryKeyCooldownTimer=null;
+
 async function createRecoveryCode(){
- if(!createRecoveryCodeButton||!recoveryCodeStatus)return;
+ if(!createRecoveryCodeButton||!recoveryCodeStatus||recoveryKeyCooldownTimer)return;
  createRecoveryCodeButton.disabled=true;
  recoveryCodeStatus.textContent=currentLanguage==="vi"?"Đang tạo khóa khôi phục…":"Creating recovery key…";
  try{
   const result=await request("/api/auth/recovery-code",{method:"POST",body:JSON.stringify({})});
-  recoveryCodeStatus.textContent=(currentLanguage==="vi"?"KHÔNG chia sẻ khóa này cho bất kỳ ai. Hãy lưu riêng tư: ":"NEVER share this recovery key with anyone. Store it privately: ")+result.code;
+  recoveryCodeStatus.textContent=(currentLanguage==="vi"?"Khóa hết hạn sau 1 giờ, chỉ dùng một lần. Hãy lưu an toàn: ":"Expires in 1 hour and works once. Store it safely: ")+result.code;
   if(navigator.clipboard?.writeText){
-   try{await navigator.clipboard.writeText(result.code);recoveryCodeStatus.textContent+=(currentLanguage==="vi"?" (Đã sao chép vào bộ nhớ tạm)":" (Copied to clipboard)");}catch{}
+   try{await navigator.clipboard.writeText(result.code);recoveryCodeStatus.textContent+=(currentLanguage==="vi"?" (Đã sao chép)":" (Copied to clipboard)");}catch{}
   }
+  recoveryKeyCooldownTimer=setTimeout(()=>{recoveryKeyCooldownTimer=null;if(createRecoveryCodeButton)createRecoveryCodeButton.disabled=false;},60000);
  }catch(error){
-  recoveryCodeStatus.textContent=error instanceof Error?error.message:"Could not create recovery code.";
- }finally{createRecoveryCodeButton.disabled=false;}
+  recoveryCodeStatus.textContent=error instanceof Error?error.message:"Could not create recovery key.";
+  createRecoveryCodeButton.disabled=false;
+ }
+}
+
+async function loadRecoveryEmailStatus(){
+ if(!recoveryEmailStatus)return;
+ try{
+  const result=await request("/api/auth/recovery-email/status");
+  if(recoveryEmailInput)recoveryEmailInput.value=result.email||"";
+  recoveryEmailStatus.textContent=result.verified
+   ?(currentLanguage==="vi"?"Email khôi phục đã xác minh: ":"Verified recovery email: ")+result.email
+   :(currentLanguage==="vi"?"Chưa thiết lập email khôi phục.":"No recovery email is configured.");
+ }catch(error){recoveryEmailStatus.textContent=error instanceof Error?error.message:"Could not load recovery email status.";}
+}
+
+async function sendRecoveryEmailCode(){
+ if(!recoveryEmailInput||!sendRecoveryEmailCodeButton||!recoveryEmailStatus)return;
+ const email=recoveryEmailInput.value.trim();
+ if(!email){recoveryEmailStatus.textContent=currentLanguage==="vi"?"Nhập email khôi phục trước.":"Enter a recovery email first.";return;}
+ sendRecoveryEmailCodeButton.disabled=true;
+ recoveryEmailStatus.textContent=currentLanguage==="vi"?"Đang gửi mã xác minh…":"Sending verification code…";
+ try{
+  const result=await request("/api/auth/recovery-email/start",{method:"POST",body:JSON.stringify({email})});
+  recoveryEmailStatus.textContent=result.message||(currentLanguage==="vi"?"Đã gửi mã. Kiểm tra hộp thư và thư rác.":"Verification code sent. Check your inbox and spam folder.");
+ }catch(error){recoveryEmailStatus.textContent=error instanceof Error?error.message:"Could not send verification code.";}
+ finally{sendRecoveryEmailCodeButton.disabled=false;}
+}
+
+async function verifyRecoveryEmail(){
+ if(!recoveryEmailInput||!recoveryEmailCodeInput||!verifyRecoveryEmailButton||!recoveryEmailStatus)return;
+ const email=recoveryEmailInput.value.trim(),code=recoveryEmailCodeInput.value.trim();
+ if(!email||!code){recoveryEmailStatus.textContent=currentLanguage==="vi"?"Nhập email và mã xác minh.":"Enter the email and verification code.";return;}
+ verifyRecoveryEmailButton.disabled=true;
+ try{
+  const result=await request("/api/auth/recovery-email/verify",{method:"POST",body:JSON.stringify({email,code})});
+  recoveryEmailStatus.textContent=(currentLanguage==="vi"?"Đã xác minh email khôi phục: ":"Verified recovery email: ")+(result.email||email);
+  recoveryEmailCodeInput.value="";
+ }catch(error){recoveryEmailStatus.textContent=error instanceof Error?error.message:"Could not verify recovery email.";}
+ finally{verifyRecoveryEmailButton.disabled=false;}
+}
+
+function openEmailRecovery(){
+ if(emailRecoveryStatus)emailRecoveryStatus.textContent="";
+ emailRecoveryModal?.classList.remove("hidden");
+ nameModal?.classList.add("hidden");
+}
+function closeEmailRecovery(){
+ emailRecoveryModal?.classList.add("hidden");
+ if(!profile)nameModal?.classList.remove("hidden");
+}
+
+async function sendEmailRecoveryCode(){
+ if(!emailRecoveryAddress||!sendEmailRecoveryCodeButton||!emailRecoveryStatus)return;
+ const email=emailRecoveryAddress.value.trim();
+ if(!email){emailRecoveryStatus.textContent=currentLanguage==="vi"?"Nhập email khôi phục.":"Enter your recovery email.";return;}
+ sendEmailRecoveryCodeButton.disabled=true;
+ emailRecoveryStatus.textContent=currentLanguage==="vi"?"Đang yêu cầu mã khôi phục…":"Requesting recovery code…";
+ try{
+  const result=await request("/api/auth/recover-email/start",{method:"POST",body:JSON.stringify({email})});
+  emailRecoveryStatus.textContent=result.message||(currentLanguage==="vi"?"Nếu email được liên kết với tài khoản SWGC, mã đã được gửi.":"If the email is linked to a SWGC account, a recovery code has been sent.");
+ }catch(error){emailRecoveryStatus.textContent=error instanceof Error?error.message:"Could not request recovery code.";}
+ finally{sendEmailRecoveryCodeButton.disabled=false;}
+}
+
+async function verifyEmailRecoveryCode(){
+ if(!emailRecoveryAddress||!emailRecoveryCode||!verifyEmailRecoveryCodeButton||!emailRecoveryStatus)return;
+ const email=emailRecoveryAddress.value.trim(),code=emailRecoveryCode.value.trim();
+ if(!email||!code){emailRecoveryStatus.textContent=currentLanguage==="vi"?"Nhập email và mã xác minh.":"Enter the email and verification code.";return;}
+ verifyEmailRecoveryCodeButton.disabled=true;
+ try{await establishAccountSession("/api/auth/recover-email/verify",{email,code});}
+ catch(error){emailRecoveryStatus.textContent=error instanceof Error?error.message:"Account recovery failed.";verifyEmailRecoveryCodeButton.disabled=false;}
+}
+
+async function signOutAccount(){
+ if(!supabaseClient)return;
+ if(!window.confirm(currentLanguage==="vi"?"Bạn có chắc muốn đăng xuất khỏi tài khoản này?":"Are you sure you want to sign out of this account?"))return;
+ if(signOutButton)signOutButton.disabled=true;
+ try{
+  const result=await supabaseClient.auth.signOut();if(result.error)throw result.error;
+  localStorage.removeItem(STORAGE_PROFILE);localStorage.removeItem("swgc-room-chats-user-id");window.location.reload();
+ }catch(error){window.alert(error instanceof Error?error.message:"Could not sign out.");if(signOutButton)signOutButton.disabled=false;}
+}
+
+async function deleteCurrentAccount(){
+ if(!supabaseClient)return;
+ const confirmText=currentLanguage==="vi"?"XÓA TÀI KHOẢN":"DELETE ACCOUNT";
+ const warning=currentLanguage==="vi"?"Thao tác này sẽ xóa tài khoản, tin nhắn, nhóm và dữ liệu liên quan. Không thể hoàn tác. Tiếp tục?":"This permanently deletes your account, messages, groups, and related data. This cannot be undone. Continue?";
+ if(!window.confirm(warning))return;
+ if(window.prompt(currentLanguage==="vi"?'Nhập "XÓA TÀI KHOẢN" để xác nhận.':'Type "DELETE ACCOUNT" to confirm.')!==confirmText)return;
+ if(deleteAccountButton)deleteAccountButton.disabled=true;
+ try{
+  await request("/api/auth/delete-account",{method:"POST",body:JSON.stringify({})});
+  await supabaseClient.auth.signOut();localStorage.removeItem(STORAGE_PROFILE);localStorage.removeItem("swgc-room-chats-user-id");
+  window.alert(currentLanguage==="vi"?"Tài khoản đã được xóa.":"Your account has been deleted.");window.location.reload();
+ }catch(error){window.alert(error instanceof Error?error.message:"Could not delete account.");if(deleteAccountButton)deleteAccountButton.disabled=false;}
 }
 
 function setupAndroidSettings(){
  const isAndroidApp=Boolean(window.SWGCAndroid&&typeof window.SWGCAndroid.getCurrentVersion==="function");
- androidSettingsCategory?.classList.toggle("hidden",!isAndroidApp);
- if(!isAndroidApp)return;
+ let isPhone=false;
+ if(isAndroidApp){try{isPhone=typeof window.SWGCAndroid.isPhone==="function"?Boolean(window.SWGCAndroid.isPhone()):window.innerWidth<=760;}catch{}}
+ androidSettingsCategory?.classList.toggle("hidden",!(isAndroidApp&&isPhone));
+ if(!(isAndroidApp&&isPhone))return;
  try{
   const version=window.SWGCAndroid.getCurrentVersion();
   if(androidVersionLabel)androidVersionLabel.textContent=(currentLanguage==="vi"?"Phiên bản đã cài: ":"Installed version: ")+(version||"Unknown");
@@ -1683,6 +1769,7 @@ async function start(){
  setConnection("Connecting");
  try{
   await initializeSupabase();
+  await loadRecoveryEmailStatus().catch(()=>{});
  }catch(error){
   console.error(error);
   setConnection(error instanceof Error?error.message:"Database offline");
@@ -1702,8 +1789,14 @@ updateTabNotifications();
 setupAndroidSettings();
 androidCheckUpdatesButton?.addEventListener("click",checkAndroidUpdates);
 androidReloadButton?.addEventListener("click",reloadAndroidApp);
-ownerLoginButton?.addEventListener("click",ownerLogin);
-ownerLoginSettingsButton?.addEventListener("click",ownerLogin);
 restoreAccountButton?.addEventListener("click",restoreAccount);
 createRecoveryCodeButton?.addEventListener("click",createRecoveryCode);
+sendRecoveryEmailCodeButton?.addEventListener("click",sendRecoveryEmailCode);
+verifyRecoveryEmailButton?.addEventListener("click",verifyRecoveryEmail);
+signOutButton?.addEventListener("click",signOutAccount);
+deleteAccountButton?.addEventListener("click",deleteCurrentAccount);
+openEmailRecoveryButton?.addEventListener("click",openEmailRecovery);
+closeEmailRecoveryModalButton?.addEventListener("click",closeEmailRecovery);
+sendEmailRecoveryCodeButton?.addEventListener("click",sendEmailRecoveryCode);
+verifyEmailRecoveryCodeButton?.addEventListener("click",verifyEmailRecoveryCode);
 start();
