@@ -112,19 +112,19 @@ async function updateDataCache(url,method,userId,data){
    await writeCHC("messages","public",(data.messages||[]).slice(-100));
    return;
   }
-  if(url.pathname==="/api/group-messages"&&method==="POST"&&data.message){
-   const groupId=String(data.message.group_id||"");
-   if(groupId){
-    const current=await readCHC("messages","group_"+groupId);
-    const messages=Array.isArray(current)?current:[];
-    await writeCHC("messages","group_"+groupId,[...messages.filter(item=>item.id!==data.message.id),data.message].slice(-100));
-   }
-   return;
-  }
-  if(url.pathname==="/api/messages"&&method==="POST"&&data.message){
-   const current=await readCHC("messages","public");
+  if((url.pathname==="/api/group-messages"||url.pathname==="/api/messages")&&method==="POST"&&data.message){
+   const message=data.message;
+   const isGroup=url.pathname==="/api/group-messages";
+   const groupId=String(message.group_id||url.searchParams.get("group_id")||"");
+   const cacheName=isGroup?"group_"+groupId:"public";
+   const current=await readCHC("messages",cacheName);
    const messages=Array.isArray(current)?current:[];
-   await writeCHC("messages","public",[...messages.filter(item=>item.id!==data.message.id),data.message].slice(-100));
+   await writeCHC("messages",cacheName,[...messages.filter(item=>item.id!==message.id),message].slice(-100));
+   if(message.type==="sticker"){
+    await writeCHC("stickers",message.id,{...message,group_id:isGroup?groupId:null,cachedAt:new Date().toISOString()});
+   }else if(message.type==="file"||message.type==="image"){
+    await writeCHC("attachments",message.id,{...message,group_id:isGroup?groupId:null,cachedAt:new Date().toISOString()});
+   }
    return;
   }
   if((url.pathname==="/api/messages"||url.pathname==="/api/group-messages")&&method==="DELETE"){
