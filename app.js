@@ -170,12 +170,17 @@ const themeOptions=document.querySelectorAll("[data-theme]");
 const settingsCategoryButtons=document.querySelectorAll("[data-settings-category]");
 const settingsPanels=document.querySelectorAll("[data-settings-panel]");
 const themeModeOptions=document.querySelectorAll("[data-theme-mode]");
+const androidSettingsCategory=document.querySelector('[data-settings-category="app"]');
+const androidVersionLabel=document.querySelector("#androidVersionLabel");
+const androidCheckUpdatesButton=document.querySelector("#androidCheckUpdatesButton");
+const androidReloadButton=document.querySelector("#androidReloadButton");
+const androidUpdateStatus=document.querySelector("#androidUpdateStatus");
+const createRecoveryCodeButton=document.querySelector("#createRecoveryCodeButton");
+const recoveryCodeStatus=document.querySelector("#recoveryCodeStatus");
 const languageSelect=document.querySelector("#languageSelect");
 const ownerLoginButton=document.querySelector("#ownerLoginButton");
 const ownerLoginSettingsButton=document.querySelector("#ownerLoginSettingsButton");
 const restoreAccountButton=document.querySelector("#restoreAccountButton");
-const createRecoveryCodeButton=document.querySelector("#createRecoveryCodeButton");
-const recoveryCodeStatus=document.querySelector("#recoveryCodeStatus");
 let friends=[];
 let selectedProfileId="";
 let groups=[];
@@ -259,7 +264,7 @@ function applyLanguage(language,save=true){
  document.documentElement.lang=value;
  if(languageSelect)languageSelect.value=value;
  const labels=value==="vi"?{
-  color:"Kiểu màu",theme:"Chủ đề",language:"Ngôn ngữ",
+  color:"Kiểu màu",theme:"Chủ đề",language:"Ngôn ngữ",danger:"Khu vực nguy hiểm",app:"Ứng dụng Android",
   colorTitle:"Kiểu màu",colorDescription:"Chọn màu nhấn chính cho SWGC Room Chats.",
   themeTitle:"Chủ đề",themeDescription:"Chọn chế độ Sáng hoặc Tối.",
   languageTitle:"Ngôn ngữ",languageDescription:"Chọn ngôn ngữ được sử dụng trong SWGC Room Chats.",
@@ -279,7 +284,7 @@ function applyLanguage(language,save=true){
   uniqueUsername:"Tên người dùng duy nhất",joinRoom:"Tham gia phòng",addFriend:"Thêm bạn",noNote:"Chưa có ghi chú hồ sơ.",
   profileTab:"Hồ sơ",settingsTab:"Cài đặt"
  }:{
-  color:"Color Style",theme:"Theme",language:"Language",
+  color:"Color Style",theme:"Theme",language:"Language",danger:"Danger Zone",app:"Android App",
   colorTitle:"Color Style",colorDescription:"Choose the main accent color for SWGC Room Chats.",
   themeTitle:"Theme",themeDescription:"Choose between Light and Dark mode.",
   languageTitle:"Language",languageDescription:"Choose the language used by SWGC Room Chats.",
@@ -305,6 +310,19 @@ function applyLanguage(language,save=true){
  setText('[data-settings-category="color"]',labels.color);
  setText('[data-settings-category="theme"]',labels.theme);
  setText('[data-settings-category="language"]',labels.language);
+ setText('[data-settings-category="danger"]',labels.danger);
+ setText('[data-settings-category="app"]',labels.app);
+ setText(".danger-zone-head strong",labels.danger);
+ setText(".danger-zone-head span",value==="vi"?"Thông tin khôi phục tài khoản rất nhạy cảm. Hãy giữ riêng tư.":"Account recovery credentials are sensitive. Keep them private.");
+ setText(".android-app-head strong",labels.app);
+ setText(".android-app-head span",value==="vi"?"Kiểm tra APK mới hoặc tải lại ứng dụng.":"Check for a newer APK or reload the app.");
+ setText("#recoveryKeyWarning",value==="vi"?"Không bao giờ chia sẻ khóa khôi phục với bất kỳ ai. Người có khóa này có thể truy cập tài khoản của bạn. Hãy lưu ở nơi riêng tư và an toàn.":"Never share your recovery key with anyone. Anyone who has this key may be able to access your account. Store it somewhere private and safe.");
+ setText("#createRecoveryCodeButton",value==="vi"?"Tạo khóa khôi phục":"Generate Recovery Key");
+ setText("#ownerLoginSettingsButton",value==="vi"?"Đăng nhập Owner":"Owner Login");
+ setText(".danger-owner-login>strong",value==="vi"?"Quyền truy cập Owner":"Owner access");
+ setText(".danger-owner-login>p",value==="vi"?"Dùng mã Owner riêng được cấu hình trên máy chủ.":"Use the private Owner code configured by the server administrator.");
+ setText("#androidCheckUpdatesButton",value==="vi"?"Kiểm tra bản cập nhật":"Check for Updates");
+ setText("#androidReloadButton",value==="vi"?"Tải lại ứng dụng":"Reload App");
  setText('[data-settings-panel="color"] .settings-section-head strong',labels.colorTitle);
  setText('[data-settings-panel="color"] .settings-section-head span',labels.colorDescription);
  setText('[data-settings-panel="theme"] .settings-section-head strong',labels.themeTitle);
@@ -379,7 +397,7 @@ function changeLanguage(language){
 }
 
 function setSettingsCategory(category){
- const value=["color","theme","language"].includes(category)?category:"color";
+ const value=["color","theme","language","danger","app"].includes(category)?category:"color";
  settingsCategoryButtons.forEach(button=>button.classList.toggle("active",button.dataset.settingsCategory===value));
  settingsPanels.forEach(panel=>panel.classList.toggle("hidden",panel.dataset.settingsPanel!==value));
 }
@@ -632,16 +650,44 @@ async function restoreAccount(){
 async function createRecoveryCode(){
  if(!createRecoveryCodeButton||!recoveryCodeStatus)return;
  createRecoveryCodeButton.disabled=true;
- recoveryCodeStatus.textContent="Creating recovery code...";
+ recoveryCodeStatus.textContent=currentLanguage==="vi"?"Đang tạo khóa khôi phục…":"Creating recovery key…";
  try{
   const result=await request("/api/auth/recovery-code",{method:"POST",body:JSON.stringify({})});
-  recoveryCodeStatus.textContent="Save this code somewhere safe. It is required to restore this same account on another device: "+result.code;
+  recoveryCodeStatus.textContent=(currentLanguage==="vi"?"KHÔNG chia sẻ khóa này cho bất kỳ ai. Hãy lưu riêng tư: ":"NEVER share this recovery key with anyone. Store it privately: ")+result.code;
   if(navigator.clipboard?.writeText){
-   try{await navigator.clipboard.writeText(result.code);recoveryCodeStatus.textContent+=" (Copied to clipboard)";}catch{}
+   try{await navigator.clipboard.writeText(result.code);recoveryCodeStatus.textContent+=(currentLanguage==="vi"?" (Đã sao chép vào bộ nhớ tạm)":" (Copied to clipboard)");}catch{}
   }
  }catch(error){
   recoveryCodeStatus.textContent=error instanceof Error?error.message:"Could not create recovery code.";
  }finally{createRecoveryCodeButton.disabled=false;}
+}
+
+function setupAndroidSettings(){
+ const isAndroidApp=Boolean(window.SWGCAndroid&&typeof window.SWGCAndroid.getCurrentVersion==="function");
+ androidSettingsCategory?.classList.toggle("hidden",!isAndroidApp);
+ if(!isAndroidApp)return;
+ try{
+  const version=window.SWGCAndroid.getCurrentVersion();
+  if(androidVersionLabel)androidVersionLabel.textContent=(currentLanguage==="vi"?"Phiên bản đã cài: ":"Installed version: ")+(version||"Unknown");
+ }catch{
+  if(androidVersionLabel)androidVersionLabel.textContent=currentLanguage==="vi"?"Không thể đọc phiên bản.":"Unable to read installed version.";
+ }
+}
+function checkAndroidUpdates(){
+ if(!androidUpdateStatus)return;
+ if(window.SWGCAndroid&&typeof window.SWGCAndroid.checkForUpdates==="function"){
+  androidUpdateStatus.textContent=currentLanguage==="vi"?"Đang kiểm tra bản cập nhật…":"Checking for updates…";
+  window.SWGCAndroid.checkForUpdates();
+  return;
+ }
+ window.open("https://github.com/FeaturedPr0ject/scratch-would-global-chat/releases","_blank","noopener,noreferrer");
+}
+function reloadAndroidApp(){
+ if(window.SWGCAndroid&&typeof window.SWGCAndroid.reloadApp==="function"){
+  window.SWGCAndroid.reloadApp();
+ }else{
+  window.location.reload();
+ }
 }
 
 async function initializeSupabase(){
@@ -1626,6 +1672,9 @@ async function start(){
  }
 }
 updateTabNotifications();
+setupAndroidSettings();
+androidCheckUpdatesButton?.addEventListener("click",checkAndroidUpdates);
+androidReloadButton?.addEventListener("click",reloadAndroidApp);
 ownerLoginButton?.addEventListener("click",ownerLogin);
 ownerLoginSettingsButton?.addEventListener("click",ownerLogin);
 restoreAccountButton?.addEventListener("click",restoreAccount);
