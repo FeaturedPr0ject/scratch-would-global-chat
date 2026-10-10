@@ -1634,3 +1634,61 @@ html[data-color-mode="light"] .danger-owner-login{border-color:#f0d4d5}
 @media(max-width:420px){
  .android-app-actions{grid-template-columns:minmax(0,1fr)}
 }
+
+
+.settings-category[data-settings-category="recovery"]{border:1px solid transparent}
+.settings-category[data-settings-category="recovery"].active{border-color:rgba(var(--accent-rgb),.3)}
+.recovery-panel-head strong{color:var(--orange2)}
+.recovery-key-tools,.recovery-email-tools{display:grid;gap:10px;margin-top:12px;padding:18px;border:1px solid rgba(var(--accent-rgb),.25);border-radius:20px;background:linear-gradient(145deg,rgba(var(--accent-rgb),.105),rgba(255,255,255,.018))}
+.recovery-key-tools>strong,.recovery-email-tools>strong{font-size:14px;color:var(--orange2);letter-spacing:.1px}
+.recovery-key-tools>p,.recovery-email-tools>p{margin:0;color:var(--muted);font-size:12px;line-height:1.65}
+.recovery-card-icon{width:42px;height:42px;display:grid;place-items:center;border:1px solid rgba(var(--accent-rgb),.32);border-radius:15px;background:rgba(var(--accent-rgb),.14);color:var(--orange2);font-size:29px;font-weight:800}
+.recovery-limit-note{color:var(--muted);font-size:11px;line-height:1.5}
+.account-recovery-tools label,.email-recovery-modal-card label{display:block;margin:4px 0 -3px;font-size:11px;font-weight:800;color:var(--muted)}
+.recovery-email-tools input,.email-recovery-modal-card input{width:100%;height:44px;min-width:0;padding:0 13px;border:1px solid var(--line);border-radius:13px;outline:none;background:var(--panel2,#15151b);color:var(--white);font:inherit;font-size:13px;transition:border-color .18s,box-shadow .18s,background .18s}
+.recovery-email-tools input:focus,.email-recovery-modal-card input:focus{border-color:rgba(var(--accent-rgb),.7);box-shadow:0 0 0 4px rgba(var(--accent-rgb),.11)}
+.recovery-email-tools .secondary-button,.recovery-key-tools .secondary-button{width:100%;min-height:44px;border:1px solid rgba(var(--accent-rgb),.28);border-radius:13px;background:rgba(var(--accent-rgb),.13);color:var(--orange2);font-weight:850;transition:transform .16s,border-color .16s,background .16s}
+.recovery-email-tools .secondary-button:hover,.recovery-key-tools .secondary-button:hover{transform:translateY(-1px);border-color:rgba(var(--accent-rgb),.6);background:rgba(var(--accent-rgb),.2)}
+.recovery-key-tools .profile-message,.recovery-email-tools .profile-message{min-height:18px;margin:0;overflow-wrap:anywhere;white-space:pre-wrap;font-size:12px;line-height:1.55}
+.account-danger-actions{display:grid;gap:10px;margin-top:14px}
+.account-action-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px;border:1px solid var(--line);border-radius:17px;background:rgba(255,255,255,.018)}
+.account-action-row>div{min-width:0}
+.account-action-row strong{display:block;font-size:13px;color:var(--white)}
+.account-action-row p{margin:5px 0 0;color:var(--muted);font-size:11px;line-height:1.55}
+.account-action-row .secondary-button,.danger-account-button{flex:0 0 auto;min-height:40px;padding:0 15px;border-radius:12px;font-size:12px;font-weight:850}
+.account-action-row .secondary-button{border:1px solid rgba(var(--accent-rgb),.28);background:rgba(var(--accent-rgb),.1);color:var(--orange2)}
+.delete-account-row{border-color:rgba(255,95,109,.24);background:rgba(255,95,109,.045)}
+.danger-account-button{border:1px solid rgba(255,95,109,.4);background:rgba(255,95,109,.13);color:#ff858d}
+.danger-account-button:hover{background:rgba(255,95,109,.22);border-color:rgba(255,95,109,.65)}
+.email-recovery-modal-card{position:relative;display:grid;gap:10px;text-align:left;width:min(420px,100%);border:1px solid rgba(var(--accent-rgb),.3);background:linear-gradient(155deg,#19191f,#101014);border-radius:26px;padding:28px;box-shadow:0 28px 100px rgba(0,0,0,.58)}
+.email-recovery-modal-card .modal-logo{width:112px;height:58px;margin:0 auto 4px}
+.email-recovery-modal-card h2{text-align:center;font-size:22px}
+.email-recovery-modal-card>p{text-align:center;margin:0 0 7px}
+.email-recovery-modal-card .secondary-button{min-height:44px;border:1px solid rgba(var(--accent-rgb),.3);border-radius:13px;background:rgba(var(--accent-rgb),.12);color:var(--orange2);font-weight:850}
+.email-recovery-modal-card .primary-button{min-height:46px;border-radius:13px;box-shadow:0 7px 20px rgba(var(--accent-rgb),.13)}
+.email-recovery-modal-card .profile-message{min-height:18px;font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+.android-app-head strong{color:var(--orange2)}
+.android-app-head span{line-height:1.6}
+[data-settings-panel="app"] .settings-section{height:auto;padding:18px;border:1px solid rgba(var(--accent-rgb),.22);border-radius:22px;background:linear-gradient(145deg,rgba(var(--accent-rgb),.075),rgba(255,255,255,.015))}
+.android-version-label{display:flex;align-items:center;min-height:48px;margin:10px 0 16px;padding:13px 15px;border:1px solid rgba(var(--accent-rgb),.25);border-radius:15px;background:rgba(var(--accent-rgb),.09);color:var(--white);font-size:12px;line-height:1.5;font-weight:800;overflow-wrap:anywhere}
+.android-app-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.android-app-actions .secondary-button{min-height:44px;border:1px solid rgba(var(--accent-rgb),.28);border-radius:14px;background:rgba(var(--accent-rgb),.12);color:var(--orange2);font-weight:850;transition:transform .16s,border-color .16s,background .16s}
+.android-app-actions .secondary-button:hover{transform:translateY(-1px);border-color:rgba(var(--accent-rgb),.65);background:rgba(var(--accent-rgb),.2)}
+html[data-color-mode="light"] .recovery-key-tools,html[data-color-mode="light"] .recovery-email-tools{background:linear-gradient(145deg,rgba(var(--accent-rgb),.075),#fff)}
+html[data-color-mode="light"] .account-action-row{background:#fff}
+html[data-color-mode="light"] .delete-account-row{background:#fff8f8}
+html[data-color-mode="light"] .email-recovery-modal-card{background:linear-gradient(155deg,#fff,#f8f8fb)}
+@media(max-width:560px){
+ .settings-layout{grid-template-columns:112px minmax(0,1fr);gap:8px}
+ .settings-category{font-size:10px;padding:0 8px}
+ .recovery-key-tools,.recovery-email-tools{padding:14px;border-radius:17px}
+ .account-action-row{align-items:stretch;flex-direction:column;gap:12px}
+ .account-action-row .secondary-button,.danger-account-button{width:100%}
+ .email-recovery-modal-card{padding:23px 19px;border-radius:22px}
+ .android-app-actions{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:360px){
+ .settings-layout{grid-template-columns:96px minmax(0,1fr)}
+ .settings-category{font-size:9px}
+ .settings-section{padding:12px!important}
+}
