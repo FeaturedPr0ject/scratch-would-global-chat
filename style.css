@@ -1171,3 +1171,19 @@ html[data-color-mode="light"] #firstUsernameInput:focus,html[data-color-mode="li
  #firstUsernameInput,#firstDisplayNameInput{height:50px;min-height:50px;border-radius:13px;font-size:14px}
  #nameModal #joinRoomButton{min-height:48px}
 }
+
+.startup-logo-wrap{
+ transform-origin:50% 58%;
+ animation:startup-logo-tilt 1.35s ease-in-out infinite!important;
+ will-change:transform;
+}
+@keyframes startup-logo-tilt{
+ 0%,100%{transform:rotate(0deg) translateY(0)}
+ 18%{transform:rotate(-7deg) translateY(-1px)}
+ 38%{transform:rotate(5deg) translateY(-2px)}
+ 58%{transform:rotate(-4deg) translateY(0)}
+ 78%{transform:rotate(3deg) translateY(-1px)}
+}
+@media(prefers-reduced-motion:reduce){
+ .startup-logo-wrap{animation:none!important}
+}
