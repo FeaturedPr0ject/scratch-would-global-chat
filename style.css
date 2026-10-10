@@ -1292,3 +1292,26 @@ html[data-color-mode="light"] #firstUsernameInput:focus,html[data-color-mode="li
  #fileButton.file-button{width:38px!important;height:40px!important;min-width:38px!important;min-height:40px!important;flex:0 0 38px!important;border-radius:11px!important}
  #fileButton.file-button svg{width:20px!important;height:20px!important}
 }
+
+.startup-logo{
+ animation:startup-logo-full-spin 8s linear infinite!important;
+ transform-origin:50% 50%!important;
+}
+@keyframes startup-logo-full-spin{
+ from{transform:rotate(0deg)}
+ to{transform:rotate(360deg)}
+}
+.startup-overlay{
+ transition:opacity .55s ease,visibility .55s ease,background-color .55s ease,backdrop-filter .55s ease,-webkit-backdrop-filter .55s ease!important;
+}
+.startup-overlay.is-hidden{
+ opacity:0!important;
+ visibility:hidden!important;
+ background:transparent!important;
+ -webkit-backdrop-filter:blur(0)!important;
+ backdrop-filter:blur(0)!important;
+ pointer-events:none!important;
+}
+@media(prefers-reduced-motion:reduce){
+ .startup-logo{animation:startup-logo-full-spin 8s linear infinite!important}
+}
