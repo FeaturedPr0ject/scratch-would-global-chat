@@ -550,9 +550,13 @@ function renderMessages(forceScroll=false){
   const avatarItem={...item,...liveProfile};
   const stickerUrl=item.type==="sticker"?safeUrl(item.text):"";
   const attachmentUrl=item.type==="image"||item.type==="file"?safeUrl(item.text):"";
-  const attachmentName=escapeText(item.attachment_name||"Attachment");
+  const rawAttachmentName=item.attachment_name||"Attachment";
+  const attachmentName=escapeText(rawAttachmentName);
   const attachmentSizeText=formatFileSize(item.attachment_size||0);
-  const content=item.type==="sticker"&&stickerUrl?'<span class="message-sticker"><img src="'+escapeText(stickerUrl)+'" alt="Sticker" loading="lazy"></span>':item.type==="sticker"?'<span class="message-sticker">'+escapeText(item.text)+'</span>':item.type==="image"&&attachmentUrl?'<a class="message-attachment-image-link" href="'+escapeText(attachmentUrl)+'" target="_blank" rel="noopener"><img class="message-attachment-image" src="'+escapeText(attachmentUrl)+'" alt="'+attachmentName+'" loading="lazy"></a>':item.type==="file"&&attachmentUrl?'<a class="message-file" href="'+escapeText(attachmentUrl)+'" target="_blank" rel="noopener"><span class="message-file-icon">↗</span><span class="message-file-info"><strong>'+attachmentName+'</strong><small>'+escapeText(attachmentSizeText)+'</small></span></a>':'<span class="message-text">'+escapeText(item.text)+'</span>';
+  const imageAttachment=Boolean(attachmentUrl&&/\.(png|jpe?g|webp|gif)(?:$|[?#])/i.test(rawAttachmentName));
+  const downloadLabel=currentLanguage==="vi"?"Tải xuống":"Download";
+  const downloadButton='<button class="attachment-download-button" type="button" data-download-url="'+escapeText(attachmentUrl)+'" data-download-name="'+attachmentName+'" aria-label="'+downloadLabel+'" title="'+downloadLabel+'"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m-4-4 4 4 4-4M5 16v4h14v-4"/></svg></button>';
+  const content=item.type==="sticker"&&stickerUrl?'<span class="message-sticker"><img src="'+escapeText(stickerUrl)+'" alt="Sticker" loading="lazy"></span>':item.type==="sticker"?'<span class="message-sticker">'+escapeText(item.text)+'</span>':imageAttachment?'<span class="message-attachment-image-wrap"><img class="message-attachment-image" src="'+escapeText(attachmentUrl)+'" alt="'+attachmentName+'" loading="lazy">'+downloadButton+'</span>':(item.type==="image"||item.type==="file")&&attachmentUrl?'<span class="message-file-wrap"><span class="message-file"><span class="message-file-icon">↗</span><span class="message-file-info"><strong>'+attachmentName+'</strong><small>'+escapeText(attachmentSizeText)+'</small></span></span>'+downloadButton+'</span>':'<span class="message-text">'+escapeText(item.text)+'</span>';
   const canDelete=item.user_id===userId;
   const deleteLabel=currentLanguage==="vi"?"Xóa tin nhắn":"Delete message";
   const deleteMarkup=canDelete?'<button class="message-delete-button" type="button" data-message-id="'+escapeText(item.id)+'" aria-label="'+escapeText(deleteLabel)+'" title="'+escapeText(deleteLabel)+'">×</button>':"";
@@ -987,7 +991,7 @@ async function uploadFile(file){
   throw fileRecord.error;
  }
  const publicUrl=supabaseClient.storage.from("chat-files").getPublicUrl(path).data.publicUrl;
- const inlineImage=/^image\/(png|jpeg)$/i.test(file.type||"")||/\.(png|jpe?g)$/i.test(file.name);
+ const inlineImage=/\.(png|jpe?g|webp|gif)$/i.test(file.name)||/^image\/(png|jpeg|webp|gif)$/i.test(file.type||"");
  const type=inlineImage?"image":"file";
  const endpoint=activeGroupId?"/api/group-messages":"/api/messages";
  const body={user_id:userId,group_id:activeGroupId||undefined,text:publicUrl,type,attachment_name:file.name,attachment_size:file.size,attachment_mime:file.type||"application/octet-stream"};
@@ -1439,7 +1443,36 @@ groupCard?.addEventListener("click",event=>{
  if(deleteButton){deleteGroup(deleteButton.dataset.groupDelete);return;}
 });
 
-messagesEl.addEventListener("click",event=>{
+messagesEl.addEventListener("click",async event=>{
+ const downloadButton=event.target.closest("[data-download-url]");
+ if(downloadButton){
+  event.preventDefault();
+  event.stopPropagation();
+  const url=safeUrl(downloadButton.dataset.downloadUrl||"");
+  if(!url)return;
+  try{
+   const response=await fetch(url);
+   if(!response.ok)throw new Error("Download failed");
+   const blob=await response.blob();
+   const objectUrl=URL.createObjectURL(blob);
+   const anchor=document.createElement("a");
+   anchor.href=objectUrl;
+   anchor.download=downloadButton.dataset.downloadName||"download";
+   document.body.appendChild(anchor);
+   anchor.click();
+   anchor.remove();
+   setTimeout(()=>URL.revokeObjectURL(objectUrl),1000);
+  }catch{
+   const anchor=document.createElement("a");
+   anchor.href=url;
+   anchor.download=downloadButton.dataset.downloadName||"download";
+   anchor.rel="noopener";
+   document.body.appendChild(anchor);
+   anchor.click();
+   anchor.remove();
+  }
+  return;
+ }
  const deleteButton=event.target.closest("[data-message-id]");
  if(deleteButton){
   event.preventDefault();
