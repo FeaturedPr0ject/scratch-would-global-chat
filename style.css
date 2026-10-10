@@ -1611,7 +1611,7 @@ html[data-color-mode="light"] .settings-section{background:linear-gradient(145de
 @media(prefers-reduced-motion:reduce){.profile-modal-card *,.profile-modal-card *::before,.profile-modal-card *::after{transition:none!important;animation:none!important}}
 
 
-.auth-extra-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.auth-extra-actions{display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px}
 .auth-extra-actions .secondary-button,.account-recovery-tools .secondary-button{min-height:42px;border:1px solid var(--border-color,rgba(255,255,255,.12));border-radius:12px;background:var(--surface-2,rgba(255,255,255,.05));color:var(--text-color,#fff);font:inherit;cursor:pointer}
 .account-recovery-tools{display:grid;gap:8px;margin-top:18px;padding:14px;border:1px solid var(--border-color,rgba(255,255,255,.12));border-radius:14px}
 .account-recovery-tools p{margin:0;opacity:.75;font-size:13px;line-height:1.5}
