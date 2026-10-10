@@ -253,7 +253,7 @@ async function handleRecoveryEmailSettings(request,response,body,mode){
 async function handleEmailAccountRecovery(request,response,body,mode){
  const admin=createAdminClient();requireResendConfiguration();const email=normalizeEmail(body.email);
  if(mode==="start"){
-  enforceRateLimit(emailRecoverySendAttempts,requesterAddress(request)+":login:"+email,5,3600000,60000);
+  enforceRateLimit(emailRecoverySendAttempts,requesterAddress(request)+":lookup:"+email,5,3600000,60000);
   const user=await findUserByRecoveryEmail(admin,email);
   if(user&&isManagedAccount(user)){
    const last=Number(user.app_metadata?.swgc_email_login_sent_at||0);
