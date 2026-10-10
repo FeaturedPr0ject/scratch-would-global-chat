@@ -535,15 +535,10 @@ const server=http.createServer(async(request,response)=>{
     await handleAccountRecovery(request,response,await readBody(request),"create");
     return;
    }
-    await handleRecoveryEmailSettings(request,response,{},"status");return;
    }
-    await handleRecoveryEmailSettings(request,response,await readBody(request),"start");return;
    }
-    await handleRecoveryEmailSettings(request,response,await readBody(request),"verify");return;
    }
-    await handleEmailAccountRecovery(request,response,await readBody(request),"start");return;
    }
-    await handleEmailAccountRecovery(request,response,await readBody(request),"verify");return;
    }
    if(method==="POST"&&url.pathname==="/api/auth/delete-account"){
     await handleDeleteAccount(request,response);return;
