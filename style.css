@@ -1202,3 +1202,24 @@ html[data-color-mode="light"] #firstUsernameInput:focus,html[data-color-mode="li
 @media(prefers-reduced-motion:reduce){
  .startup-logo{animation:none!important}
 }
+
+.startup-logo{animation:startup-logo-full-spin 8s linear infinite!important}
+@keyframes startup-logo-full-spin{
+ from{transform:rotate(0deg)}
+ to{transform:rotate(360deg)}
+}
+.sticker-button-logo{
+ display:block;
+ width:25px;
+ height:25px;
+ object-fit:contain;
+ pointer-events:none;
+ filter:drop-shadow(0 2px 5px rgba(var(--accent-rgb),.2));
+}
+.sticker-button{display:grid;place-items:center}
+@media(max-width:760px){
+ .sticker-button-logo{width:23px;height:23px}
+}
+@media(prefers-reduced-motion:reduce){
+ .startup-logo{animation:none!important}
+}
