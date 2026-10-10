@@ -1187,3 +1187,18 @@ html[data-color-mode="light"] #firstUsernameInput:focus,html[data-color-mode="li
 @media(prefers-reduced-motion:reduce){
  .startup-logo-wrap{animation:none!important}
 }
+
+.startup-logo{
+ transform-origin:50% 50%;
+ animation:startup-logo-gentle-spin 3.8s ease-in-out infinite!important;
+ will-change:transform;
+}
+@keyframes startup-logo-gentle-spin{
+ 0%,100%{transform:rotate(0deg) scale(1)}
+ 25%{transform:rotate(5deg) scale(1.025)}
+ 50%{transform:rotate(0deg) scale(1.035)}
+ 75%{transform:rotate(-5deg) scale(1.025)}
+}
+@media(prefers-reduced-motion:reduce){
+ .startup-logo{animation:none!important}
+}
