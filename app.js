@@ -1230,8 +1230,12 @@ async function deleteGroup(groupId){
 async function openPublicProfile(userIdValue){
  if(!userIdValue)return;
  try{
-  const result=await request("/api/profiles");
-  const data=result.profiles.find(item=>item.id===userIdValue);
+  let data=profileDirectory.get(userIdValue);
+  if(!data){
+   const result=await request("/api/profiles");
+   (result.profiles||[]).forEach(item=>profileDirectory.set(item.id,item));
+   data=profileDirectory.get(userIdValue);
+  }
   if(!data)return;
   selectedProfileId=data.id;
   setProfileAvatar(publicProfileAvatar,data,"public-avatar");
