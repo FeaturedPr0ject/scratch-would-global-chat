@@ -44,6 +44,7 @@ public class MainActivity extends Activity {
     private static final String RELEASES_API = "https://api.github.com/repos/FeaturedPr0ject/scratch-would-global-chat/releases/latest";
     private WebView webView;
     private ValueCallback<Uri[]> fileChooserCallback;
+    private volatile boolean trustedWebViewOrigin;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,6 +78,14 @@ public class MainActivity extends Activity {
         CookieManager.getInstance().setAcceptThirdPartyCookies(webView, false);
 
         webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
+                Uri pageUri = Uri.parse(url);
+                trustedWebViewOrigin = "https".equalsIgnoreCase(pageUri.getScheme()) &&
+                    "scratch-would-global-chat.vercel.app".equalsIgnoreCase(pageUri.getHost());
+                super.onPageStarted(view, url, favicon);
+            }
+
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
@@ -148,10 +157,7 @@ public class MainActivity extends Activity {
     }
 
     private boolean isTrustedWebViewOrigin() {
-        if (webView == null || webView.getUrl() == null) return false;
-        Uri uri = Uri.parse(webView.getUrl());
-        return "https".equalsIgnoreCase(uri.getScheme()) &&
-            "scratch-would-global-chat.vercel.app".equalsIgnoreCase(uri.getHost());
+        return trustedWebViewOrigin;
     }
 
     private class AndroidBridge {
