@@ -965,9 +965,17 @@ function formatFileSize(size){
  return (value/(1024*1024)).toFixed(2)+" MB";
 }
 
-async function uploadFile(file){
+
+function showFileSizeWarning(size){
+ const panel=document.querySelector("#fileSizeWarning");
+ const text=document.querySelector("#fileSizeWarningText");
+ if(!panel||!text)return;
+ text.textContent=currentLanguage==="vi"?"Tệp "+formatFileSize(size)+" vượt quá giới hạn 4 MB. Vui lòng chọn tệp nhỏ hơn.":"This file is "+formatFileSize(size)+", exceeding the 4 MB limit. Please choose a smaller file.";
+ panel.classList.remove("hidden");
+}
+\nasync function uploadFile(file){
  if(!file||!profile||!userId)return;
- if(file.size>2*1024*1024)throw new Error(currentLanguage==="vi"?"Tệp phải nhỏ hơn 2 MB.":"File must be smaller than 2 MB.");
+ if(file.size>4*1024*1024){showFileSizeWarning(file.size);return;}
  const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,"_").slice(-120)||"file";
  const path=userId+"/"+Date.now()+"-"+crypto.randomUUID()+"-"+safeName;
  const upload=await supabaseClient.storage.from("chat-files").upload(path,file,{contentType:file.type||"application/octet-stream",upsert:false});
@@ -1324,6 +1332,7 @@ scrollToBottomButton?.addEventListener("click",()=>scrollToBottom(true));
 sendButton.addEventListener("click",()=>sendMessage());
 stickerButton?.addEventListener("click",event=>{event.stopPropagation();openStickerPicker()});
 fileButton?.addEventListener("click",()=>fileInput?.click());
+document.querySelector("#fileSizeWarningClose")?.addEventListener("click",()=>document.querySelector("#fileSizeWarning")?.classList.add("hidden"));
 fileInput?.addEventListener("change",async()=>{
  const file=fileInput.files?.[0];
  fileInput.value="";
