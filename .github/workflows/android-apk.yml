@@ -3,11 +3,11 @@ name: Build SWGC Android APK
 on:
   workflow_dispatch:
   push:
+    branches:
+      - "main"
     paths:
       - "android-app/**"
       - ".github/workflows/android-apk.yml"
-    tags:
-      - "v*"
 
 permissions:
   contents: write
