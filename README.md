@@ -1,51 +1,38 @@
 # SWGC Room Chats
 
-A SWGC Room Chats interface using the SWG orange and white visual style.
+The frontend for SWGC Room Chats. Backend HTTP endpoints live on the `server` branch.
 
-## Current Build
+## Frontend
 
-The frontend includes:
+- `index.html`, `app.js`, and `style.css` provide the responsive chat UI.
+- Supabase Auth initializes anonymous sessions in the browser.
+- Supabase Realtime and Storage remain connected directly from the browser.
+- Profile, message, friend, group, sticker-search, and support-email HTTP requests use the backend API.
 
-- SWGC Room Chats interface
-- SWG logo branding
-- Orange and white visual design
-- Realtime chat with Supabase
-- Anonymous chat sessions
-- Unique username checking
-- Separate display name
-- Editable profile note
-- Profile avatar upload
-- Public profile viewing
-- Responsive mobile layout
-- Server-side troubleshooting email delivery
-- No client-side support email or email API secret
+## Backend API
+
+The API source is maintained on the [`server` branch](https://github.com/FeaturedPr0ject/scratch-would-global-chat/tree/server).
+
+Set the backend service URL in `app.js` as `SERVER_API_BASE`. The current value is `https://swgc-chat-server.onrender.com`.
+
+Deploy the `server` branch as a separate Render service using the repository root, `npm install` as the build command, and `npm start` as the start command.
+
+Configure these environment variables on the backend service:
+
+- `SUPABASE_URL`
+- `SUPABASE_PUBLISHABLE_KEY`
+- `KLIPY_API_KEY`
+- `SUPPORT_EMAIL`
+- `RESEND_API_KEY`
+- `RESEND_FROM`
+- `FRONTEND_ORIGINS` (optional comma-separated allowed frontend origins)
+
+Never put Supabase secret/service-role keys or email provider API keys in frontend code. The backend uses the signed-in user's access token so Supabase Row Level Security remains active.
 
 ## Supabase Setup
 
-Create a Supabase project, enable Anonymous Sign-Ins, and run supabase/schema.sql in the SQL Editor.
+The live Supabase project and its data are not moved by changing Git branches. If the database schema needs to be set up, use `supabase/schema.sql` from the `server` branch in the Supabase SQL Editor only when appropriate; do not rerun it blindly on a live project.
 
-Add these Vercel Environment Variables:
+## Deployment note
 
-- SUPABASE_URL
-- SUPABASE_PUBLISHABLE_KEY
-- SUPPORT_EMAIL
-- RESEND_API_KEY
-- RESEND_FROM
-
-The browser receives only the Supabase project URL and publishable key through /api/config. The publishable key is intended for browser use and database access is protected by RLS. Never put a Supabase secret key, Resend API key, or support Gmail address in frontend code.
-
-The avatars Storage bucket and its access policies are created by supabase/schema.sql.
-
-## Troubleshooting Email
-
-The browser sends troubleshooting requests only to the same-origin API endpoint:
-
-/api/troubleshoot
-
-The support Gmail address and email provider API key stay on the server in Vercel Environment Variables.
-
-## Deployment
-
-Deploy the repository with Vercel and configure the environment variables before testing the realtime chat.
-
-Supabase Realtime uses database change subscriptions for low-latency message delivery. The current implementation uses Postgres Changes because it is simple and suitable for a small public room. Supabase documents Broadcast as the more scalable option for larger realtime workloads.
+Configure the Render service to use branch `server` and leave Root Directory blank. Keep the frontend deployment on `main`. Test login, profiles, messages, friends, groups, stickers, file uploads, and troubleshooting email after deploying.
