@@ -92,6 +92,53 @@ async function getIdentity(request){
  return {client,user:result.data.user};
 }
 
+async function updateDataCache(url,method,userId,data){
+ if(!process.env.CHC_CACHE_KEY||!data?.ok)return;
+ try{
+  if(url.pathname==="/api/profiles"&&method==="POST"&&data.profile){
+   await writeCHC("profilesdata",userId,data.profile);
+   return;
+  }
+  if(url.pathname==="/api/profiles"&&method==="GET"&&Array.isArray(data.profiles)){
+   await writeCHC("profilesdata","all_profiles",data.profiles);
+   return;
+  }
+  if(url.pathname==="/api/group-messages"&&method==="GET"){
+   const groupId=url.searchParams.get("group_id")?.trim()||"";
+   if(groupId)await writeCHC("messages","group_"+groupId,(data.messages||[]).slice(-100));
+   return;
+  }
+  if(url.pathname==="/api/messages"&&method==="GET"){
+   await writeCHC("messages","public",(data.messages||[]).slice(-100));
+   return;
+  }
+  if(url.pathname==="/api/group-messages"&&method==="POST"&&data.message){
+   const groupId=String(data.message.group_id||"");
+   if(groupId){
+    const current=await readCHC("messages","group_"+groupId);
+    const messages=Array.isArray(current)?current:[];
+    await writeCHC("messages","group_"+groupId",[...messages.filter(item=>item.id!==data.message.id),data.message].slice(-100));
+   }
+   return;
+  }
+  if(url.pathname==="/api/messages"&&method==="POST"&&data.message){
+   const current=await readCHC("messages","public");
+   const messages=Array.isArray(current)?current:[];
+   await writeCHC("messages","public",[...messages.filter(item=>item.id!==data.message.id),data.message].slice(-100));
+   return;
+  }
+  if((url.pathname==="/api/messages"||url.pathname==="/api/group-messages")&&method==="DELETE"){
+   if(url.pathname==="/api/messages")await deleteCHC("messages","public");
+   else{
+    const groupId=url.searchParams.get("group_id")||"";
+    if(groupId)await deleteCHC("messages","group_"+groupId);
+   }
+  }
+ }catch(cacheFailure){
+  process.stderr.write("CHC data cache write failed: "+cacheFailure.message+"\\n");
+ }
+}
+
 async function handleDatabase(response,url,method,body,identity){
  const {client,user}=identity;
  const userId=user.id;
