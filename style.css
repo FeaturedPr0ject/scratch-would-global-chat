@@ -1070,3 +1070,26 @@ html[data-color-mode="light"] .message-time{
  .sidebar{max-width:86vw}
 }
 @media(prefers-reduced-motion:reduce){.startup-logo-wrap{animation:none}}
+
+.startup-loader span{animation:startup-dot-hop .72s ease-in-out infinite}
+.startup-loader span:nth-child(1){animation-delay:0s}
+.startup-loader span:nth-child(2){animation-delay:.18s}
+.startup-loader span:nth-child(3){animation-delay:.36s}
+@keyframes startup-dot-hop{0%,65%,100%{transform:translateY(0);opacity:.3}32%{transform:translateY(-9px);opacity:1}}
+@media(max-width:600px){
+.startup-overlay{padding:18px;padding-top:max(18px,env(safe-area-inset-top));padding-bottom:max(18px,env(safe-area-inset-bottom))}
+.startup-content{width:min(290px,100%)}
+.startup-logo-wrap{width:clamp(64px,19vw,78px);height:clamp(64px,19vw,78px);margin-bottom:18px}
+.startup-logo{width:clamp(48px,14vw,60px);height:clamp(42px,12vw,50px)}
+.startup-title{font-size:clamp(19px,5.7vw,23px);line-height:1.2}
+.startup-subtitle{max-width:230px;font-size:12px}
+.startup-loader{margin-top:20px}
+.startup-status{font-size:10px}
+}
+@media(max-height:500px) and (orientation:landscape){
+.startup-logo-wrap{width:54px;height:54px;margin-bottom:8px}
+.startup-logo{width:42px;height:36px}
+.startup-title{font-size:19px}
+.startup-subtitle{margin-top:4px}
+.startup-loader{margin-top:8px;height:20px}
+}
