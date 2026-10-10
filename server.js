@@ -117,7 +117,7 @@ async function updateDataCache(url,method,userId,data){
    if(groupId){
     const current=await readCHC("messages","group_"+groupId);
     const messages=Array.isArray(current)?current:[];
-    await writeCHC("messages","group_"+groupId",[...messages.filter(item=>item.id!==data.message.id),data.message].slice(-100));
+    await writeCHC("messages","group_"+groupId,[...messages.filter(item=>item.id!==data.message.id),data.message].slice(-100));
    }
    return;
   }
