@@ -6,7 +6,22 @@
 <meta name="theme-color" content="#ffad00">
 <title>SWGC Room Chats</title>
 <link rel="icon" type="image/png" href="./assests/logo.png">
-<link rel="stylesheet" href="style.css?v=20261010-startup-mobile-fix-v3">
+<link rel="stylesheet" href="style.css?v=20261010-startup-theme-motion-v4">
+<script>
+(function(){
+try{
+var themes={orange:["#ffad00","#ffbf2f","255,173,0"],blue:["#4f8cff","#74a6ff","79,140,255"],purple:["#a970ff","#c293ff","169,112,255"],green:["#38d39f","#63e6b8","56,211,159"],red:["#ff5f6d","#ff7b86","255,95,109"]};
+var selected=localStorage.getItem("swgc-room-chats-theme")||"orange";
+var theme=themes[selected]||themes.orange;
+var root=document.documentElement;
+root.style.setProperty("--orange",theme[0]);
+root.style.setProperty("--orange2",theme[1]);
+root.style.setProperty("--accent-rgb",theme[2]);
+var meta=document.querySelector('meta[name="theme-color"]');
+if(meta)meta.setAttribute("content",theme[0]);
+}catch(error){}
+})();
+</script>
 </head>
 <body>
 <div id="startupOverlay" class="startup-overlay" role="status" aria-live="polite" aria-label="Connecting to SWGC">
