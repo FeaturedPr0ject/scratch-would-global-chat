@@ -6,7 +6,14 @@ import crypto from "node:crypto";
 import {writeCHC,readCHC,hasCHC,deleteCHC,CHC_CACHE_TYPES} from "./cache/chc.js";
 
 const PORT=Number(process.env.PORT||3000);
-const FRONTEND_ORIGINS=(process.env.FRONTEND_ORIGINS||"").split(",").map(value=>value.trim()).filter(Boolean);
+const DEFAULT_FRONTEND_ORIGINS=[
+ "https://scratch-would-global-chat.vercel.app",
+ "https://featuredpr0ject.github.io"
+];
+const FRONTEND_ORIGINS=[...new Set([
+ ...DEFAULT_FRONTEND_ORIGINS,
+ ...(process.env.FRONTEND_ORIGINS||"").split(",").map(value=>value.trim()).filter(Boolean)
+])];
 const SUPABASE_URL=process.env.SUPABASE_URL||"";
 const SUPABASE_PUBLISHABLE_KEY=process.env.SUPABASE_PUBLISHABLE_KEY||"";
 const SUPABASE_SERVICE_ROLE_KEY=process.env.SUPABASE_SERVICE_ROLE_KEY||"";
