@@ -1448,3 +1448,29 @@ html[data-color-mode="light"] .file-size-warning{background:#fff8e8;color:#704b0
 .message-file-wrap .message-file{margin-top:0;padding-right:47px;max-width:100%}
 .message-file-wrap>.attachment-download-button{top:8px;right:8px;width:28px;height:28px}
 @media(max-width:600px){.message-attachment-image-wrap{max-width:78vw}.message-attachment-image{max-height:240px}.attachment-download-button{width:28px;height:28px;top:6px;right:6px}}
+
+
+@media(max-width:600px){
+ .profile-modal-card{width:calc(100vw - 20px)!important;max-width:460px!important;max-height:calc(var(--visual-vh,100dvh) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 20px)!important;overflow-y:auto!important;overscroll-behavior:contain;padding:12px!important;border-radius:16px!important}
+ .profile-modal-tabs{width:calc(100% - 38px)!important;margin:0 38px 12px 0!important;position:sticky;top:0;z-index:4}
+ .settings-layout{display:flex!important;flex-direction:column!important;gap:10px!important;min-height:0!important}
+ .settings-nav{display:flex!important;flex-direction:row!important;gap:6px!important;padding:5px!important;overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:none;white-space:nowrap;position:sticky;top:0;z-index:3}
+ .settings-nav::-webkit-scrollbar{display:none}
+ .settings-category{flex:0 0 auto!important;width:auto!important;min-width:max-content!important;min-height:36px!important;padding:0 12px!important;font-size:11px!important;text-align:center!important;border-radius:9px!important}
+ .settings-content{width:100%!important;min-width:0!important}
+ .settings-section{height:auto!important;min-height:0!important;padding:13px!important;border-radius:12px!important}
+ .settings-section-head{margin-bottom:12px!important}
+ .settings-section-head strong{font-size:14px!important}
+ .settings-section-head span{font-size:11px!important;line-height:1.45}
+ .theme-options{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+ .theme-option{min-width:0!important;min-height:66px!important}
+ .theme-mode-options{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+ .theme-mode-option{height:68px!important}
+ .settings-select{height:44px!important;font-size:16px!important}
+ .settings-category,.theme-option,.theme-mode-option,.settings-select{touch-action:manipulation}
+}
+@media(max-width:360px){
+ .profile-modal-card{width:calc(100vw - 12px)!important;padding:9px!important}
+ .settings-nav{gap:4px!important}
+ .settings-category{padding:0 10px!important;font-size:10px!important}
+}
