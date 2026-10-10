@@ -6,6 +6,10 @@ android {
     namespace "app.swgc.roomchats"
     compileSdk 35
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     defaultConfig {
         applicationId "app.swgc.roomchats"
         minSdk 23
