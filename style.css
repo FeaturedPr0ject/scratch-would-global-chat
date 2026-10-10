@@ -1028,10 +1028,45 @@ html[data-color-mode="light"] .message-time{
 .startup-subtitle{margin-top:8px;color:#9696a3;font-size:13px;line-height:1.5}
 .startup-loader{height:24px;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:29px}
 .startup-loader span{width:7px;height:7px;border-radius:50%;background:#ffad00;animation:startup-bounce .9s ease-in-out infinite}
-.startup-loader span:nth-child(2){animation-delay:.14s}
-.startup-loader span:nth-child(3){animation-delay:.28s}
+.startup-loader span:nth-child(2){animation-delay:.18s}
+.startup-loader span:nth-child(3){animation-delay:.36s}
 .startup-status{margin-top:7px;color:#777783;font-size:11px;letter-spacing:.2px}
 @keyframes startup-logo-bounce{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-9px) scale(1.025)}}
-@keyframes startup-bounce{0%,60%,100%{transform:translateY(0);opacity:.45}30%{transform:translateY(-7px);opacity:1}}
+@keyframes startup-bounce{0%,60%,100%{transform:translateY(0);opacity:.28}30%{transform:translateY(-8px);opacity:1}}
 @keyframes startup-enter{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
 @media(prefers-reduced-motion:reduce){.startup-content,.startup-logo,.startup-loader span{animation:none}.startup-overlay{transition:none}}
+
+.startup-overlay{isolation:isolate;overflow:hidden;background:rgba(8,8,12,.94);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.startup-overlay::before{content:"";position:absolute;inset:-20%;z-index:-1;background:radial-gradient(ellipse at 50% 42%,rgba(255,173,0,.13),transparent 42%);pointer-events:none}
+.startup-logo-wrap{animation:startup-wrap-breathe 2.2s ease-in-out infinite}
+@keyframes startup-wrap-breathe{0%,100%{box-shadow:0 0 32px rgba(255,173,0,.06);background:rgba(255,173,0,.045)}50%{box-shadow:0 0 58px rgba(255,173,0,.16);background:rgba(255,173,0,.09)}}
+@media(max-width:760px){
+ .startup-overlay{padding:20px}
+ .startup-content{width:min(300px,100%)}
+ .startup-logo-wrap{width:82px;height:82px;border-radius:24px;margin-bottom:20px}
+ .startup-logo{width:62px;height:50px}
+ .startup-title{font-size:23px}
+ .startup-subtitle{max-width:240px;font-size:12px}
+ .startup-loader{margin-top:24px}
+ .startup-status{font-size:10px}
+ .topbar{gap:7px;padding-left:10px;padding-right:10px}
+ .topbar .logo-main.logo-image{width:38px;height:30px}
+ .top-search-wrap{flex:1;width:auto;min-width:0;max-width:none}
+ .top-search-input{width:100%;min-width:0}
+ .top-actions{gap:6px;font-size:10px;white-space:nowrap}
+ .support-link{display:none}
+ .chat-head{height:58px;min-height:58px;padding:0 12px}
+ .messages{padding:10px 8px}
+ .message{gap:7px;padding:8px 3px}
+ .message-avatar{width:30px;height:30px;border-radius:9px}
+ .message-meta{flex-wrap:wrap;gap:4px 6px}
+ .message-text{font-size:13px;overflow-wrap:anywhere}
+ .composer{padding:8px 8px calc(8px + env(safe-area-inset-bottom))}
+ .composer-row{gap:6px}
+ .sticker-button{width:38px;height:40px;border-radius:11px}
+ #messageInput{min-width:0;max-height:112px}
+ .send-button{min-width:54px;padding-left:10px;padding-right:10px}
+ .composer-foot{font-size:9px;gap:5px}
+ .sidebar{max-width:86vw}
+}
+@media(prefers-reduced-motion:reduce){.startup-logo-wrap{animation:none}}
