@@ -41,10 +41,30 @@ function drawTabFavicon(){
  favicon.href=canvas.toDataURL("image/png");
 }
 function countUnreadTabMessage(message){
- if(!message||message.user_id===userId||!document.hidden)return;
- unreadTabMessages=Math.min(999,unreadTabMessages+1);
- updateTabNotifications();
+ if(!message||message.user_id===userId)return;
+ const away=document.hidden||!document.hasFocus();
+ if(away){
+  unreadTabMessages=Math.min(999,unreadTabMessages+1);
+  updateTabNotifications();
+  showIncomingMessageNotification(message);
+ }
 }
+function showIncomingMessageNotification(message){
+ const author=String(message.display_name||message.username||"SWGC user");
+ const body=message.type==="sticker"?"Sent a sticker":String(message.text||"New message").slice(0,180);
+ if("Notification" in window&&Notification.permission==="granted"){
+  try{
+   const notice=new Notification(author,{body,icon:"./assests/logo.png",tag:"swgc-"+String(message.id||Date.now())});
+   notice.onclick=()=>{window.focus();notice.close();};
+  }catch{}
+ }
+}
+let notificationPromptRequested=false;
+document.addEventListener("pointerdown",()=>{
+ if(notificationPromptRequested||!("Notification" in window)||Notification.permission!=="default")return;
+ notificationPromptRequested=true;
+ requestNotificationPermission();
+},{once:true,passive:true});
 document.addEventListener("visibilitychange",()=>{
  if(!document.hidden){
   unreadTabMessages=0;
@@ -975,21 +995,31 @@ async function sendMessage(type="text",sticker=""){
  const text=type==="sticker"?sticker:input.value.trim();
  if(!text||!profile||!userId)return;
  sendButton.disabled=true;
+ const targetGroupId=activeGroupId;
+ const endpoint=targetGroupId?"/api/group-messages":"/api/messages";
+ const optimisticId="pending-"+Date.now()+"-"+Math.random().toString(36).slice(2,8);
+ const optimisticMessage={id:optimisticId,user_id:userId,user_number:profile.user_number,username:profile.username,display_name:profile.display_name,avatar_url:profile.avatar_url,text,type,created_at:new Date().toISOString(),pending:true};
+ const targetList=targetGroupId?groupMessages:publicMessages;
+ targetList.push(optimisticMessage);
+ if(targetList.length>100)targetList.splice(0,targetList.length-100);
+ messages=targetList.slice();
+ renderMessages(true);
+ input.value="";
+ input.style.height="auto";
+ charCount.textContent="0 / 500";
+ stickerPicker?.classList.add("hidden");
  try{
-  const endpoint=activeGroupId?"/api/group-messages":"/api/messages";
-  const body=activeGroupId?{user_id:userId,group_id:activeGroupId,text,type}:{user_id:userId,text,type};
+  const body=targetGroupId?{user_id:userId,group_id:targetGroupId,text,type}:{user_id:userId,text,type};
   const result=await request(endpoint,{method:"POST",body:JSON.stringify(body)});
-  if(result.message&&!messages.some(item=>item.id===result.message.id)){
-   messages.push(result.message);
-   messages=messages.slice(-100);
-   if(activeGroupId)groupMessages=messages.slice();else publicMessages=messages.slice();
-   renderMessages(true);
-  }
-  input.value="";
-  input.style.height="auto";
-  charCount.textContent="0 / 500";
-  stickerPicker?.classList.add("hidden");
+  const currentList=targetGroupId?groupMessages:publicMessages;
+  const withoutPending=currentList.filter(item=>item.id!==optimisticId);
+  if(result.message&&!withoutPending.some(item=>item.id===result.message.id))withoutPending.push(result.message);
+  if(withoutPending.length>100)withoutPending.splice(0,withoutPending.length-100);
+  if(targetGroupId)groupMessages=withoutPending;else publicMessages=withoutPending;
+  if(activeGroupId===targetGroupId){messages=withoutPending.slice();renderMessages(true);}
  }catch(error){
+  if(targetGroupId)groupMessages=groupMessages.filter(item=>item.id!==optimisticId);else publicMessages=publicMessages.filter(item=>item.id!==optimisticId);
+  if(activeGroupId===targetGroupId){messages=(targetGroupId?groupMessages:publicMessages).slice();renderMessages(true);}
   setConnection(error instanceof Error?error.message:"Message failed");
   setTimeout(()=>setConnection("Connected"),1800);
  }finally{sendButton.disabled=false;}
