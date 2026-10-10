@@ -2,7 +2,7 @@ package app.swgc.roomchats;
 
 import android.app.Activity;
 import android.app.DownloadManager;
-import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.net.Uri;
@@ -20,6 +20,14 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.JavascriptInterface;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.GradientDrawable;
+import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 import android.widget.FrameLayout;
 import android.widget.TextView;
@@ -46,16 +54,6 @@ public class MainActivity extends Activity {
         webView = new WebView(this);
         webView.setBackgroundColor(android.graphics.Color.rgb(12, 12, 16));
         root.addView(webView, new FrameLayout.LayoutParams(-1, -1));
-        TextView menu = new TextView(this);
-        menu.setText("⋮");
-        menu.setTextColor(android.graphics.Color.WHITE);
-        menu.setTextSize(25);
-        menu.setGravity(Gravity.CENTER);
-        menu.setBackgroundColor(android.graphics.Color.rgb(35, 35, 43));
-        FrameLayout.LayoutParams menuParams = new FrameLayout.LayoutParams(dp(42), dp(42), Gravity.TOP | Gravity.END);
-        menuParams.setMargins(0, dp(8), dp(8), 0);
-        root.addView(menu, menuParams);
-        menu.setOnClickListener(v -> showAppMenu());
         setContentView(root);
 
         WebSettings settings = webView.getSettings();
@@ -73,6 +71,7 @@ public class MainActivity extends Activity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             settings.setSafeBrowsingEnabled(true);
         }
+        webView.addJavascriptInterface(new AndroidBridge(), "SWGCAndroid");
 
         CookieManager.getInstance().setAcceptCookie(true);
         CookieManager.getInstance().setAcceptThirdPartyCookies(webView, false);
@@ -148,13 +147,112 @@ public class MainActivity extends Activity {
         return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
     }
 
-    private void showAppMenu() {
-        String[] items = {"Check for updates", "Reload SWGC", "App version " + CURRENT_VERSION};
-        new AlertDialog.Builder(this).setTitle("SWGC Android").setItems(items, (dialog, which) -> {
-            if (which == 0) checkForUpdates();
-            else if (which == 1 && webView != null) webView.reload();
-            else if (which == 2) new AlertDialog.Builder(this).setMessage("SWGC Android " + CURRENT_VERSION).setPositiveButton("OK", null).show();
-        }).setNegativeButton("Close", null).show();
+    private boolean isTrustedWebViewOrigin() {
+        if (webView == null || webView.getUrl() == null) return false;
+        Uri uri = Uri.parse(webView.getUrl());
+        return "https".equalsIgnoreCase(uri.getScheme()) &&
+            "scratch-would-global-chat.vercel.app".equalsIgnoreCase(uri.getHost());
+    }
+
+    private class AndroidBridge {
+        @JavascriptInterface
+        public String getCurrentVersion() {
+            return isTrustedWebViewOrigin() ? CURRENT_VERSION : "";
+        }
+
+        @JavascriptInterface
+        public void checkForUpdates() {
+            if (isTrustedWebViewOrigin()) runOnUiThread(() -> MainActivity.this.checkForUpdates());
+        }
+
+        @JavascriptInterface
+        public void reloadApp() {
+            if (isTrustedWebViewOrigin()) runOnUiThread(() -> {
+                if (webView != null) webView.reload();
+            });
+        }
+    }
+
+    private TextView dialogButton(Dialog dialog, String text, boolean primary, Runnable action) {
+        TextView button = new TextView(this);
+        button.setText(text);
+        button.setTextSize(13);
+        button.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
+        button.setGravity(Gravity.CENTER);
+        button.setPadding(dp(16), dp(12), dp(16), dp(12));
+        GradientDrawable shape = new GradientDrawable();
+        shape.setColor(primary ? Color.rgb(255, 173, 0) : Color.rgb(43, 43, 53));
+        shape.setCornerRadius(dp(13));
+        if (!primary) shape.setStroke(dp(1), Color.rgb(66, 66, 78));
+        button.setBackground(shape);
+        button.setTextColor(primary ? Color.rgb(24, 20, 12) : Color.WHITE);
+        button.setOnClickListener(view -> {
+            dialog.dismiss();
+            if (action != null) action.run();
+        });
+        return button;
+    }
+
+    private void showModernDialog(String title, String message, String positiveText, Runnable positiveAction, String secondaryText, Runnable secondaryAction) {
+        Dialog dialog = new Dialog(this);
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(dp(22), dp(22), dp(22), dp(18));
+        GradientDrawable cardBackground = new GradientDrawable();
+        cardBackground.setColor(Color.rgb(22, 22, 29));
+        cardBackground.setCornerRadius(dp(24));
+        cardBackground.setStroke(dp(1), Color.rgb(55, 55, 68));
+        card.setBackground(cardBackground);
+
+        TextView eyebrow = new TextView(this);
+        eyebrow.setText("SWGC  /  ANDROID");
+        eyebrow.setTextSize(10);
+        eyebrow.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
+        eyebrow.setTextColor(Color.rgb(255, 190, 52));
+        card.addView(eyebrow);
+
+        TextView titleView = new TextView(this);
+        titleView.setText(title);
+        titleView.setTextSize(21);
+        titleView.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
+        titleView.setTextColor(Color.WHITE);
+        LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(-1, -2);
+        titleParams.topMargin = dp(9);
+        card.addView(titleView, titleParams);
+
+        TextView messageView = new TextView(this);
+        messageView.setText(message);
+        messageView.setTextSize(14);
+        messageView.setTextColor(Color.rgb(190, 190, 202));
+        messageView.setLineSpacing(dp(3), 1.0f);
+        LinearLayout.LayoutParams messageParams = new LinearLayout.LayoutParams(-1, -2);
+        messageParams.topMargin = dp(10);
+        card.addView(messageView, messageParams);
+
+        LinearLayout actions = new LinearLayout(this);
+        actions.setGravity(Gravity.END);
+        actions.setOrientation(LinearLayout.HORIZONTAL);
+        actions.setPadding(0, dp(20), 0, 0);
+        if (secondaryText != null) {
+            TextView secondary = dialogButton(dialog, secondaryText, false, secondaryAction);
+            LinearLayout.LayoutParams secondaryParams = new LinearLayout.LayoutParams(-2, -2);
+            secondaryParams.rightMargin = dp(8);
+            actions.addView(secondary, secondaryParams);
+        }
+        actions.addView(dialogButton(dialog, positiveText, true, positiveAction), new LinearLayout.LayoutParams(-2, -2));
+        card.addView(actions);
+        dialog.setContentView(card);
+        dialog.setCancelable(true);
+        dialog.show();
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+            WindowManager.LayoutParams attributes = window.getAttributes();
+            attributes.dimAmount = 0.68f;
+            window.setAttributes(attributes);
+            window.setLayout(Math.min(getResources().getDisplayMetrics().widthPixels - dp(36), dp(440)), -2);
+        }
     }
 
     private void checkForUpdates() {
@@ -184,16 +282,18 @@ public class MainActivity extends Activity {
                 String finalApkUrl = apkUrl;
                 new Handler(Looper.getMainLooper()).post(() -> {
                     if (tag.isEmpty() || tag.equals(CURRENT_VERSION)) {
-                        new AlertDialog.Builder(this).setTitle("SWGC Android").setMessage("You are using version " + CURRENT_VERSION + ". No newer release found.").setPositiveButton("OK", null).show();
+                        showModernDialog("You are up to date", "Installed version: " + CURRENT_VERSION + "\nNo newer release was found.", "Done", null, null, null);
                     } else {
-                        AlertDialog.Builder dialog = new AlertDialog.Builder(this).setTitle("Update available").setMessage("New version: " + tag + "\\nCurrent version: " + CURRENT_VERSION).setNegativeButton("Later", null);
-                        if (finalApkUrl != null && finalApkUrl.startsWith("https://")) dialog.setPositiveButton("Download APK", (d, w) -> downloadUpdate(finalApkUrl));
-                        else dialog.setPositiveButton("View releases", (d, w) -> startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/FeaturedPr0ject/scratch-would-global-chat/releases"))));
-                        dialog.show();
+                        String message = "New version: " + tag + "\nInstalled version: " + CURRENT_VERSION;
+                        if (finalApkUrl != null && finalApkUrl.startsWith("https://")) {
+                            showModernDialog("Update available", message, "Download APK", () -> downloadUpdate(finalApkUrl), "Later", null);
+                        } else {
+                            showModernDialog("Update available", message, "View releases", () -> startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/FeaturedPr0ject/scratch-would-global-chat/releases"))), "Later", null);
+                        }
                     }
                 });
             } catch (Exception exception) {
-                new Handler(Looper.getMainLooper()).post(() -> new AlertDialog.Builder(this).setTitle("Update check failed").setMessage("No GitHub release was found, or the network request failed.").setPositiveButton("OK", null).show());
+                new Handler(Looper.getMainLooper()).post(() -> showModernDialog("Could not check updates", "No GitHub release was found, or the network request failed. Check your connection and try again.", "Got it", null, null, null));
             } finally { if (connection != null) connection.disconnect(); }
         }).start();
     }
