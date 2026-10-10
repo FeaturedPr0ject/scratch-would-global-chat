@@ -10,8 +10,8 @@ android {
         applicationId "app.swgc.roomchats"
         minSdk 23
         targetSdk 35
-        versionCode (project.findProperty("appVersionCode") ?: "1").toInteger()
-        versionName (project.findProperty("appVersionName") ?: "1.0.0").toString()
+        versionCode = project.providers.gradleProperty("appVersionCode").getOrElse("1").toInteger()
+        versionName = project.providers.gradleProperty("appVersionName").getOrElse("1.0.0").toString()
     }
 
     compileOptions {
