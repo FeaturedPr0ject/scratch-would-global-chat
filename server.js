@@ -123,7 +123,7 @@ async function createAccountSession(userId,seed){
  return signedIn.data.session;
 }
 
-async function handleOwnerLogin(response,body){
+async function handleOwnerLogin(request,response,body){
  if(!OWNER_LOGIN_CODE||!SUPABASE_SERVICE_ROLE_KEY)throw Object.assign(new Error("Owner Login is not configured on Render."),{status:503});
  const submitted=String(body.code||"");
  const forwardedValues=String(request.headers["x-forwarded-for"]||"").split(",").map(value=>value.trim()).filter(Boolean);
@@ -469,7 +469,7 @@ const server=http.createServer(async(request,response)=>{
    return;
   }
   if(method==="POST"&&url.pathname==="/api/auth/owner-login"){
-   await handleOwnerLogin(response,await readBody(request));
+   await handleOwnerLogin(request,response,await readBody(request));
    return;
   }
   if(method==="POST"&&url.pathname==="/api/auth/recover"){
