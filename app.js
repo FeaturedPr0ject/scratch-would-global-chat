@@ -973,7 +973,8 @@ function showFileSizeWarning(size){
  text.textContent=currentLanguage==="vi"?"Tệp "+formatFileSize(size)+" vượt quá giới hạn 4 MB. Vui lòng chọn tệp nhỏ hơn.":"This file is "+formatFileSize(size)+", exceeding the 4 MB limit. Please choose a smaller file.";
  panel.classList.remove("hidden");
 }
-\nasync function uploadFile(file){
+
+async function uploadFile(file){
  if(!file||!profile||!userId)return;
  if(file.size>4*1024*1024){showFileSizeWarning(file.size);return;}
  const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,"_").slice(-120)||"file";
