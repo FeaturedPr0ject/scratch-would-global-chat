@@ -1,6 +1,7 @@
 import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-const CONFIG_ENDPOINT="/api/config";
+const SERVER_API_BASE="https://swgc-chat-server.onrender.com";
+const CONFIG_ENDPOINT=SERVER_API_BASE+"/api/config";
 const STORAGE_NAME="swgc-room-chats-name";
 const STORAGE_PROFILE="swgc-room-chats-profile";
 const THEME_STORAGE="swgc-room-chats-theme";
@@ -500,192 +501,15 @@ function renderMessages(forceScroll=false){
 
 async function request(path,options={}){
  const method=options.method||"GET";
- const url=new URL(path,"https://swgc.local");
- const body=options.body?JSON.parse(options.body):{};
- let data=null;
- let error=null;
-
- if(url.pathname==="/api/profiles"&&method==="GET"){
-  const result=await supabaseClient.from("profiles").select("id,user_number,username,display_name,note,avatar_url,created_at,updated_at").order("created_at",{ascending:true});
-  data={ok:true,profiles:result.data||[]};
-  error=result.error;
- }else if(url.pathname==="/api/username"&&method==="GET"){
-  const username=new URLSearchParams(url.search).get("username")?.trim()||"";
-  const result=await supabaseClient.from("profiles").select("id,user_number").eq("username_key",username.toLowerCase()).maybeSingle();
-  data={ok:true,taken:Boolean(result.data)};
-  error=result.error;
- }else if(url.pathname==="/api/users/search"&&method==="GET"){
-  const query=new URLSearchParams(url.search).get("q")?.trim()||"";
-  const result=/^\d+$/.test(query)
-   ? await supabaseClient.from("profiles").select("id,user_number,username,display_name,note,avatar_url,last_seen").eq("user_number",Number(query)).maybeSingle()
-   : await supabaseClient.from("profiles").select("id,user_number,username,display_name,note,avatar_url,last_seen").eq("username_key",query.toLowerCase()).maybeSingle();
-  data={ok:true,profile:result.data||null};
-  error=result.error;
- }else if(url.pathname==="/api/groups"&&method==="GET"){
-  const result=await supabaseClient.from("groups").select("id,owner_id,name,avatar_url,created_at,deleted_at").order("created_at",{ascending:true});
-  data={ok:true,groups:result.data||[]};
-  error=result.error;
- }else if(url.pathname==="/api/groups"&&method==="POST"){
-  const name=String(body.name||"").trim().replace(/\s+/g," ").slice(0,48);
-  if(name.length<2)throw new Error("Group name must be 2-48 characters.");
-  const result=await supabaseClient.from("groups").insert({owner_id:userId,name}).select("id,owner_id,name,avatar_url,created_at,deleted_at").single();
-  data={ok:true,group:result.data};
-  error=result.error;
- }else if(url.pathname==="/api/groups/update"&&method==="POST"){
-  const groupId=String(body.group_id||"").trim();
-  const name=String(body.name||"").trim().replace(/\s+/g," ").slice(0,48);
-  const avatarUrl=String(body.avatar_url||"").trim();
-  if(!groupId)throw new Error("Group ID is required");
-  if(name.length<2||name.length>48)throw new Error("Group name must be 2-48 characters.");
-  if(avatarUrl.length>1500000)throw new Error("Group avatar is too large.");
-  const result=await supabaseClient.from("groups").update({name,avatar_url:avatarUrl||null}).eq("id",groupId).eq("owner_id",userId).is("deleted_at",null).select("id,owner_id,name,avatar_url,created_at,deleted_at").single();
-  if(result.error)throw result.error;
-  data={ok:true,group:result.data};
-  error=null;
- }else if(url.pathname==="/api/groups/delete"&&method==="POST"){
-  const groupId=String(body.group_id||"").trim();
-  if(!groupId)throw new Error("Group ID is required");
-  const result=await supabaseClient.rpc("delete_group",{group_id_value:groupId});
-  if(result.error)throw result.error;
-  data={ok:true,deleted:Boolean(result.data)};
-  error=null;
- }else if(url.pathname==="/api/group-members"&&method==="POST"){
-  const groupId=String(body.group_id||"").trim();
-  const memberIds=Array.isArray(body.user_ids)?[...new Set(body.user_ids.map(value=>String(value).trim()).filter(value=>value&&value!==userId))]:[];
-  if(!groupId)throw new Error("Group ID is required");
-  if(memberIds.length){
-   const result=await supabaseClient.from("group_members").insert(memberIds.map(memberId=>({group_id:groupId,user_id:memberId})));
-   if(result.error)throw result.error;
-  }
-  data={ok:true};
-  error=null;
- }else if(url.pathname==="/api/group-messages"&&method==="GET"){
-  const groupId=new URLSearchParams(url.search).get("group_id")?.trim()||"";
-  if(!groupId)throw new Error("Group ID is required");
-  const result=await supabaseClient.from("group_messages").select("id,group_id,user_id,user_number,username,display_name,avatar_url,text,type,attachment_name,attachment_size,attachment_mime,created_at").eq("group_id",groupId).order("created_at",{ascending:false}).limit(100);
-  data={ok:true,messages:(result.data||[]).reverse()};
-  error=result.error;
- }else if(url.pathname==="/api/group-messages"&&method==="POST"){
-  const groupId=String(body.group_id||"").trim();
-  const messageText=String(body.text||"").trim().slice(0,500);
-  const type=["sticker","image","file"].includes(body.type)?body.type:"text";
-  if(!groupId)throw new Error("Group ID is required");
-  if(!messageText)throw new Error("Message cannot be empty");
-  if(!profile)throw new Error("Profile not found");
-  const attachmentName=String(body.attachment_name||"").trim().slice(0,255);
-  const attachmentSize=Number(body.attachment_size||0);
-  const attachmentMime=String(body.attachment_mime||"").trim().slice(0,255);
-  if((type==="image"||type==="file")&&(attachmentSize<=0||attachmentSize>2097152))throw new Error("Attachment size is invalid");
-  const result=await supabaseClient.from("group_messages").insert({group_id:groupId,user_id:profile.id,user_number:profile.user_number,username:profile.username,display_name:profile.display_name,avatar_url:profile.avatar_url,text:messageText,type,attachment_name:type==="text"||type==="sticker"?null:attachmentName||"Attachment",attachment_size:type==="text"||type==="sticker"?null:attachmentSize,attachment_mime:type==="text"||type==="sticker"?null:attachmentMime}).select("id,group_id,user_id,user_number,username,display_name,avatar_url,text,type,attachment_name,attachment_size,attachment_mime,created_at").single();
-  data={ok:true,message:result.data};
-  error=result.error;
- }else if(url.pathname==="/api/group-messages"&&method==="DELETE"){
-  const messageId=String(body.id||"").trim();
-  if(!messageId)throw new Error("Message ID is required");
-  const result=await supabaseClient.from("group_messages").delete().eq("id",messageId).eq("user_id",userId).select("id").maybeSingle();
-  if(result.error)throw result.error;
-  if(!result.data)throw new Error("Message not found or you are not allowed to delete it.");
-  data={ok:true,message_id:result.data.id};
-  error=null;
- }else if(url.pathname==="/api/messages"&&method==="GET"){
-  const result=await supabaseClient.from("messages").select("id,user_id,user_number,username,display_name,avatar_url,text,type,attachment_name,attachment_size,attachment_mime,created_at").order("created_at",{ascending:false}).limit(100);
-  data={ok:true,messages:(result.data||[]).reverse()};
-  error=result.error;
- }else if(url.pathname==="/api/friends"&&method==="GET"){
-  const result=await supabaseClient.from("friend_requests").select("id,requester_id,recipient_id,status,created_at,updated_at").or("requester_id.eq."+userId+",recipient_id.eq."+userId).in("status",["pending","accepted"]).order("updated_at",{ascending:false});
-  if(!result.error){
-   const ids=[...new Set((result.data||[]).map(item=>item.requester_id===userId?item.recipient_id:item.requester_id))];
-   const profilesResult=ids.length?await supabaseClient.from("profiles").select("id,user_number,username,display_name,avatar_url").in("id",ids):{data:[],error:null};
-   const profilesMap=new Map((profilesResult.data||[]).map(item=>[item.id,item]));
-   data={ok:true,friends:(result.data||[]).map(item=>{
-    const otherId=item.requester_id===userId?item.recipient_id:item.requester_id;
-    const other=profilesMap.get(otherId);
-    return {id:item.id,user_id:otherId,user_number:other?.user_number||null,status:item.status,username:other?.username||"",display_name:other?.display_name||"",avatar_url:other?.avatar_url||"",incoming:item.recipient_id===userId};
-   })};
-   error=profilesResult.error;
-  }else{
-   error=result.error;
-  }
- }else if(url.pathname==="/api/friends/request"&&method==="POST"){
-  const requesterId=String(body.user_id||"");
-  const targetId=String(body.target_user_id||"");
-  if(!requesterId||!targetId||requesterId===targetId)throw new Error("Invalid friend request");
-  const existing=await supabaseClient.from("friend_requests").select("id,status,requester_id,recipient_id").or("and(requester_id.eq."+requesterId+",recipient_id.eq."+targetId+"),and(requester_id.eq."+targetId+",recipient_id.eq."+requesterId+")").in("status",["pending","accepted"]).limit(1).maybeSingle();
-  if(existing.error)throw existing.error;
-  if(existing.data?.status==="accepted")throw new Error("You are already friends.");
-  if(existing.data?.status==="pending")throw new Error("Friend request already exists.");
-  const result=await supabaseClient.from("friend_requests").insert({requester_id:requesterId,recipient_id:targetId,status:"pending"}).select("id,requester_id,recipient_id,status,created_at,updated_at").single();
-  data={ok:true,message:"Friend request sent.",friend:result.data};
-  error=result.error;
- }else if(url.pathname==="/api/friends/unfriend"&&method==="POST"){
-  const targetId=String(body.target_user_id||"");
-  if(!targetId||targetId===userId)throw new Error("Invalid friend");
-  const friendship=await supabaseClient.from("friendships").delete().or("and(user_a.eq."+userId+",user_b.eq."+targetId+"),and(user_a.eq."+targetId+",user_b.eq."+userId+")");
-  if(friendship.error)throw friendship.error;
-  const requests=await supabaseClient.from("friend_requests").delete().or("and(requester_id.eq."+userId+",recipient_id.eq."+targetId+"),and(requester_id.eq."+targetId+",recipient_id.eq."+userId+")");
-  if(requests.error)throw requests.error;
-  data={ok:true,message:"Friend removed."};
-  error=null;
- }else if(url.pathname==="/api/friends/respond"&&method==="POST"){
-  const action=body.action==="accept"?"accepted":body.action==="decline"?"declined":"";
-  if(!action)throw new Error("Invalid friend response");
-  const result=await supabaseClient.from("friend_requests").update({status:action}).eq("id",body.request_id).eq("recipient_id",body.user_id).select("id,requester_id,recipient_id,status,created_at,updated_at").single();
-  data={ok:true,friend:result.data};
-  error=result.error;
- }else if(url.pathname==="/api/profiles"&&method==="POST"){
-  const id=String(body.id||"");
-  const username=String(body.username||"").trim().replace(/\s+/g," ");
-  const displayName=String(body.display_name||"").trim().replace(/\s+/g," ");
-  const note=String(body.note||"").trim().slice(0,1000);
-  const avatarUrl=String(body.avatar_url||"").trim().slice(0,6000000);
-  if(!id||username.length<2)throw new Error("Username is required");
-  const existing=await supabaseClient.from("profiles").select("id").eq("id",id).maybeSingle();
-  if(existing.error)throw existing.error;
-  const payload={id,username,display_name:displayName||username,note,avatar_url:avatarUrl};
-  const result=existing.data
-   ? await supabaseClient.from("profiles").update({username,display_name:payload.display_name,note,avatar_url:avatarUrl}).eq("id",id).select("id,user_number,username,display_name,note,avatar_url,created_at,updated_at").single()
-   : await supabaseClient.from("profiles").insert(payload).select("id,user_number,username,display_name,note,avatar_url,created_at,updated_at").single();
-  data={ok:true,profile:result.data};
-  error=result.error;
- }else if(url.pathname==="/api/messages"&&method==="DELETE"){
-  const messageId=String(body.id||"").trim();
-  if(!messageId)throw new Error("Message ID is required");
-  const result=await supabaseClient.from("messages").delete().eq("id",messageId).eq("user_id",userId).select("id").maybeSingle();
-  if(result.error)throw result.error;
-  if(!result.data)throw new Error("Message not found or you are not allowed to delete it.");
-  data={ok:true,message_id:result.data.id};
-  error=null;
- }else if(url.pathname==="/api/messages"&&method==="POST"){
-  const messageText=String(body.text||"").trim().slice(0,500);
-  const type=["sticker","image","file"].includes(body.type)?body.type:"text";
-  if(!messageText)throw new Error("Message cannot be empty");
-  if(!profile)throw new Error("Profile not found");
-  const attachmentName=String(body.attachment_name||"").trim().slice(0,255);
-  const attachmentSize=Number(body.attachment_size||0);
-  const attachmentMime=String(body.attachment_mime||"").trim().slice(0,255);
-  if((type==="image"||type==="file")&&(attachmentSize<=0||attachmentSize>2097152))throw new Error("Attachment size is invalid");
-  const result=await supabaseClient.from("messages").insert({
-   user_id:profile.id,
-   user_number:profile.user_number,
-   username:profile.username,
-   display_name:profile.display_name,
-   avatar_url:profile.avatar_url,
-   text:messageText,
-   attachment_name:type==="text"||type==="sticker"?null:attachmentName||"Attachment",
-   attachment_size:type==="text"||type==="sticker"?null:attachmentSize,
-   attachment_mime:type==="text"||type==="sticker"?null:attachmentMime,
-   type
-  }).select("id,user_id,user_number,username,display_name,avatar_url,text,type,attachment_name,attachment_size,attachment_mime,created_at").single();
-  data={ok:true,message:result.data};
-  error=result.error;
- }else{
-  throw new Error("Unsupported request");
+ const headers={"Content-Type":"application/json",...(options.headers||{})};
+ if(supabaseClient){
+  const sessionResult=await supabaseClient.auth.getSession();
+  const accessToken=sessionResult.data.session?.access_token||"";
+  if(accessToken)headers.Authorization="Bearer "+accessToken;
  }
-
- if(error){
-  const message=error.code==="23505"?(url.pathname==="/api/profiles"?"Name already exists. Choose another.":url.pathname==="/api/friends/request"?"Friend request already exists.":"Database conflict. Please try again."):error.message||"Database request failed";
-  throw new Error(message);
- }
+ const response=await fetch(SERVER_API_BASE+path,{...options,method,headers,cache:"no-store"});
+ const data=await response.json().catch(()=>({}));
+ if(!response.ok||data.ok===false)throw new Error(data.error||"Server request failed.");
  return data;
 }
 
@@ -1026,31 +850,14 @@ async function searchStickers(queryOverride=null,append=false){
  stickerSearchLoading=true;
  stickerSearchStatus.textContent=append?"Loading more KLIPY stickers...":"Searching KLIPY...";
  try{
-  const endpoint=query?"https://api.klipy.com/v2/search":"https://api.klipy.com/v2/featured";
-  const params=new URLSearchParams({
-   key:klipyApiKey,
-   searchfilter:"sticker",
-   country:"VN",
-   locale:"vi_VN",
-   contentfilter:"medium",
-   media_filter:"tinywebp_transparent,nanowebp_transparent,webp_transparent,tinygif_transparent,nanogif_transparent,gif_transparent",
-   limit:"50"
-  });
+  const params=new URLSearchParams();
   if(query)params.set("q",query);
   if(stickerSearchPos)params.set("pos",stickerSearchPos);
-  const response=await fetch(endpoint+"?"+params.toString());
+  const response=await fetch(SERVER_API_BASE+"/api/stickers?"+params.toString(),{cache:"no-store"});
   const data=await response.json();
   if(requestId!==stickerSearchRequest)return;
-  if(!response.ok)throw new Error(data.error||"Sticker search failed");
-  const stickers=(Array.isArray(data.results)?data.results:[]).map(item=>{
-   const media=item?.media_formats||item?.media||{};
-   const keys=["tinywebp_transparent","nanowebp_transparent","webp_transparent","tinygif_transparent","nanogif_transparent","gif_transparent","tinywebp","nanowebp","webp","tinygif","nanogif","gif"];
-   for(const key of keys){
-    const url=media[key]?.url;
-    if(url)return url;
-   }
-   return "";
-  }).filter(Boolean);
+  if(!response.ok||data.ok===false)throw new Error(data.error||"Sticker search failed");
+  const stickers=Array.isArray(data.stickers)?data.stickers:[];
   if(!append)stickerSearchGrid.innerHTML="";
   if(stickers.length){
    stickerSearchGrid.insertAdjacentHTML("beforeend",stickers.map(url=>{
