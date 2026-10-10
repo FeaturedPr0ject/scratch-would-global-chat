@@ -287,7 +287,7 @@ async function handleDatabase(response,url,method,body,identity){
   const attachmentName=clean(body.attachment_name,255);
   const attachmentSize=Number(body.attachment_size||0);
   const attachmentMime=clean(body.attachment_mime,255);
-  if((type==="image"||type==="file")&&(attachmentSize<=0||attachmentSize>2097152))throw new Error("Attachment size is invalid");
+  if((type==="image"||type==="file")&&(attachmentSize<=0||attachmentSize>4194304))throw new Error("Attachment size must be between 1 byte and 4 MB");
   const result=await client.from("messages").insert({user_id:profile.id,user_number:profile.user_number,username:profile.username,display_name:profile.display_name,avatar_url:profile.avatar_url,text:messageText,attachment_name:type==="text"||type==="sticker"?null:attachmentName||"Attachment",attachment_size:type==="text"||type==="sticker"?null:attachmentSize,attachment_mime:type==="text"||type==="sticker"?null:attachmentMime,type}).select("id,user_id,user_number,username,display_name,avatar_url,text,type,attachment_name,attachment_size,attachment_mime,created_at").single();
   data={ok:true,message:result.data};error=result.error;
  }else{
