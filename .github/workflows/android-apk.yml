@@ -30,12 +30,20 @@ jobs:
         with:
           gradle-version: "8.9"
 
+      - name: Set version metadata
+        id: version
+        shell: bash
+        run: |
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            VERSION_NAME="$GITHUB_REF_NAME"
+          else
+            VERSION_NAME="1.0.0-build.$GITHUB_RUN_NUMBER"
+          fi
+          echo "version_name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
+
       - name: Build debug APK
         working-directory: android-app
-        run: |
-          VERSION_NAME="${GITHUB_REF_TYPE}"
-          if [ "$GITHUB_REF_TYPE" = "tag" ]; then VERSION_NAME="${GITHUB_REF_NAME}"; else VERSION_NAME="1.0.0-build.${GITHUB_RUN_NUMBER}"; fi
-          gradle --no-daemon assembleDebug -PappVersionCode="${GITHUB_RUN_NUMBER}" -PappVersionName="${VERSION_NAME}"
+        run: gradle --no-daemon assembleDebug -PappVersionCode="${GITHUB_RUN_NUMBER}" -PappVersionName="${{ steps.version.outputs.version_name }}"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -46,9 +54,11 @@ jobs:
           retention-days: 14
 
       - name: Publish APK release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          name: SWGC Android ${{ github.ref_name }}
+          tag_name: ${{ steps.version.outputs.version_name }}
+          name: SWGC Android ${{ steps.version.outputs.version_name }}
+          prerelease: ${{ github.ref_type != 'tag' }}
           files: android-app/app/build/outputs/apk/debug/app-debug.apk
           generate_release_notes: true
