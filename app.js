@@ -172,6 +172,7 @@ const settingsPanels=document.querySelectorAll("[data-settings-panel]");
 const themeModeOptions=document.querySelectorAll("[data-theme-mode]");
 const languageSelect=document.querySelector("#languageSelect");
 const ownerLoginButton=document.querySelector("#ownerLoginButton");
+const ownerLoginSettingsButton=document.querySelector("#ownerLoginSettingsButton");
 const restoreAccountButton=document.querySelector("#restoreAccountButton");
 const createRecoveryCodeButton=document.querySelector("#createRecoveryCodeButton");
 const recoveryCodeStatus=document.querySelector("#recoveryCodeStatus");
@@ -1626,6 +1627,7 @@ async function start(){
 }
 updateTabNotifications();
 ownerLoginButton?.addEventListener("click",ownerLogin);
+ownerLoginSettingsButton?.addEventListener("click",ownerLogin);
 restoreAccountButton?.addEventListener("click",restoreAccount);
 createRecoveryCodeButton?.addEventListener("click",createRecoveryCode);
 start();
