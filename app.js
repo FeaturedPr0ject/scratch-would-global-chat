@@ -896,10 +896,6 @@ async function searchStickers(queryOverride=null,append=false){
   stickerSearchGrid.innerHTML="";
  }
  const requestId=stickerSearchRequest;
- if(!klipyApiKey){
-  stickerSearchStatus.textContent="KLIPY is not configured.";
-  return;
- }
  stickerSearchLoading=true;
  stickerSearchStatus.textContent=append?"Loading more KLIPY stickers...":"Searching KLIPY...";
  try{
